@@ -1,0 +1,3 @@
+The idea here seems to be to use very big models that can pick different weights based on the input. They aim to make this fast and efficient.
+
+I skimmed this, but I don't think it's relevant to the directions I want to take my research in. Therefore I'm thinking of skipping it.

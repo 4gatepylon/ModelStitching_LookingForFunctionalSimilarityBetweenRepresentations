@@ -1,0 +1,9 @@
+The main takeaway here that is different from a VAE is that instead of simply passing on the latent, they instead replace it with the nearest latent from a learned bank of latents (that can be also learned in real time). Usually (i.e. for images) the latent is actually a grid of latents (or other such sequence) and the bank is used on a per-element basis (so a tensor => find grid of indices => new tensor). The bank distance from the latent is minimized as is the distance from the bank for the latent. At the same time, the loss functions from the decoder given the bank latent are used for the regular latent.
+
+Recall that the main idea of a VAE from a non-probabilistic perspective is that a regularizer is added so that the different dimensions will look like gaussians centered at zero (and thus we will have semantic-like structure).
+
+The VAE idea is expressed as a sort of bayesian function where the p(this latent | this input) is what we want to learn (within the class of functions of gaussians) and we learn it by looking at p(this input | this latent) * p(this latent) / p(this input) such that p(this input | this latent) is using p(this output | this latent) instead. Then they minimize the difference between the the regularized conditional distribution of the latent given the input and the real form. (Or the prior... not sure.) They use KL divergence for this.
+
+TODO: review VAEs and what is KL divergence. I don't totally understand the idea of the VAE unless I drop probability and see it as a regularizer.
+
+TODO: review why the KL divergence can be lost. I think a problem here is that I simply don't know what KL divergence is.

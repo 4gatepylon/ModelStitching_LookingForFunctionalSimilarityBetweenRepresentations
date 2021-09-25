@@ -1,0 +1,3 @@
+TODO what are normalizing flows?
+
+This seems to be recursively searching for modularity. I am more interested in trying to understand how we might represent modularity in a continuous setting. What does modularity look like? Is it a behavior? Is it a feature? Thus, I also skimmed this paper, but did not decide to continue with it in detail.

@@ -1,0 +1,5 @@
+This was very interesting, but seems too large scale to do what we want to do.
+
+On one hand they are testing a bunch of programmatic tasks and other such things that I think might be beyond the scope of the research we want to do. That's not necessarily true, but in general I think there's too much to unpack. Also it seems very computationally intensive and we don't have much compute.
+
+Overall, I skimmed this and it's interesting. I like the ideas. However, I think that we will want to focus on something simpler and trying to understand it deeply (i.e. stitching), especially if it's computationally more tractable for us.

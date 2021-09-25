@@ -1,0 +1,3 @@
+Right now (Sept 23rd, 2021) we are in the process of figuring out where to take the research. There are many interesting directions.
+
+I'm very interested in this idea of stitching. I am also generally interested in what inductive biases we could use to induce human-like behavior. Also, I'm pretty set on doing something "continuous" insofar as I would like things like modularity to emerge from the design, not be pre-programmed in like AI Feynman 2.0. However, it's important to narrow down now, so I will be updating this with a more narrow direction, shortly.

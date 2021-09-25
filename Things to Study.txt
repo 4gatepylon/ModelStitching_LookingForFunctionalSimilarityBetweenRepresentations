@@ -1,0 +1,17 @@
+1. Information theory (look into kologomorov complexity and other such ideas involving the "shortest possible program" that can describe or generate the data; think of this learning as compression).
+2. Linear Algebra/Multivariate Calculus and other branches of math (which are related) will be useful to express the idea of analogy.
+3. Algorithms will be important for the optimizer.
+
+Inductive biases and patterns that are probably interesting:
+1. Analogy or Isomorphism.
+2. Generating processes and programs that describe data.
+3. Occam's Razor, Shannon Information, etc... (learning as compression).
+4. Reinforcement learning and evolutionary methods to train for small/simple models; dynamic sizing. Also, optimizers that work for random generators. It might be desirable to train for a random generating process instead of a deterministic one (like neural networks); what if those weights encoded some sort of distribution instead?
+5. Binding/aggregation vs. spread (prediction). I am particularly fond of the idea of accumulator nodes.
+6. Manifolds and what they represent.
+7. Trees and compositionality.
+8. Alternative optimization algorithms. Training in a "forward" pass (information acquisition) for label-less data.
+9. Symbolic vs. sub-symbolic and the notion of what an "object" is.
+10. Patterns of connectivity.
+11. Methods of encoding information. How to express certain types of statements (etc).
+...

@@ -1,0 +1,27 @@
+Manifold Learning for Extracting Conservation Laws
+
+There is this notion of needing or not needing "dynamical information" which in my understanding is where things are, when they are (i.e. what happens). One goal here seems to be to not need a lot of precise dynamical information, because no matter what happens, the conserved quantity should be conserved. I'm imaging right now that the more information you get, the less information is conserved; thus we can start with a small set and grow that set until it becomes a manifold that describes the conserved quantity. The manifold in my idea here describes "where you can go". Through a process of set union you can grow the manifold. Every iteration you try and fit the new observation into the manifold. The problem now is how to deal with infinite manifolds (or very large manifolds) efficiently.
+
+It's become clear to me that you would want to be able to have both high and low-level features. On a low level you can basically say "this is the set of points where I believe that this object can go" and on a higher level you can say "here is the generating process (a program) that describes or otherwise encodes those low-level features like position. There may also be medium level features like momentum. The ability to infer conservation should be somehow possible on each level, and from conservation on some level, it should be possible to infer a corresponding conservation on a higher level. That is to say, there has to be a disentanglement between conservation and abstraction, but at the same time, there has to be a way to join them.
+
+As a test I like the idea of asking the program "what points are possible" and having it return. The main difficulty here is the ability to encode multiple points. I also like the idea of making the conservation code use the scientific method.
+
+Note they use planetary orbits and a pendulum. We could use a trade system, mechanical system, quantum mechanical system, images that we decide have a certain structure, or anything where we can create a static generating process. The core idea of a conserved quantity, I think, is that there is a STATIC GENERATING PROCESS and that we are trying to FIND IT.
+
+Wasserstein distance is defined as the minimum distance that can be crossed from one point to another (or a function to another, etc...) such that the least amount of work or effort is expended (based on some probability distribution...). They use the pairwise distance of points on the orbits for this. The way they calculate it, I did not totally understand, but it seems that the main idea was to find the DISTANCE BETWEEN THE ORBITS by looking at the DISTANCE BETWEEN THE POINTS and finding the MINIMUM PAIRING such that the SUM of probability of the transport plan from one point to another and the distance (i.e. cost, which for them is just plain euclidian distance) is minimized. You can think of this as I need to move one set of points to another, how do I pick which point goes to where, to minimize distance. NOTE THAT THEM MINIMUM PAIRING IS NOT NECESSARILY BIJECTIVE (or maybe it might be, it's unclear whether this is a constraint or not).
+
+They calculate this pairwise distance between every pair of orbits and put it into a matrix. From this matrix they want to extract the low-dimensional manifold of the conserved quantities. They use various off the shelf manifold learning methods. They seem to be using dimensionality reduction methods. We have a matrix and we want to reduce its dimension. You can think of every row or column as a "point" and we want to see if we can fit these points on lower dimensions. I do not totally understand how the pairwise distances of, say, the orbits work so well as "points". Basically they are expressing every orbit as a relation to other orbits, and want a lower-dimensional way of doing this, but I haven't completely grasped the implications.
+
+One thing that comes to mind is that we don't just want the distance. WE WANT THE PAIRWISE MAPPING that I described previously. That better the describes HOW orbits are similar which is an important step to understanding conserved quantities. If you shift one thing one way, what else MUST shift? What shifts do not seem to be allowed?
+
+Diffusion maps create graphs of nearby points and treat these as spring systems and calculate overall springs from the spring set. Then you want to extract the eigenvalue/vector pairs which best describe it (I'm thinking PCA or something of the like) where we think of these as single spring descriptors. The idea is that this system of springs is well-described by a small (i.e. one two or three) main springs.
+
+MDS (multi-dimensional-scaling) is some form of embedding/compression. I don't know what it does.
+
+IsoMap is similar to MDS but local. It seems to group local points, and then use GEODESIC DISTANCE INSTEAD OF THE SIMILARITY METRIC. Takeaway: you can change your metrics (or use different metrics for different purposes).
+
+So their results seem kind of meh, but the diffusion maps method with the Wasserstein distances is not bad.
+
+It's probably worth glancing at the referenced papers.
+
+Also it's important to think about how such an algorithm might be used and/or be useful. What format is the output data?

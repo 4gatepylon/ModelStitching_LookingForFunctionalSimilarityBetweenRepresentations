@@ -1,0 +1,14 @@
+Object Oriented Deep Learning
+
+A couple main takeaways come to mind.
+1. Computation should be on some level data-oriented instead of model oriented. This is insofar as for normal convolutional neural networks there is a fixed number of convolutions and they operate just as slow on a blank canvas as on a full image. This should not be the case. This is in line with my idea of searching the image.
+2. You can combine symbolic elements with sub-symbolic elements (think about the signatures used in their model; what do those mean?)
+3. How you optimize is very important. They do not talk about how they do it, but it's crucial.
+4. Bind/aggregate vs. predict/vote. I also like the idea of accumulation. These should be the sort of "atomic" elements of such a system. Maybe also transformations of some kind.
+5. At some point there should be a context created that differentiates things such as background and foreground. This is important, for example, because it is effective for occlusion problems.
+6. It is important to be able to deal with overlapping. You should be able to create a spacial/tree map of the world.
+7. There should be independence and disentanglement of different objects in the representation. Examples such as changing the pose of a cat behind a fence, should NOT affect the fence at all.
+8. We want some level of continuous positioning if possible I think. Not entirely set on this, but there are some elements or properties of continuity which are not the case for discrete systems, which we will want to keep.
+9. Convolution is "filter-driven." What other paradigms might exist? They talk about object-driven but I don't understand the full implications of this view.
+
+It is worth re-reading some of these points in the paper, but I think that the implementation is not that, that useful. It seems to be a regular neural network with additional features stacked, but they also do not explain how they train nor how they perform some of these operations (i.e. how do you take in various inputs and predict ONE output? It's very unclear what formula they are using).

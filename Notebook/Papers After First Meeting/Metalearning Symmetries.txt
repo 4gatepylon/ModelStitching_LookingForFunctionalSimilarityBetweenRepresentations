@@ -1,0 +1,15 @@
+It would be fruitful to study some abstract algebra; my vocabulary in this sense is limited.
+
+Important idea: we don't just want equivariance, we also will want transformation mapping (i.e. transforming with X in the input is transforming with Y in the output ALWAYS, even if Y != X).
+
+They basically use a massive matrix that outputs the weight matrix for filter values and then use tricks like kronecker factorization to try and make it less computationally disastrous. I like their idea, however, of applying this to existing already biased layers (like convolutions). The symmetry matrix U (read the paper) does not need to output a weight matrix, but can instead output, say, a bank of convolutional layers (and then you could have the filter values vector be multiple different filters: this could find filter sizes potentially and share across filters).
+
+Another idea is that we could drop linear layers and instead assume a certain set of functional mappings (i.e. equivariance or something else) such that we didn't need to store separate weights.
+
+TODO go through the proofs.
+
+What is an ablation?
+
+What kernels have been creating that actually weight share for rotation and flips? Maybe we can actually just use these.
+
+TODO review the problem set up.

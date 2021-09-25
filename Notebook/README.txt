@@ -1,0 +1,1 @@
+I'm writing my notebook in my GitHub repository for my work, so I'm keeping it as a file structure. I have folders for papers' notes and will soon have for experiments, general thoughts, etcetera.

@@ -1,0 +1,14 @@
+There is this super cool idea of "stitching" two neural networks for which we cut a neural network graph between two layers, connect it to an FC, then connect it to another neural network at the same layer. You can think of this FC as calculating an "analogy" between the representations of the two neural networks. This tends to be good because (we think) the representations tend to be structurally similar, even if spatially different.
+
+Rumen has linked various papers which I've added to my cache. Not all are about stitching; some are about recurrent neural networks and other stuff. Some include:
+-PonderNet
+-Perciever
+-DeeBert
+-The stitching paper
+
+I also should look into:
+-Recycling in neural networks (keyword from Aayush)
+
+For stitching it's unclear what exactly we want to make of it. I'll need to read the paper first. The idea can take many forms, but you could think of it as being used to measure similarity between neural networks. We could also try and expand on stitching to make it more powerful or flexible (try different ways of stitching, etcetera). We could also try and apply it to situations. There are many ways to take this. I am still deciding.
+
+I will update this folder once I have read the papers

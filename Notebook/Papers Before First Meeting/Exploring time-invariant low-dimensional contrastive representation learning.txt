@@ -1,0 +1,36 @@
+Exploring time-invariant low-dimensional contrastive representation learning
+
+The abstract makes the startling claim that from their results it seems likely that giving labels to an algorithm can make it WORSE than doing this in a totally unsupervised manner.
+
+They basically used a rigid pendulum and tried to get similar representations using SimCLR on the images of the pendulum (just the end of it) to tell whether two views of two pendulums had the same energy or not (where the "same" pendulum: I'm guessing they didn't vary the mass).
+
+They found that their model was able to interpolate on a limited level and had a lot of success extracting the energy. In most cases it outperformed a supervised baseline, which is impressive and a little unintuitive. It is noise resistant. They did not find a convincing reason why self-supervised outperformed supervised.
+
+They seem to have fixed the radius and mass, and modulated the energy from 0 to 1 (scaled) such that 1 (exclusive) is enough to reach the top and 0 is immobile. They seem to have fed a set of uniformly temporally displaced images (i.e. 2 out of 20) if each pendulum (so you can tell speed and thus energy without needing the height).
+
+They did some tricky things to make it harder:
+1. 100x100 images instead of 32x32.
+2. Random perturbation of the angle from the correct angle.
+3. Graphical noise (translational one pixel, tint, background color).
+4. Energy gaps: this seems good though since they reintroduce on test to force interpolation. The gaps are on entire pendulum instances, not images.
+5. Cropping (which introduces blank images).
+
+They use a SimCLR base encoder without a projector or predictor. InfoCNE loss (modified) such that similarity = exp(-euclid_dist(x, y) squared / tau) where tau is a parameter "heat". The total loss is -Expected Value(log(similarity of x and y / sum of x with all other similarities)). Something something, cross-entropy where logins are negative Euclidean distance and target is zero everywhere except when the indices match (i.e. they ARE the same).
+
+They don't use cosine similarity because of a wraparound effect (0 = 2pi). That said when they tried it, it also worked OK.
+
+Local vs. global spearman.
+
+Interesting phenomena: fracturing.
+
+The representation range might be interesting to explore. They suggest it comes from the loss function or from the data itself. I think noisy data should be more dense (which is what they got) BECAUSE upon seeing more randomness it's harder to tell apart things. Think about it a bit. If you get totally random data, and cannot find a pattern, you think everything is the "same" in a way: differentiation does not work.
+
+They give an information theoretic argument based on the loss, which makes sense. Interesting argument on why high-energy pendulums (high-displacement) might be to blame for higher density based on the fact that they are harder to tell apart well for the RESNET due to its local properties! Density is a sort of metric of difficulty!
+
+With the cropping ambiguous data (blank) was sent to the average!
+
+More information that just the single-dimensional energy was found it seems (i.e. position I the Y direction). That's interesting!
+
+IT IS WORTH RE-READING & esp. in detail the appendix
+
+Main important things here seem to be the InfoCNE loss (think about the loss a lot!) and this notion of density and how the model reacts to not knowing things.
