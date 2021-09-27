@@ -1,0 +1,31 @@
+Basically the goal here is to speed up inference for BERT-style large language models.
+Normally these can be very good to train, but slow for inference since they are so big.
+
+Dee: Dynamic Early Exiting. They have "off-ramps" which are basically my own ideas for "vents"
+(classification layers that come out from intermediate layers and allow you to early exit). These
+off-ramps seem to be jointly trained and fine-tuned. This process is basically regular training
+for a while, then you stop, freeze the transformer layers and last clasfifier, then train on the
+sum of the losses of the previous classifier cross entropy losses for their weights. You freeze
+the transformer layer, because you don't want to ruin the last layer classification accuracy. Also,
+part of the point is to use a good representation from the trasnform layers that is ideally already
+there.
+
+Thus future questions are: could you get away without the freeze? Should you? Could you do a different
+joint loss function?
+
+Inference basically looks at the entropy and picks the first layer with a sufficiently low entropy (i.e.
+below a bound "S" which you can define). Entropy is negatively correlated with accuracy here (I think it's
+a measure of the "uniformity" of the distribution, which, if it comes from a softmax, should be very skewed
+if it is "confident" and thus very low).
+
+They report 40% runtime increases.
+
+Main takeaway here, I think, is the conditional early exit. This is one way to manifest my idea of short
+circuiting. I don't think I'll be exploring this for my SuperUROP, but I genuinely might want to try it
+out again in the future. It's very simple and effective and elegant. My goal, however, would be to see if
+I could (1) do more joint actions and encode the early stop into the algorithm instead of some meta-algorithm,
+or (2) explore what combinations of freeze/unfreeze you can do.
+
+I think this question of freeze/unfreeze is really interesting. Could you speed up model training by doing
+intelligent freeze/unfreeze operations during training? Could you use that to build robustness? Could you
+use that for some other interesting purpose?

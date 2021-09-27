@@ -1,0 +1,3 @@
+Basically this is my idea plus some formalism. I think what would be worthwhile here is just to do a personal project/experiment
+to build this but for images and see what you can get out of it. If you can get this to be good and small for image recognition
+tasks then I think it would be super cool!

@@ -1,0 +1,17 @@
+The goal is to be able to learn from different modalities of data.
+
+They interleave self and cross attention. It's worth re-reading about attention. The video
+here is very helpful: https://www.youtube.com/watch?v=P_xeshTnPZg. Also, read a little bit
+about the newer attention mechanisms.
+
+Most importantly for the cross attention, remember how the video talks about the cross attention
+using inputs from two languages' sentences. In this paper, one language is the latent and the other
+is the actual input. That way, you can have a small latent even if the input is very long.
+
+Something here, which I think is interesting, is how the original latest (leftmost latent) is something
+like an initial inductive bias.
+
+You can share weights in which case it's similar to a RNN.
+
+In the end I only watched the video instead of reading the paper. I think these are interesting ideas, but I'm
+not sure they are relevant for my work yet.

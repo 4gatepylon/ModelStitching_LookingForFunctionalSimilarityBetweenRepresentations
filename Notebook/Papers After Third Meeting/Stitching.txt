@@ -1,0 +1,43 @@
+Very interesting: sitching connectivity akin to mode connectivity.
+Minima that are typically reached by SGD can all be stiched! Note the similarity
+to "mode-connectivity" in which it was found that "local minima found by SGD are often connected through 
+low-loss paths" (though they are often non-linear).
+
+It may be worth reading about previously used methods for measuring the similarity of
+learned representations. For example; CKA and SVCCA. That way I can get some context.
+
+Three ideas: (1) embeddings as snowflakes, (2) embeddings as "all roads lead to Rome", and (3) more data is better
+(i.e. Rome, but if you use my more well-trained road you'll do better).
+
+Another point: stitching can be used to see whether semi-supervised or self-supervised tasks
+that we use to learn the similarity of embeddings is similar to what is learned when you do supervised
+or otherwise traditional learning tasks.
+
+Idea: evolutionary stitching (or other way to picking to switch instead of keeping). This is my
+own idea (basically how to pick the best PLACE to stitch and/or deal with variance/bias tradeoff).
+
+They define the loss as the difference between the idealized loss of the network minus the idealized
+loss of that network with an optimally trained stitch from the previous network. They use simple connections
+like 1x1 convolutions for convolutional neural network layers (remember these are a grid) (a 1x1 convolution
+as I understand it will result in purely a 1-to-1 mapping with linear rescaling for each of the elements).
+
+They want it to be simple, which is to say, the resulting function should be within the class of learnable functions using
+the original networks.
+
+What have they not explored that we can explore? How about non-linear stitching. How about stitching across
+different tasks like vision to/from language? How about using that to try and find a strong joint training scheme?
+They often say that stitching is NOT learning, but honestly, why not? Why not using stitching as a form of learning?
+It would be a very interesting take on language-vision models.
+
+Why stitching might be better than these other families: the others are ivnariant under wierd untrue cases, loss function
+units might be more meaningful, it's "asymmetric" with respect to quality, ignores spurious features (supposedly).
+
+Stitching connectivity seems to apply on ALL layers! This is how they choose if the two models are "stitch-connected".
+
+What about layers that are not 1-to-1 connected, but instead maybe shifted off by some amount?
+
+This is worth re-reading. I think this is a cool idea. Perhaps, interesting to explore is learnable stitches, how far you can
+get with fully pretrained models on new datasets, analogy: trying to stitch things that are analogous in a non-linear way
+but not the same dataset (i.e. language and vision or two physics datasets), ensemble training of unsupervised or semi-supervised
+methods to lower variance by using a stitch-loss (or maybe even with multi-modal or supervised methods), etcetera. I have various
+ideas, but I'm not sure exactly where to take it.

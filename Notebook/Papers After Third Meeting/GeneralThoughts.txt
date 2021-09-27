@@ -1,0 +1,11 @@
+I think that stitching is the way to go.
+
+DeeBert was an interesting idea, but I think we should put that on the shelf for now.
+
+I avoided perciever, since I don't think it's totally relevant. It's primarily trying to do
+something else: it's trying to make transformers that are more generally applicable to massive sources of data.
+
+PonderNet seems to be almost exactly the idea I had. Darn it they beat me to it! I'll come back to it later, but I also
+do not think it's the direction to go now, at least yet. PonderNet may be useful for physics problems where
+we need to execute algorithmic procedures. The types of tasks they use PonderNet for are primarily algorithmic,
+so it also might have some merit to try it on vision or language or other such tasks.
