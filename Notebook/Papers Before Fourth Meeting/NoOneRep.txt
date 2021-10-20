@@ -1,0 +1,20 @@
+Main question is whether different training methodology can change model behavior (i.e. being good and/or bad on different
+subsets of the data.)
+
+They classify five main points of variation:
+1. Re-inits (exact same, but initialize differently)
+2. Hyperparameters (same architecture, but trained with different hyperparameters, like widths, for example)
+3. Architectures (use a different architecture)
+4. Frameworks (trained on different objectives/loss functions)
+5. Datasets (use a different dataset)
+
+Typically going from 1 => 5 yields more changes. They train always with a base model that is fixed and typical and is ensembled
+with one of the other models. You can think of each category as an axis of change, and because different pairs have different
+axes of change usually they will have significant change.
+
+They look at correlation of errors. The measure of "error inconsistency" of negatively correlated to correlation.
+
+They also look at the disparity of confidences.
+
+Bad networks that are diffferent from good networks, can help them if ensembled. Thus there is an intersect (probably) but not
+a superset.

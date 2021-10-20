@@ -1,0 +1,16 @@
+Modular Neural Networks.
+
+Using Stitching as a tool (and others) to basically define interfaces for neural network modules
+and map between different architectures' modules. Try and break it down into atoms.
+
+Important notes are in the slack channel.
+
+Basically, we will want to find the best mapping from one neural network to another looking at different length neural networks.
+
+Later we'll look at different layer types. After that, we'll look at potentially differnet datasets and whatnot. We also will
+eventually try to improve the algorithms to find the mapping. We may also look at tools of contrastive learning. Eventually, we
+will also want to start to think about how to define interfaces. I think invariances are a meaningful and important way for defining
+interfaces here. The interface is something which defines the data format in and out between two components and what it means (the
+meaning should at least be somewhat there, if not totally; the format is the most important).
+
+The very first baby step as of October 19th, 2021 is to get stitching to work on a toy dataset i.e. MNIST and then CIFAR.

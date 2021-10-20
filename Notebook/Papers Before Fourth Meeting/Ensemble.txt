@@ -1,0 +1,11 @@
+Lijie sent me a borderline useless paper from some dude in IIT and Singapore on what ensemble methods exist. The main takeaways I think are.
+- Stacking: exactly what it sounds like
+- Bagging vs. boosting (train on random subsets of the data vs train on what the previous model was bad at)
+- Concat was nowhere to be seen
+- Negative Correlation, Incremental, etc… had no explanation in the paper
+- Can voting be done with gradient descent?
+- Winner takes all vs. majority vote vs. bayesian (conditioned on the input) vs. averaging (probably more for regression) and other methods
+- Splitting into two subspaces that cover
+- Implicit ensembling: Dropout is an implicit ensembling method
+- When you vote or average it can be weighted or unweighted
+- Bias Variance Tradeoff
