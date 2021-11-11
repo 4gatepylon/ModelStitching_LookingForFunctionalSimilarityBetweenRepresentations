@@ -131,3 +131,9 @@ dmypy.json
 # Mac sux
 .DS_Store
 **/.DS_Store
+
+# this is where we store our datasets like mnist for now
+data/
+**/data/**
+mnist_cnn_*.pt
+mnist_cnn_**.pt

@@ -1,3 +1,16 @@
+import argparse
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+from torchvision import datasets, transforms
+from torch.optim.lr_scheduler import StepLR
+
+# Plan:
+# 1. Make simple MNIST CNN work (don't use the general Net from below, use something more hard-coded)
+# 2. Make multiple copies of it with different layer widths and stitch those together, get stitching to work
+# 3. Make a simple single axis of variation and see if we can do optimal stitches for these different lengths
+
 # A simple CNN network for MNIST that expects in MNIST digits in a single band channel
 # and also expects a tuple layer_sizes that declares a sequence of layers such that the beginning
 # if the sequence is comprised of convolutions and the end is comprised of FCs. Between every FC
@@ -77,3 +90,63 @@ class Net(nn.Module):
         x = self.seq(x)
         output = F.log_softmax(, dim=1)
         return output
+
+def train(args, model, device, train_loader, optimizer, epoch):
+    model.train()
+    for batch_idx, (data, target) in enumerate(train_loader):
+        data, target = data.to(device), target.to(device)
+        optimizer.zero_grad()
+        output = model(data)
+        loss = F.nll_loss(output, target)
+        loss.backward()
+        optimizer.step()
+        if batch_idx % args.log_interval == 0:
+            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                epoch, batch_idx * len(data), len(train_loader.dataset),
+                100. * batch_idx / len(train_loader), loss.item()))
+            if args.dry_run:
+                break
+
+
+def test(model, device, test_loader):
+    model.eval()
+    test_loss = 0
+    correct = 0
+    with torch.no_grad():
+        for data, target in test_loader:
+            data, target = data.to(device), target.to(device)
+            output = model(data)
+            test_loss += F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
+            pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
+            correct += pred.eq(target.view_as(pred)).sum().item()
+
+    test_loss /= len(test_loader.dataset)
+
+    print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
+        test_loss, correct, len(test_loader.dataset),
+        100. * correct / len(test_loader.dataset)))
+
+def main():
+    pass
+
+# stitch on a simple hardcoded model
+def simple_stitch(model1, model2):
+    pass
+
+# stitch two layers and return the accuracy (i.e. a measure of similarity)
+def stitch(model1, model2, layer1, layer2):
+    return 0
+
+# return a tuple of pairings of the best stitches between two models
+def optimal_stitchs(model1, model2, layers1, layers2, seq=False):
+    pairings = []
+    start = 0
+    for i in range(0, layers1):
+        find = max(i for i in range(start, layers2), key=lambda l1, l2: stitch(model1, model2, layer1, layer2))
+        if seq:
+            start = find + 1
+        pairings.append((i, find))
+    return pairings
+
+if __name__ == "__main__":
+    pass
