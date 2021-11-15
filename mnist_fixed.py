@@ -66,16 +66,16 @@ class StitchMode(Enum):
     FC1 = 2 # Stitch before fc1
     FC2 = 3 # Stitch before fc2
 
-def linear_stitch_seq(starter_out, ender_in):
+def linear_stitch_seq(starter_out, ender_in, device):
     return nn.Sequential(
         # Batch norm 1d subtracts the expected value (average), divides by the
         # standard deviation, and then rescales and biases that vector (once per mini-batch)
         nn.BatchNorm1d(starter_out),
         nn.Linear(starter_out, ender_in),
         nn.BatchNorm1d(ender_in),
-    )
+    ).to(device)
 
-def cnn_stitch_seq(starter_out, ender_in):
+def cnn_stitch_seq(starter_out, ender_in, device):
     # Note that connect_units is the output size of the previous layer (i.e. if we modify conv2
     # this would be the output size of conv1 and should yield the same output size, since conv2
     # is expecting that as input)
@@ -86,28 +86,28 @@ def cnn_stitch_seq(starter_out, ender_in):
         # kernel size 1, stride 1
         nn.Conv2d(starter_out, ender_in, 1, 1),
         nn.BatchNorm2d(ender_in),
-    )
+    ).to(device)
 
 # Stitch net is very slow because of all the CPU logic, I think... 
 # TODO we need a way to ascertain that starter and ender are, in fact,
 # frozen
 class StitchNet(nn.Module):
-    def __init__(self, starter, ender, stitch_mode=None):
+    def __init__(self, starter, ender, device, stitch_mode=None):
         super(StitchNet, self).__init__()
         if stitch_mode == StitchMode.CONV2:
             self.stitch_mode = StitchMode.CONV2
             # Second one will expect input to conv2 to have the output of its own convolution
-            self.stitch = cnn_stitch_seq(starter.conv1_depth, ender.conv1_depth)
+            self.stitch = cnn_stitch_seq(starter.conv1_depth, ender.conv1_depth, device)
         elif stitch_mode == StitchMode.FC1:
             self.stitch_mode = StitchMode.FC1
             # Same as before second one will expect the input to have the dimensions of its own
             # inputs
-            self.stitch = linear_stitch_seq(starter.fc1_width, ender.fc1_width)
+            self.stitch = linear_stitch_seq(starter.fc1_width, ender.fc1_width, device)
         elif stitch_mode == StitchMode.FC2:
             self.stitch_mode = StitchMode.FC2
             # Once again we need to make sure to pass the inputs in the proper sizes that
             # the ender network expects
-            self.stitch = linear_stitch_seq(starter.hidden_width, ender.hidden_width)
+            self.stitch = linear_stitch_seq(starter.hidden_width, ender.hidden_width, device)
         else:
             raise NotImplementedError
 
@@ -315,8 +315,8 @@ def main():
 
     # Try stithing from smaller models to larger models; expect better performance
     # TODO measure stitching accuracy (i.e. whether the stitch worked or not)
-    default_to_fat_fc = StitchNet(default_model, fat_fc_model, StitchMode.FC1)
-    default_to_fat_conv2  = StitchNet(default_model, fat_conv2_model, StitchMode.CONV2)
+    default_to_fat_fc = StitchNet(default_model, fat_fc_model, device, stitch_mode=StitchMode.FC1)
+    default_to_fat_conv2  = StitchNet(default_model, fat_conv2_model, device, stitch_mode=StitchMode.CONV2)
     stitched_models = ((default_to_fat_fc, "default_to_fat_fc1"), (default_to_fat_conv2, "default_to_fat_conv2"))
     train_test_save_models(stitched_models, device, train_loader, test_loader)
     
