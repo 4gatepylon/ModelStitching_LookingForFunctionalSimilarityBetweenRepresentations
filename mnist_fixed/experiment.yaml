@@ -1,0 +1,13 @@
+
+DEFAULT_NET_KWARGS:
+    conv1_depth: 32
+    conv2_depth: 64
+    hidden_width: 128
+FAT_CONV2_NET_KWARGS:
+    conv1_depth: 32
+    conv2_depth: 128
+    hidden_width: 128
+FAT_FC_NET_KWARGS:
+    conv1_depth: 32
+    conv2_depth: 64
+    hidden_width: 256
