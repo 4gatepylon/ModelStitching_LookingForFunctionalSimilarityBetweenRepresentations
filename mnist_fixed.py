@@ -322,7 +322,7 @@ def main():
     
 if __name__ == '__main__':
     if torch.cuda.is_available():
-        printf("CUDA IS AVAILABLE!")
+        print("CUDA IS AVAILABLE!")
     # We allow users to pick whether they want to download or not, because in supercloud you cannot use
     # the internet, so you'd want to download before, then activate your node (etc) in, say, interactive mode
     parser = argparse.ArgumentParser(description='Decide whether to download the dataset (MNIST) or run training.')
