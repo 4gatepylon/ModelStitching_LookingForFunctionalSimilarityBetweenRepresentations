@@ -215,7 +215,6 @@ def test(model, device, test_loader):
 
 
 # The idea is to train two networks with slightly different starting parameters
-DEFAULT_EPOCHS = 1
 DEFAULT_TRAIN_BATCH_SIZE = 64
 DEFAULT_TEST_BATCH_SIZE = 1000
 DEFAULT_LR = 1.0
@@ -248,15 +247,15 @@ FAT_FC_NET_KWARGS = {
     "hidden_width": 256,
 }
 
-def train_test_save_models(models_and_names, device, train_loader, test_loader):
+def train_test_save_models(models_and_names, device, train_loader, test_loader, epochs):
     for model, model_name in models_and_names:
-        print("Training {} for {} epochs".format(model_name, DEFAULT_EPOCHS))
+        print("Training {} for {} epochs".format(model_name, epochs))
         # Each model gets its own optimizer and scheduler since we may want to vary across them later
         optimizer = optim.Adadelta(model.parameters(), lr=DEFAULT_LR)
         scheduler = StepLR(optimizer, step_size=1, gamma=DEFAULT_LR_EXP_DROP)
 
         # Train for the epochs for that one model
-        for epoch in range(1, DEFAULT_EPOCHS + 1):
+        for epoch in range(1, epochs + 1):
             train(model, device, train_loader, optimizer, epoch, PRINT_EVERY)
             test(model, device, test_loader)
             scheduler.step()
@@ -273,7 +272,7 @@ transform=transforms.Compose([
 
 # Stitch from/to FC will be a linear layer
 # Stitch from/to CNN will be a 1x1 cnn that maintains the number of channels
-def main():
+def main(epochs=1):
     # Set up the settings based on the requested ones (in arguments)
     use_cuda = torch.cuda.is_available()
     train_batch_size = DEFAULT_TRAIN_BATCH_SIZE
@@ -311,14 +310,14 @@ def main():
 
     # Run main training loop to train all the models
     original_models = ((default_model, "default"), (fat_fc_model, "fat_fc1"), (fat_conv2_model, "fat_conv2"))
-    train_test_save_models(original_models, device, train_loader, test_loader)
+    train_test_save_models(original_models, device, train_loader, test_loader, epochs)
 
     # Try stithing from smaller models to larger models; expect better performance
     # TODO measure stitching accuracy (i.e. whether the stitch worked or not)
     default_to_fat_fc = StitchNet(default_model, fat_fc_model, device, stitch_mode=StitchMode.FC1)
     default_to_fat_conv2  = StitchNet(default_model, fat_conv2_model, device, stitch_mode=StitchMode.CONV2)
     stitched_models = ((default_to_fat_fc, "default_to_fat_fc1"), (default_to_fat_conv2, "default_to_fat_conv2"))
-    train_test_save_models(stitched_models, device, train_loader, test_loader)
+    train_test_save_models(stitched_models, device, train_loader, test_loader, epochs)
     
 if __name__ == '__main__':
     if torch.cuda.is_available():
@@ -327,6 +326,7 @@ if __name__ == '__main__':
     # the internet, so you'd want to download before, then activate your node (etc) in, say, interactive mode
     parser = argparse.ArgumentParser(description='Decide whether to download the dataset (MNIST) or run training.')
     parser.add_argument('--d', dest='d', action='store_true')
+    parser.add_argument('--e', default=1, type=int, help="Number of epochs")
     parser.set_defaults(d=False)
     args = parser.parse_args()
 
@@ -335,4 +335,6 @@ if __name__ == '__main__':
         datasets.MNIST('./data', train=True, download=True, transform=transform)
         datasets.MNIST('./data', train=False, transform=transform)
     else:
-        main()
+        assert(type(args.e) == int)
+        assert(args.e >= 1)
+        main(epochs=args.e)
