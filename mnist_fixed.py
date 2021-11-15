@@ -8,6 +8,7 @@ from torch.optim.lr_scheduler import StepLR
 from enum import Enum
 from tensorboardX import SummaryWriter
 import yaml
+import argparse
 
 class Net(nn.Module):
     # Note that MNIST has 28x28 images
@@ -263,6 +264,13 @@ def train_test_save_models(models_and_names, device, train_loader, test_loader):
         # Save that specific model, TODO save a tensorboard plot somewhere and print the command to use to show it
         torch.save(model.state_dict(), SAVE_MODEL_FILE_TEMPLATE.format(model_name))
 
+# I think this is a greyscale thing, and it is shared across both
+# main and __main__
+transform=transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize((0.1307,), (0.3081,))
+    ])
+
 # Stitch from/to FC will be a linear layer
 # Stitch from/to CNN will be a 1x1 cnn that maintains the number of channels
 def main():
@@ -287,18 +295,10 @@ def main():
                        'shuffle': True}
         train_kwargs.update(cuda_kwargs)
         test_kwargs.update(cuda_kwargs)
-
-    # I think this is a greyscale thing
-    transform=transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.1307,), (0.3081,))
-        ])
     
-    # load the dataset for test and train
-    dataset1 = datasets.MNIST('./data', train=True, download=True,
-                       transform=transform)
-    dataset2 = datasets.MNIST('./data', train=False,
-                       transform=transform)
+    # load the dataset for test and train from a local location (supercloud has to access to the internet)
+    dataset1 = datasets.MNIST('./data', train=True, download=False, transform=transform)
+    dataset2 = datasets.MNIST('./data', train=False, transform=transform)
     
     # these are basically iterators that give us utility functionality
     train_loader = torch.utils.data.DataLoader(dataset1,**train_kwargs)
@@ -321,4 +321,16 @@ def main():
     train_test_save_models(stitched_models, device, train_loader, test_loader)
     
 if __name__ == '__main__':
-    main()
+    # We allow users to pick whether they want to download or not, because in supercloud you cannot use
+    # the internet, so you'd want to download before, then activate your node (etc) in, say, interactive mode
+    parser = argparse.ArgumentParser(description='Decide whether to download the dataset (MNIST) or run training.')
+    parser.add_argument('--d', dest='d', action='store_true')
+    parser.set_defaults(d=False)
+    args = parser.parse_args()
+
+    if args.d:
+        # Simply download everything
+        datasets.MNIST('./data', train=True, download=True, transform=transform)
+        datasets.MNIST('./data', train=False, transform=transform)
+    else:
+        main()
