@@ -321,6 +321,8 @@ def main():
     train_test_save_models(stitched_models, device, train_loader, test_loader)
     
 if __name__ == '__main__':
+    if torch.cuda.is_available():
+        printf("CUDA IS AVAILABLE!")
     # We allow users to pick whether they want to download or not, because in supercloud you cannot use
     # the internet, so you'd want to download before, then activate your node (etc) in, say, interactive mode
     parser = argparse.ArgumentParser(description='Decide whether to download the dataset (MNIST) or run training.')
