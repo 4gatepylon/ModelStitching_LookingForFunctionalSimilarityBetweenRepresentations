@@ -5,22 +5,27 @@ sources:
             conv1_depth: 32
             conv2_depth: 64
             hidden_width: 128
+        seed: 1
     fat_conv2:
         kwargs:
             conv1_depth: 32
             conv2_depth: 128
             hidden_width: 128
+        seed: 1
     fat_fc2:
         kwargs:
             conv1_depth: 32
             conv2_depth: 64
             hidden_width: 256
+        seed: 1
 stitches:
     default_to_fat_conv2:
         starter: default
         ender: fat_conv2
         stitch_mode: conv2
+        seed: 1
     default_to_fat_fc2_via_fc1:
         starter: default
         ender: fat_fc2
         stitch_mode: fc1
+        seed: 1

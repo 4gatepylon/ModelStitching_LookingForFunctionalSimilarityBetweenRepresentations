@@ -126,7 +126,7 @@ def main(epochs=1):
     train_func = lambda models: train_test_save_models(models, device, train_loader, test_loader, epochs)
 
     # TODO we need an evaluator than can measure accuracies and do some plots ideally also in log-space
-    eval_func = lambda models: raise NotImplementedError
+    eval_func = lambda models: None
 
     experiment.load_yaml()
     experiment.init_nets(net_init)
