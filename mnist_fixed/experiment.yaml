@@ -1,13 +1,26 @@
 
-DEFAULT_NET_KWARGS:
-    conv1_depth: 32
-    conv2_depth: 64
-    hidden_width: 128
-FAT_CONV2_NET_KWARGS:
-    conv1_depth: 32
-    conv2_depth: 128
-    hidden_width: 128
-FAT_FC_NET_KWARGS:
-    conv1_depth: 32
-    conv2_depth: 64
-    hidden_width: 256
+sources:
+    default:
+        kwargs:
+            conv1_depth: 32
+            conv2_depth: 64
+            hidden_width: 128
+    fat_conv2:
+        kwargs:
+            conv1_depth: 32
+            conv2_depth: 128
+            hidden_width: 128
+    fat_fc2:
+        kwargs:
+            conv1_depth: 32
+            conv2_depth: 64
+            hidden_width: 256
+stitches:
+    default_to_fat_conv2:
+        starter: default
+        ender: fat_conv2
+        stitch_mode: conv2
+    default_to_fat_fc2_via_fc1:
+        starter: default
+        ender: fat_fc2
+        stitch_mode: fc1

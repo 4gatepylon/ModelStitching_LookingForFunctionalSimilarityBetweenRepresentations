@@ -55,9 +55,9 @@ class Net(nn.Module):
         return output
 
 class StitchMode(Enum):
-    CONV2 = 1 # Stitch before conv2
-    FC1 = 2 # Stitch before fc1
-    FC2 = 3 # Stitch before fc2
+    CONV2 = "conv2" # Stitch before conv2
+    FC1 = "fc1" # Stitch before fc1
+    FC2 = "fc2" # Stitch before fc2
 
 def linear_stitch_seq(starter_out, ender_in, device):
     return nn.Sequential(
@@ -85,7 +85,7 @@ def cnn_stitch_seq(starter_out, ender_in, device):
 # TODO we need a way to ascertain that starter and ender are, in fact,
 # frozen
 class StitchNet(nn.Module):
-    def __init__(self, starter, ender, device, stitch_mode=None):
+    def __init__(self, starter, ender, stitch_mode, device=None):
         super(StitchNet, self).__init__()
         if stitch_mode == StitchMode.CONV2:
             self.stitch_mode = StitchMode.CONV2

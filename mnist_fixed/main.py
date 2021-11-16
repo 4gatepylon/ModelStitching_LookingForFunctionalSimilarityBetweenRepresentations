@@ -9,7 +9,7 @@ import argparse
 
 # Import our networks
 from net import Net, StitchNet, StitchMode
-from yaml_reader import load_models_kwargs
+from yaml_reader import Experiment
 
 # TODO please make a printf utility when you make the tensorboard shit (and make it
 # print/log to a file as necessary or whatever)
@@ -64,7 +64,7 @@ SAVE_MODEL_FILE_TEMPLATE = "mnist_cnn_{}.pt" # use .format(name here) to give it
 
 
 def train_test_save_models(models_and_names, device, train_loader, test_loader, epochs):
-    for model, model_name in models_and_names:
+    for model_name, model in models_and_names.items():
         print("Training {} for {} epochs".format(model_name, epochs))
         # Each model gets its own optimizer and scheduler since we may want to vary across them later
         optimizer = optim.Adadelta(model.parameters(), lr=DEFAULT_LR)
@@ -118,25 +118,22 @@ def main(epochs=1):
     # these are basically iterators that give us utility functionality
     train_loader = torch.utils.data.DataLoader(dataset1,**train_kwargs)
     test_loader = torch.utils.data.DataLoader(dataset2, **test_kwargs)
+    
+    # Default filename is experiment.yaml in this same folder
+    experiment = Experiment()
+    net_init = lambda **kwargs: Net(**kwargs).to(device)
+    stitch_init = lambda starter, ender, stitch_mode: StitchNet(starter, ender, stitch_mode, device=device)
+    train_func = lambda models: train_test_save_models(models, device, train_loader, test_loader, epochs)
 
-    # We have three models that represent three variations on the same network, and we will attempt to stitch them
-    # use the default yaml file "experiment.yaml"
-    # TODO make this totally programatic and have it return the actual model, model_name tuple list
-    MODELS_KWARGS = load_models_kwargs()
-    default_model = Net(**MODELS_KWARGS["DEFAULT_NET_KWARGS"]).to(device)
-    fat_fc_model = Net(**MODELS_KWARGS["FAT_FC_NET_KWARGS"]).to(device)
-    fat_conv2_model = Net(**MODELS_KWARGS["FAT_CONV2_NET_KWARGS"]).to(device)
+    # TODO we need an evaluator than can measure accuracies and do some plots ideally also in log-space
+    eval_func = lambda models: raise NotImplementedError
 
-    # Run main training loop to train all the models
-    original_models = ((default_model, "default"), (fat_fc_model, "fat_fc1"), (fat_conv2_model, "fat_conv2"))
-    train_test_save_models(original_models, device, train_loader, test_loader, epochs)
-
-    # Try stithing from smaller models to larger models; expect better performance
-    # TODO measure stitching accuracy (i.e. whether the stitch worked or not)
-    default_to_fat_fc = StitchNet(default_model, fat_fc_model, device, stitch_mode=StitchMode.FC1)
-    default_to_fat_conv2  = StitchNet(default_model, fat_conv2_model, device, stitch_mode=StitchMode.CONV2)
-    stitched_models = ((default_to_fat_fc, "default_to_fat_fc1"), (default_to_fat_conv2, "default_to_fat_conv2"))
-    train_test_save_models(stitched_models, device, train_loader, test_loader, epochs)
+    experiment.load_yaml()
+    experiment.init_nets(net_init)
+    experiment.train_nets(train_func)
+    experiment.init_stitch_nets(stitch_init)
+    experiment.train_stitch_nets(train_func)
+    experiment.evaluate_stitches(eval_func)
     
 if __name__ == '__main__':
     if torch.cuda.is_available():
