@@ -90,7 +90,7 @@ def eval_stitches(model_tuples, device, test_loader, stitch_acc_per_epoch, verbo
             print("Stitching penalty for ender: {}".format(ender_stitch_penalty))
         
         # Calculate the stitching penalty over time (i.e. by epoch of stitch training)
-        for epoch, acc in stitch_acc_per_epoch[stitch_name]:
+        for epoch, acc in enumerate(stitch_acc_per_epoch[stitch_name]):
             tb_writer.add_scalar("{}_starter_stitching_penalty".format(stitch_name), pc_start - acc, epoch + 1)
             tb_writer.add_scalar("{}_ender_stitching_penalty".format(stitch_name), pc_end - acc, epoch + 1)
             # Acc obviously in [0, 100] so roughly this is shifted by 2 in the log space
@@ -105,11 +105,10 @@ DEFAULT_LR_EXP_DROP = 0.7 # also called 'gamma'
 PRINT_EVERY = 100
 SAVE_MODEL_FILE_TEMPLATE = "mnist_cnn_{}.pt" # use .format(name here) to give it a name
 
-def train_test_save_models(models_and_names, device, train_loader, test_loader, epochs, acc_per_epoch=None):
+def train_test_save_models(models_and_names, device, train_loader, test_loader, epochs, acc_per_epoch=None, verbose=False):
     assert(acc_per_epoch is None or type(acc_per_epoch) == dict)
     for model_name, model in models_and_names.items():
         if not (acc_per_epoch is None):
-            print("ACC PER EPOCH IS NOT NONE FOR MODEL {}".format(model_name)) # TODO
             acc_per_epoch[model_name] = []
         
         print("Training {} for {} epochs".format(model_name, epochs))
@@ -123,8 +122,8 @@ def train_test_save_models(models_and_names, device, train_loader, test_loader, 
             # the model is training across batches, meaning that
             # the accuracy is not the same per epoch. We decide
             # to look at per-epoch metrics to avoid testing too much.
-            train_loss = train(model, device, train_loader, optimizer, epoch, PRINT_EVERY)
-            test_loss, test_acc = test(model, device, test_loader)
+            train_loss = train(model, device, train_loader, optimizer, epoch, PRINT_EVERY, verbose=verbose)
+            test_loss, test_acc = test(model, device, test_loader, verbose=verbose)
             scheduler.step()
 
             # Log to tensorboard
@@ -132,11 +131,9 @@ def train_test_save_models(models_and_names, device, train_loader, test_loader, 
             tb_writer.add_scalar("{}_test_acc".format(model_name), test_acc, epoch)
 
             if not (acc_per_epoch is None):
-                print("ACC PER EPOCH {} of {} = {}".format(epoch, model_name, test_acc)) # TODO
                 acc_per_epoch[model_name].append(test_acc)
         
         torch.save(model.state_dict(), SAVE_MODEL_FILE_TEMPLATE.format(model_name))
-        print("Acc per epoch after model {} is {}".format(model_name, acc_per_epoch)) # TODO
 
 # I think this is a greyscale thing, and it is shared across both
 # main and __main__
@@ -147,7 +144,7 @@ transform=transforms.Compose([
 
 # Stitch from/to FC will be a linear layer
 # Stitch from/to CNN will be a 1x1 cnn that maintains the number of channels
-def main(epochs=1, shuffle_data=False):
+def main(epochs=1, shuffle_data=False, verbose=False):
     # Set up the settings based on the requested ones (in arguments)
     use_cuda = torch.cuda.is_available()
     train_batch_size = DEFAULT_TRAIN_BATCH_SIZE
@@ -174,22 +171,25 @@ def main(epochs=1, shuffle_data=False):
     test_loader = torch.utils.data.DataLoader(dataset2, **test_kwargs)
     
     # Default filename is experiment.yaml in this same folder
+    # We use this stitch_acc_per_epoch to remember for each of the stitched model names how fast
+    # they converge (I thought it might be interesting to see, since maybe more "similar" layers
+    # converge faster; in reality we care more about how well they converge for different amounts
+    # of epochs)
     stitch_acc_per_epoch = {}
-    print("(start) stitch acc per epoch {}".format(stitch_acc_per_epoch)) # TODO
     experiment = Experiment()
     net_init = lambda **kwargs: Net(**kwargs).to(device)
     stitch_init = lambda starter, ender, stitch_mode: StitchNet(starter, ender, stitch_mode, device=device)
-    train_func = lambda models: train_test_save_models(models, device, train_loader, test_loader, epochs, acc_per_epoch=stitch_acc_per_epoch)
-    stitch_train_func = lambda models: train_test_save_models(models, device, train_loader, test_loader, epochs, acc_per_epoch=stitch_acc_per_epoch)
+    # Training is different because we don't need to store acc_per_epoch (at least as of yet) for  the regular trainings
+    train_func = lambda models: train_test_save_models(models, device, train_loader, test_loader, epochs, verbose=verbose)
+    stitch_train_func = lambda models: train_test_save_models(models, device, train_loader, test_loader, epochs, acc_per_epoch=stitch_acc_per_epoch, verbose=verbose)
+    # We use the stitch_acc_per_epoch to see how the stitching penalty changes over time as the stitch is trained
     eval_func = lambda models: eval_stitches(models, device, test_loader, stitch_acc_per_epoch, verbose=True)
 
     experiment.load_yaml()
     experiment.init_nets(net_init)
     experiment.train_nets(train_func)
-    print("(after train) stitch acc per epoch {}".format(stitch_acc_per_epoch)) # TODO
     experiment.init_stitch_nets(stitch_init)
-    experiment.train_stitch_nets(train_func)
-    print("(after stitch train) stitch acc per epoch {}".format(stitch_acc_per_epoch)) # TODO
+    experiment.train_stitch_nets(stitch_train_func)
     experiment.evaluate_stitches(eval_func)
     
 if __name__ == '__main__':
@@ -202,9 +202,11 @@ if __name__ == '__main__':
     # the internet, so you'd want to download before, then activate your node (etc) in, say, interactive mode
     parser = argparse.ArgumentParser(description='Decide whether to download the dataset (MNIST) or run training.')
     parser.add_argument('--d', dest='d', action='store_true', help="Download dataset or run experiment")
+    parser.add_argument('--v', dest='v', action='store_true', help="Whether to do verbose printing while training")
     parser.add_argument('--e', default=1, type=int, help="Number of epochs")
     parser.add_argument('--drng', dest="drng", action="store_true", help="Randomize data")
     parser.set_defaults(d=False)
+    parser.set_defaults(v=False)
     parser.set_defaults(drng=False)
     args = parser.parse_args()
 
@@ -215,4 +217,4 @@ if __name__ == '__main__':
     else:
         assert(type(args.e) == int)
         assert(args.e >= 1)
-        main(epochs=args.e, shuffle_data=args.drng)
+        main(epochs=args.e, shuffle_data=args.drng, verbose=v)

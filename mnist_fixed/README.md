@@ -4,9 +4,7 @@ make sure to run without `-O`.
 
 Immediate next steps include
 1. Ensuring that on stitch, the two networks are frozen (through assertions, etcetera)
-2. Measuring whether the stitch is effective (please use the paper)
-3. Tensorboard plots so we can compare behavior over time (may want to do log plots, or something, since even tiny networks reach high accuracies), this also includes utility logging, etcetera
-4. Start thinking about how to expand this to longer networks (perhaps that will begin a new file, `mnist_long.py` or something like that); I think before that, though, it may be more important to enable YAML hyperparameter searching, ensure that we can run on SuperCloud (may involve one or two python scripts), adding baselines, and shorten widths to do more reasonable testing.
+2. Start doing MNIST long tests with some form of resnet (or at least build the infrastructure); MAKE SURE TO FULLY AUTOMATE so that we can compare FOR DIFFERING AMOUNTS OF EPOCHS AND OTHER STUFF TOO (mnist short requires you to do your experiments by hand for the differing amounts of epochs, which is really annoying)
 
 ## Running on Supercloud
 1. Make sure to copy data with `scp` or something like `transfer.sh` (using `wget` on the upload URL)
