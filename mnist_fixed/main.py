@@ -179,7 +179,7 @@ def main(epochs=1, shuffle_data=False):
     experiment = Experiment()
     net_init = lambda **kwargs: Net(**kwargs).to(device)
     stitch_init = lambda starter, ender, stitch_mode: StitchNet(starter, ender, stitch_mode, device=device)
-    train_func = lambda models: train_test_save_models(models, device, train_loader, test_loader, epochs)
+    train_func = lambda models: train_test_save_models(models, device, train_loader, test_loader, epochs, acc_per_epoch=stitch_acc_per_epoch)
     stitch_train_func = lambda models: train_test_save_models(models, device, train_loader, test_loader, epochs, acc_per_epoch=stitch_acc_per_epoch)
     eval_func = lambda models: eval_stitches(models, device, test_loader, stitch_acc_per_epoch, verbose=True)
 
