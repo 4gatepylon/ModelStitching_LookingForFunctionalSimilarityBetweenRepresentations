@@ -108,8 +108,9 @@ SAVE_MODEL_FILE_TEMPLATE = "mnist_cnn_{}.pt" # use .format(name here) to give it
 def train_test_save_models(models_and_names, device, train_loader, test_loader, epochs, acc_per_epoch=None):
     assert(acc_per_epoch is None or type(acc_per_epoch) == dict)
     for model_name, model in models_and_names.items():
-        if not acc_per_epoch is None:
-                acc_per_epoch[model_name] = []
+        if not (acc_per_epoch is None):
+            print("ACC PER EPOCH IS NOT NONE FOR MODEL {}".format(model_name)) # TODO
+            acc_per_epoch[model_name] = []
         
         print("Training {} for {} epochs".format(model_name, epochs))
         # Each model gets its own optimizer and scheduler since we may want to vary across them later
@@ -130,10 +131,12 @@ def train_test_save_models(models_and_names, device, train_loader, test_loader, 
             tb_writer.add_scalars("{}_loss".format(model_name), {"test": test_loss, "train": train_loss}, epoch)
             tb_writer.add_scalar("{}_test_acc".format(model_name), test_acc, epoch)
 
-            if not acc_per_epoch is None:
+            if not (acc_per_epoch is None):
+                print("ACC PER EPOCH {} of {} = {}".format(epoch, model_name, test_acc)) # TODO
                 acc_per_epoch[model_name].append(test_acc)
         
         torch.save(model.state_dict(), SAVE_MODEL_FILE_TEMPLATE.format(model_name))
+        print("Acc per epoch after model {} is {}".format(model_name, acc_per_epoch)) # TODO
 
 # I think this is a greyscale thing, and it is shared across both
 # main and __main__
@@ -172,6 +175,7 @@ def main(epochs=1, shuffle_data=False):
     
     # Default filename is experiment.yaml in this same folder
     stitch_acc_per_epoch = {}
+    print("(start) stitch acc per epoch {}".format(stitch_acc_per_epoch)) # TODO
     experiment = Experiment()
     net_init = lambda **kwargs: Net(**kwargs).to(device)
     stitch_init = lambda starter, ender, stitch_mode: StitchNet(starter, ender, stitch_mode, device=device)
@@ -182,8 +186,10 @@ def main(epochs=1, shuffle_data=False):
     experiment.load_yaml()
     experiment.init_nets(net_init)
     experiment.train_nets(train_func)
+    print("(after train) stitch acc per epoch {}".format(stitch_acc_per_epoch)) # TODO
     experiment.init_stitch_nets(stitch_init)
     experiment.train_stitch_nets(train_func)
+    print("(after stitch train) stitch acc per epoch {}".format(stitch_acc_per_epoch)) # TODO
     experiment.evaluate_stitches(eval_func)
     
 if __name__ == '__main__':
