@@ -137,3 +137,9 @@ data/
 **/data/**
 mnist_cnn_*.pt
 mnist_cnn_**.pt
+
+**/experiment-tensorboard-*/**
+**/experiment-tensorboard-**/**
+experiment-tensorboard-**/
+mnist_fixed/experiment-tensorboard-**/
+mnist_fixed/experiment-tensorboard-*/
