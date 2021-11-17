@@ -217,4 +217,4 @@ if __name__ == '__main__':
     else:
         assert(type(args.e) == int)
         assert(args.e >= 1)
-        main(epochs=args.e, shuffle_data=args.drng, verbose=v)
+        main(epochs=args.e, shuffle_data=args.drng, verbose=args.v)
