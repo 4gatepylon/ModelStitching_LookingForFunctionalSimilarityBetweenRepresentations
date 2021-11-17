@@ -94,8 +94,10 @@ def eval_stitches(model_tuples, device, test_loader, stitch_acc_per_epoch, verbo
             tb_writer.add_scalar("{}_starter_stitching_penalty".format(stitch_name), pc_start - acc, epoch + 1)
             tb_writer.add_scalar("{}_ender_stitching_penalty".format(stitch_name), pc_end - acc, epoch + 1)
             # Acc obviously in [0, 100] so roughly this is shifted by 2 in the log space
-            tb_writer.add_scalar("{}_log_starter_stitching_penalty".format(stitch_name), torch.log10(torch.tensor(pc_start - acc)).item(), epoch + 1)
-            tb_writer.add_scalar("{}_log_ender_stitching_penalty".format(stitch_name), torch.log10(torch.tensor(pc_end - acc)).item(), epoch + 1)
+            tb_writer.add_scalars("{}_log_starter_stitching_penalty".format(stitch_name), {
+                "starter": torch.log10(torch.tensor(pc_start)).item(),
+                "acc": torch.log10(torch.tensor(acc)).item(),
+                "ender": torch.log10(torch.tensor(pc_end)).item()}, epoch + 1)
 
 # The idea is to train two networks with slightly different starting parameters
 DEFAULT_TRAIN_BATCH_SIZE = 64
