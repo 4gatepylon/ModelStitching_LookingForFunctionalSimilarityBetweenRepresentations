@@ -14,6 +14,7 @@ from yaml_reader import Experiment
 
 # TODO we need a way to ascertain that starter and ender are, in fact, frozen in net.py (or somewhere else)
 # TODO we need a way to ascertain that stitching correctly flows the data as necessary
+# TODO get better plots for tensorboard (the ones we have are not what we want)
 
 # For this experiment. We assume one experiment per run of main, store it in a log-dir with year, month, day,
 # hour, and minute (we assume that here is at most one experiment per minute).
