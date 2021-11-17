@@ -22,9 +22,9 @@ DEFAULT_FILENAME = "experiment.yaml"
 # a stitch evaluation. Experiment also lets you pass in a seed in the yaml file so you don't need
 # to worry about reproducibility. You may not use the same name for a stitch as for a source. Note
 # that there is no random number seeding for the optimizer nor for the data. If you don't give
-# a seed then it picks a random one using the default generator.
-
-# TODO we may want to be able to control randomness of the data as well as of the optimizer.
+# a seed then it picks a random one using the default generator. However, if you use an optimizer
+# like adadelta and do not pass --drng then data should be not be shuffled and since the randomness
+# of optimization only depends on data and weights, it should be deterministic.
 
 # Yaml format is
 # sources:
@@ -80,7 +80,7 @@ class Experiment:
         # Stitch net ender must at least take in (starter, ender, stitch_mode)
         self.stitch_nets = {}
         for stitch_model_name, stitch in self.stitches.items():
-            seed = self.seeds[model_name] if model_name in self.seeds else torch.seed()
+            seed = self.seeds[stitch_model_name] if stitch_model_name in self.seeds else torch.seed()
             torch.manual_seed(seed)
             torch.cuda.manual_seed_all(seed)
             self.stitch_nets[stitch_model_name] = stitch_net_init(

@@ -82,8 +82,6 @@ def cnn_stitch_seq(starter_out, ender_in, device):
     ).to(device)
 
 # Stitch net is very slow because of all the CPU logic, I think... 
-# TODO we need a way to ascertain that starter and ender are, in fact,
-# frozen
 class StitchNet(nn.Module):
     def __init__(self, starter, ender, stitch_mode, device=None):
         super(StitchNet, self).__init__()
