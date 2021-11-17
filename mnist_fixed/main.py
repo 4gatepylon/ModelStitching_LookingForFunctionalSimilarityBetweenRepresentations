@@ -67,8 +67,7 @@ def test(model, device, test_loader, verbose=True):
 
     if verbose:
         print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
-            test_loss, correct, len(test_loader.dataset),
-            percent_correct)))
+            test_loss, correct, len(test_loader.dataset), percent_correct))
     
     return test_loss, percent_correct
 
