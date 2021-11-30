@@ -2,7 +2,7 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from enum import Enum
+from examples import NET_3_2, NET_10_2
 
 # Calculate the width and height of a convolutional layer
 # from the input width and height as well as the (assumed symmetric)
@@ -23,7 +23,7 @@ def kwargs(**kwargs):
 # {
 # (Required)      "layer_type" : "Conv2d" | "AvgPool2d" | "MaxPool2d" | "Linear" | "LogSoftmax" | "ReLU",
 # (Conv and Pool) "kernel_size": an integer,
-# (Conv and Pool) "output_depth": an integer,
+# (Conv)          "output_depth": an integer,
 # (Conv and Pool) "stride": an integer,
 # (Linear only)   "output_width": an integer,
 # }
@@ -46,7 +46,7 @@ def layers_from_layer_dict(layer, input_depth=None, input_height=None, input_wid
             raise ValueError
         if not "kernel" in layer or not "output_depth" in layer or not "stride" in layer:
             raise ValueError
-        if "output_width" in layer_type:
+        if "output_width" in layer:
             raise NotImplementedError
         
         h, w = conv_output_dims(input_height, input_width, layer["kernel_size"], layer["stride"])
@@ -60,7 +60,9 @@ def layers_from_layer_dict(layer, input_depth=None, input_height=None, input_wid
             raise ValueError
         if not "kernel" in layer or not "stride" in layer:
             raise ValueError
-        if "output_width" in layer_type:
+        if "output_width" in layer:
+            raise NotImplementedError
+        if "output_depth" in layer:
             raise NotImplementedError
         
         h, w = pool_output_dims(input_height, input_width, layer["kernel_size"], layer["stride"])
@@ -70,7 +72,7 @@ def layers_from_layer_dict(layer, input_depth=None, input_height=None, input_wid
     elif layer_type == "Linear":
         if "kernel_size" in layer or "output_depth" in layer or "stride" in layer:
             raise NotImplementedError
-        if not "output_width" in layer_type:
+        if not "output_width" in layer:
             raise ValueError
         
         # On layers that go from a convolution to an FC we need to flatten first
@@ -184,3 +186,11 @@ class Net(nn.Module):
         for idx in range(input_idx, output_idx):
             x = self.layers[idx](x)
         return x
+
+if __name__ == "__main__":
+    shortnet = NET_3_2
+    longnet = NET_10_2
+    # TODO do something!
+    # TODO make sure the sizes in examples.py are actually something desireable
+    # TODO make stitching across these two guys!
+    pass
