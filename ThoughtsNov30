@@ -1,0 +1,2 @@
+Maybe we can find a general stitching function from any tensor to any other tensor by
+flattening and doing a linear, or doing linears along every dimension seperatly in some way.

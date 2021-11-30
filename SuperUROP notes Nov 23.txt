@@ -1,0 +1,20 @@
+- Joining lab mailing list for the lab
+- Rumen is doing a presentation in December, I'm invited!
+- Peter is doing representation learning and interpretability.
+- There are various other people in the lab working on ML and it would be a smart idea to do a 1:1 with each of them.
+- Post and/or ask question in Slack about references (etc); there used to be weekly meetings
+- Compare the representations POST stick with something CKA
+- Try deciding which layers to stitch at using something like CKA optionally (and sanity tests; linear probe or linear regression or other similarity metric might be good)
+- Avoid BatchNorm for the beginning. Latter, BatchNorm every layer? This should not be important because it's along the batch dimension and not the hidden dimension(s)
+- No dropout for CNNs (start without dropout first for FC, then maybe add dropout later)
+- Pooling: make sure pools are 1:1 so the shapes match (look into visual attention mechanisms similar to a softmax pool to see how to stitch across pools)
+- You may maintain the accuracy, but are you maintaining the predictions? Measure similarity between output predictions as well!
+- Layer sizes: smallest that give me good results (so start medium and go down).
+
+After the first experiment
+- FC to Conv with flattening
+- Across pools
+- FCs at the end
+
+Something to think about post-MNIST that would be interesting:
+- Talk about perturbation and talk about becoming good at different things
