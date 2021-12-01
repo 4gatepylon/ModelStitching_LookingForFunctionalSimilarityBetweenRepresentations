@@ -459,8 +459,8 @@ if __name__ == "__main__":
         
         # NOTE: all these will be stored in .pt files in the two training runs
         print("*** Initializing nets ***")
-        shortnet = Net(layers=NET_3_2)
-        longnet = Net(layers=NET_10_2)
+        shortnet = Net(layers=NET_3_2).to(device)
+        longnet = Net(layers=NET_10_2).to(device)
         print("*** Initializing stitches ***")
         stitches = get_stitches(shortnet, longnet, NET_3_2_TO_NET_10_2_STITCHES)
 
