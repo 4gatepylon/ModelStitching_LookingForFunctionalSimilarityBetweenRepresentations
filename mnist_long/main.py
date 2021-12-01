@@ -2,7 +2,11 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from examples import NET_3_2, NET_10_2
+
+# These are two hard-coded examples with 3 and 10 convolutions respectively
+# of sizes hard-coded by me. They both have 2 FCs followed by an FC classifier
+# of the same shape/size
+from examples_2 import NET_3_2, NET_10_2
 
 # Calculate the width and height of a convolutional layer
 # from the input width and height as well as the (assumed symmetric)
@@ -18,6 +22,25 @@ def pool_output_dims(height, width, kernel, stride):
 
 def kwargs(**kwargs):
     return kwargs
+
+def ensure_in_dict(dictionary, *args):
+    for arg in args:
+        if not arg in dictionary:
+            raise ValueError("Dictionary {} missing {}".format(dictionary, arg))
+def ensure_not_in_dict(dictionary, *args):
+    for arg in args:
+        if arg in dictionary:
+            raise ValueError("Dictionary {} should not have {}".format(dictionary, arg))
+
+def ensure_not_none(*args):
+    for arg in args:
+        if arg is None:
+            raise ValueError("Argument was None")
+def ensure_none(*args):
+    for arg in args:
+        if not arg is None:
+            raise validity("Argument was not None")
+
 
 # Layers are supposed to be the following:
 # {
@@ -36,18 +59,15 @@ def kwargs(**kwargs):
 # NOTE: while a lot of validity checking is done, you are still allowed to use LogSoftmax
 # results in linear layers. This functionality is not meant to exist so ignore it.
 def layers_from_layer_dict(layer, input_depth=None, input_height=None, input_width=None, mode_cnn=True):
-    if not "layer_type" in layer:
-        raise ValueError
+    ensure_in_dict(layer, "layer_type")
+    
     layer_type = layer["layer_type"]
     if layer_type == "Conv2d":
         if not mode_cnn:
             raise ValueError
-        if input_depth is None or input_height is None or input_width is None:
-            raise ValueError
-        if not "kernel" in layer or not "output_depth" in layer or not "stride" in layer:
-            raise ValueError
-        if "output_width" in layer:
-            raise NotImplementedError
+        ensure_not_none(input_depth, input_height, input_width)
+        ensure_in_dict(layer, "kernel_size", "output_depth", "stride")
+        ensure_not_in_dict(layer, "output_widh")
         
         h, w = conv_output_dims(input_height, input_width, layer["kernel_size"], layer["stride"])
         conv = nn.Conv2d(input_depth, layer["output_depth"], layer["kernel_size"], stride=layer["stride"])
@@ -56,61 +76,50 @@ def layers_from_layer_dict(layer, input_depth=None, input_height=None, input_wid
     elif layer_type == "AvgPool2d" or layer_type == "MaxPool2d":
         if not mode_cnn:
             raise ValueError
-        if input_height is None or input_width is None:
-            raise ValueError
-        if not "kernel" in layer or not "stride" in layer:
-            raise ValueError
-        if "output_width" in layer:
-            raise NotImplementedError
-        if "output_depth" in layer:
-            raise NotImplementedError
+        ensure_not_none(input_height, input_width)
+        ensure_not_in_dict(layer, "output_width", "output_depth")
+        ensure_in_dict(layer, "kernel_size", "stride")
         
         h, w = pool_output_dims(input_height, input_width, layer["kernel_size"], layer["stride"])
-        pool = (nn.AvgPool2d if layer_type == "AvgPool2d" else MaxPool2d)(layer["kernel_size"], stride=layer["stride"], padding=0)
+        pool = (nn.AvgPool2d if layer_type == "AvgPool2d" else nn.MaxPool2d)(layer["kernel_size"], stride=layer["stride"], padding=0)
         return [pool], kwargs(input_depth=input_depth, input_height=h, input_width=w, mode_cnn=True)
         
     elif layer_type == "Linear":
-        if "kernel_size" in layer or "output_depth" in layer or "stride" in layer:
-            raise NotImplementedError
-        if not "output_width" in layer:
-            raise ValueError
+        ensure_not_in_dict(layer, "kernel_size", "output_depth", "stride")
+        ensure_in_dict(layer, "output_width")
         
         # On layers that go from a convolution to an FC we need to flatten first
-        if mode_cnn and (not input_depth is None and not input_height is None and not input_width is None):
-            raise ValueError
-        elif not mode_cnn and input_width is None:
-            raise ValueError
+        if mode_cnn:
+            ensure_not_none(input_depth, input_height, input_width)
+        else:
+            ensure_none(input_depth, input_height)
+            ensure_not_none(input_width)
 
         layers = []
-        input_width = input_width * input_height * input_depth if requires_flattener else input_width
+        input_width = input_width * input_height * input_depth if mode_cnn else input_width
         if mode_cnn:
             layers.append(Flattener())
         layers.append(nn.Linear(input_width, layer["output_width"]))
         
-        return layers, kwargs(output_width=layer["output_width"], mode_cnn=False)
+        return layers, kwargs(input_width=layer["output_width"], mode_cnn=False)
     
     elif layer_type == "ReLU":
-        if "kernel_size" in layer or "stride" in layer or "output_depth" in layer or "output_width" in layer:
-            raise ValueError
+        ensure_not_in_dict(layer, "kernel_size", "stride", "output_depth", "output_width")
 
         # We need to make sure to pass the right kwargs to the next one, though ReLU
         # can ALWAYS be applied to any tensor since it's pointwise
         k = kwargs(input_width=input_width, mode_cnn=False)
         if mode_cnn:
-            if not input_depth or not input_height or not input_width:
-                raise ValueError
+            ensure_not_none(input_depth, input_height, input_width)
             k = kwargs(input_depth=input_depth, input_height=input_height, input_width=input_width, mode_cnn=True)
         
         return [nn.ReLU(inplace=False)], k
     
     elif layer_type == "LogSoftmax":
-        if "kernel_size" in layer or "stride" in layer or "output_depth" in layer or "output_width" in layer:
-            raise ValueError
-    
         if mode_cnn:
             raise ValueError
-        if not input_depth is None or not input_height is None:
-            raise ValueError
+        ensure_not_in_dict(layer, "kernel_size", "stride", "output_depth", "output_width")
+        ensure_none(input_depth, input_height)
         
         return [nn.LogSoftmax(dim=1)], kwargs(input_width=input_width, mode_cnn=False)
 
@@ -188,8 +197,8 @@ class Net(nn.Module):
         return x
 
 if __name__ == "__main__":
-    shortnet = NET_3_2
-    longnet = NET_10_2
+    shortnet = Net(layers=NET_3_2)
+    longnet = Net(layers=NET_10_2)
     # TODO do something!
     # TODO make sure the sizes in examples.py are actually something desireable
     # TODO make stitching across these two guys!
