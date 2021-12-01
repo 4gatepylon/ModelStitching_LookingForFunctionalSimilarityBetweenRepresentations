@@ -330,8 +330,8 @@ DEFAULT_LR = 1.0
 DEFAULT_LR_EXP_DROP = 0.7 # also called 'gamma'
 
 # TODO scale up!
-DEFAULT_EPOCHS_OG = 1
-DEFAULT_EPOCHS_STITCH = 1
+DEFAULT_EPOCHS_OG = 1#40
+DEFAULT_EPOCHS_STITCH = 1#20
 
 # Run 10 experiments
 NUM_EXPERIMENTS = 40
@@ -387,7 +387,7 @@ def train_og_model(model, model_name, device, train_loader, test_loader, epochs,
 
         # Log to the file
         with open(logfile, "a") as f:
-            f.write("model {}\n\tepoch {}\n\ttrain loss {}\n\ttest loss{}\n\ttest acc{}\n".format(
+            f.write("model {}\n\tepoch {}\n\ttrain loss {}\n\ttest loss {}\n\ttest acc {}\n".format(
                 model_name, epoch, train_loss, test_loss, test_acc))
     # Make sure to save the model for further analysis
     torch.save(model.state_dict(), "{}.pt".format(model_name))
@@ -416,7 +416,7 @@ def train_stitch(model1, model2, stitch,
             f.write("model1 {} model2 {}\nidx1 {} idx2 {}\n\tepoch {}\n\ttrain loss {}\n\ttest loss{}\n\ttest acc{}\n".format(
                 model1_name, model2_name, idx1, idx2, epoch, train_loss, test_loss, test_acc))
     # Make sure to save the model for further analysis
-    torch.save(model.state_dict(), "stitch_{}_l{}_to_{}_l{}.pt".format(model1_name, idx1, model2_name, idx2))
+    torch.save(stitch.state_dict(), "stitch_{}_l{}_to_{}_l{}.pt".format(model1_name, idx1, model2_name, idx2))
 
 if __name__ == "__main__":
     # Make a folder for these experiments
@@ -487,7 +487,21 @@ if __name__ == "__main__":
                     idx1, idx2, device,
                     train_loader, test_loader, DEFAULT_EPOCHS_STITCH, "{}/shortnet_l{}_longnet_l{}.txt".format(exp_name, idx1, idx2))
 
-        # TODO please do some controls!
+        # Copy pasta for control lul
+        print("*** Initializing RANDOM nets (short) ***")
+        shortnet = Net(layers=NET_3_2).to(device)
+        print("*** Initializing RANDOM nets (long) ***")
+        longnet = Net(layers=NET_10_2).to(device)
+        print("*** NETS NOT TRAINED ***")
+        print("*** Training Stitches on rand nets ***")
+        for idx1, idx2s in stitches.items():
+            for idx2, stitch in idx2s.items():
+                stitch = stitch.to(device)
+                train_stitch(
+                    shortnet, longnet, stitch,
+                    "rand_shortnet", "rand_longnet",
+                    idx1, idx2, device,
+                    train_loader, test_loader, DEFAULT_EPOCHS_STITCH, "{}/rand_shortnet_l{}_longnet_l{}.txt".format(exp_name, idx1, idx2))
 
     ### Important after we are done with overnight training
     # TODO find a way to analyze based on the accuracies
