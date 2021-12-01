@@ -480,12 +480,15 @@ if __name__ == "__main__":
         print("*** Training stitches ***")
         for idx1, idx2s in stitches.items():
             for idx2, stitch in idx2s.items():
-                stitch = stitch.to(device)
-                train_stitch(
-                    shortnet, longnet, stitch,
-                    "shortnet", "longnet",
-                    idx1, idx2, device,
-                    train_loader, test_loader, DEFAULT_EPOCHS_STITCH, "{}/shortnet_l{}_longnet_l{}.txt".format(exp_name, idx1, idx2))
+                try:
+                    stitch = stitch.to(device)
+                    train_stitch(
+                        shortnet, longnet, stitch,
+                        "shortnet", "longnet",
+                        idx1, idx2, device,
+                        train_loader, test_loader, DEFAULT_EPOCHS_STITCH, "{}/shortnet_l{}_longnet_l{}.txt".format(exp_name, idx1, idx2))
+                except:
+                    print("FAILED TO STITCH INDICES {} and {}".format(idx1, idx2))
 
         # Copy pasta for control lul
         print("*** Initializing RANDOM nets (short) ***")
@@ -496,12 +499,15 @@ if __name__ == "__main__":
         print("*** Training Stitches on rand nets ***")
         for idx1, idx2s in stitches.items():
             for idx2, stitch in idx2s.items():
-                stitch = stitch.to(device)
-                train_stitch(
-                    shortnet, longnet, stitch,
-                    "rand_shortnet", "rand_longnet",
-                    idx1, idx2, device,
-                    train_loader, test_loader, DEFAULT_EPOCHS_STITCH, "{}/rand_shortnet_l{}_longnet_l{}.txt".format(exp_name, idx1, idx2))
+                try:
+                    stitch = stitch.to(device)
+                    train_stitch(
+                        shortnet, longnet, stitch,
+                        "rand_shortnet", "rand_longnet",
+                        idx1, idx2, device,
+                        train_loader, test_loader, DEFAULT_EPOCHS_STITCH, "{}/rand_shortnet_l{}_longnet_l{}.txt".format(exp_name, idx1, idx2))
+                except:
+                    print("FAILED TO STITCH INDICES {} and {}".format(idx1, idx2))
 
     ### Important after we are done with overnight training
     # TODO find a way to analyze based on the accuracies
