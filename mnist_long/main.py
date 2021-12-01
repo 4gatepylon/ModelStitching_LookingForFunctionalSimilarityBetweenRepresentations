@@ -355,9 +355,6 @@ def test(model, device, test_loader):
     with torch.no_grad():
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
-            latent = model(data)
-            # In the future we may want to avoid using dropout, but for consistency
-            # I've chosen to use it for all such examples
             output = model(latent)
             test_loss += F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
             pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
