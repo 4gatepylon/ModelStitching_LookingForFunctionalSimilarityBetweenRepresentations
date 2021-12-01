@@ -274,12 +274,15 @@ def get_stitch(model1, model2, layer1_idx, layer2_idx):
         layer1 = model1.layers[layer1_idx - 2]
     # And the last layer that provided dimensions for the recieving network
     # (i.e. we need to provide the same dimensions)
+    dec_layer2 = False
     layer2 = model2.layers[layer2_idx]
     if type(layer2) in [nn.ReLU, nn.MaxPool2d, nn.AvgPool2d]:
+        dec_layer2 = True
         layer2 = model2.layers[layer2_idx - 1]
     # Sometimes there will be a pool after a ReLU, which we support, but NOT
     # two pools in a row... it's assumed that this implies index >= 2
     if type(layer2) == nn.ReLU:
+        dec_layer2 = True
         layer2 = model2.layers[layer2_idx - 2]
     
     if type(layer1) == nn.Linear and type(layer2) == nn.Linear:
@@ -294,8 +297,13 @@ def get_stitch(model1, model2, layer1_idx, layer2_idx):
         # and we want to use kernel dims 1x1 and take the input depth as the output depth of
         # layer1 and the output depth as the output depth of layer2
         input_depth, _, _, _ = layer1.weight.size()
-        output_depth, _, _, _ = layer2.weight.size()
 
+        # Depending on whether we decrement or not, we want to use the output (of the previous layer)
+        # or the input (of the current layer)
+        _, output_depth, _, _ = layer2.weight.size()
+        if dec_layer2:
+            output_depth, _, _, _ = layer2.weight.size()
+        
         # Stride is 1 because we are selecting which filters we want
         # and note that nothing else can change the width or height since
         # either there was a ReLU after this (does nothing to the dimensions)
@@ -405,8 +413,8 @@ def train_stitch(model1, model2, stitch,
         scheduler.step()
         # Log to the file
         with open(logfile, "a") as f:
-            f.write("model {}\n\tepoch {}\n\ttrain loss {}\n\ttest loss{}\n\ttest acc{}\n".format(
-                model_name, epoch, train_loss, test_loss, test_acc))
+            f.write("model1 {} model2 {}\nidx1 {} idx2 {}\n\tepoch {}\n\ttrain loss {}\n\ttest loss{}\n\ttest acc{}\n".format(
+                model1_name, model2_name, idx1, idx2, epoch, train_loss, test_loss, test_acc))
     # Make sure to save the model for further analysis
     torch.save(model.state_dict(), "stitch_{}_l{}_to_{}_l{}.pt".format(model1_name, idx1, model2_name, idx2))
 
@@ -455,26 +463,31 @@ if __name__ == "__main__":
         print("*** Running experiment ***")
         
         # NOTE: all these will be stored in .pt files in the two training runs
-        print("*** Initializing nets ***")
+        print("*** Initializing nets (short) ***")
         shortnet = Net(layers=NET_3_2).to(device)
+        print("*** Initializing nets (long) ***")
         longnet = Net(layers=NET_10_2).to(device)
         print("*** Initializing stitches ***")
         stitches = get_stitches(shortnet, longnet, NET_3_2_TO_NET_10_2_STITCHES)
 
         # NOTE: this will log og accuracy!
-        print("*** Training og nets ***")
-        train_og_model(shortnet, "shortnet", device, train_loader, test_loader, DEFAULT_EPOCHS_OG, "shortnet_train.txt")
-        train_og_model(longnet, "longnet", device, train_loader, test_loader, DEFAULT_EPOCHS_OG, "longnet_train.txt")
+        print("*** Training og nets (short) ***")
+        train_og_model(shortnet, "shortnet", device, train_loader, test_loader, DEFAULT_EPOCHS_OG, "{}/shortnet_train.txt".format(exp_name))
+        print("*** Training on og nets (long) ***")
+        train_og_model(longnet, "longnet", device, train_loader, test_loader, DEFAULT_EPOCHS_OG, "{}/longnet_train.txt".format(exp_name))
 
         # NOTE: this will log stitching accuracy!
         print("*** Training stitches ***")
         for idx1, idx2s in stitches.items():
             for idx2, stitch in idx2s.items():
+                stitch = stitch.to(device)
                 train_stitch(
                     shortnet, longnet, stitch,
                     "shortnet", "longnet",
                     idx1, idx2, device,
-                    train_loader, test_loader, DEFAULT_EPOCHS_STITCH, "shortnet_l{}_longnet_l{}.txt".format(idx1, idx2))
+                    train_loader, test_loader, DEFAULT_EPOCHS_STITCH, "{}/shortnet_l{}_longnet_l{}.txt".format(exp_name, idx1, idx2))
+
+        # TODO please do some controls!
 
     ### Important after we are done with overnight training
     # TODO find a way to analyze based on the accuracies
