@@ -330,11 +330,11 @@ DEFAULT_LR = 1.0
 DEFAULT_LR_EXP_DROP = 0.7 # also called 'gamma'
 
 # TODO scale up!
-DEFAULT_EPOCHS_OG = 1#40
-DEFAULT_EPOCHS_STITCH = 1#20
+DEFAULT_EPOCHS_OG = 40
+DEFAULT_EPOCHS_STITCH = 20
 
 # Run 10 experiments
-NUM_EXPERIMENTS = 40
+NUM_EXPERIMENTS = 10
 
 # Simple train and test functions to run a single train or test run in a single epoch
 def train(model, device, train_loader, optimizer):
