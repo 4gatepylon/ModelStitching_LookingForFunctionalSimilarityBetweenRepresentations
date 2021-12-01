@@ -143,3 +143,7 @@ mnist_cnn_**.pt
 experiment-tensorboard-**/
 mnist_fixed/experiment-tensorboard-**/
 mnist_fixed/experiment-tensorboard-*/
+
+# We will put all our files into a folder called experiments
+mnist_long/experiments/
+mnist_long/experiments/**

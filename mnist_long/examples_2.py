@@ -250,3 +250,14 @@ NET_10_2 = [
     # Linear: 26
     # LogSoftmax: 27
 ] + CLASSIFIER_2
+
+NET_3_2_TO_NET_10_2_STITCHES = {
+    # Convolutional layers after the ReLU into 
+    1 : [2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
+    3: [2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
+    5: [2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
+
+    # Linear layers
+    9: [24, 26],
+    11: [24, 26],
+}
