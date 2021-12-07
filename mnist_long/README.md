@@ -24,3 +24,6 @@ Then
 ```
 cd mnist_long && rm -rf experiments && python3 main.py
 ```
+
+# Important
+PLEASE LEARN TO USE BATCH

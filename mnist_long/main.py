@@ -14,7 +14,7 @@ from datetime import datetime
 # These are two hard-coded examples with 3 and 10 convolutions respectively
 # of sizes hard-coded by me. They both have 2 FCs followed by an FC classifier
 # of the same shape/size
-from examples_2 import NET_3_2, NET_10_2, NET_3_2_TO_NET_10_2_STITCHES
+from examples_2 import NET_3_2, NET_4_2, NET_3_2_TO_NET_4_2_STITCHES
 
 # Calculate the width and height of a convolutional layer
 # from the input width and height as well as the (assumed symmetric)
@@ -267,7 +267,7 @@ def get_stitch(model1, model2, layer1_idx, layer2_idx):
     # Find the last layer that provided dimensions
     # (so we know what dimensions we need to transform from)
     layer1 = model1.layers[layer1_idx]
-    if type(layer1) in [nn.ReLU, nn.MaxPool2d, nn.AvgPool2d]:
+    if type(layer1) in [nn.ReLU, nn.MaxPool2d, nn.AvgPool2d, nn.LogSoftmax]:
         layer1 = model1.layers[layer1_idx - 1]
     # Sometimes there will be a pool after a ReLU which we support, but NOT two pools in a row
     if type(layer1) == nn.ReLU:
@@ -276,7 +276,7 @@ def get_stitch(model1, model2, layer1_idx, layer2_idx):
     # (i.e. we need to provide the same dimensions)
     dec_layer2 = False
     layer2 = model2.layers[layer2_idx]
-    if type(layer2) in [nn.ReLU, nn.MaxPool2d, nn.AvgPool2d]:
+    if type(layer2) in [nn.ReLU, nn.MaxPool2d, nn.AvgPool2d, nn.LogSoftmax]:
         dec_layer2 = True
         layer2 = model2.layers[layer2_idx - 1]
     # Sometimes there will be a pool after a ReLU, which we support, but NOT
@@ -329,7 +329,7 @@ DEFAULT_TEST_BATCH_SIZE = 1000
 DEFAULT_LR = 1.0
 DEFAULT_LR_EXP_DROP = 0.7 # also called 'gamma'
 
-# TODO scale up!
+# TODO scale up! (or down to test!)
 DEFAULT_EPOCHS_OG = 40
 DEFAULT_EPOCHS_STITCH = 20
 
@@ -466,9 +466,9 @@ if __name__ == "__main__":
         print("*** Initializing nets (short) ***")
         shortnet = Net(layers=NET_3_2).to(device)
         print("*** Initializing nets (long) ***")
-        longnet = Net(layers=NET_10_2).to(device)
+        longnet = Net(layers=NET_4_2).to(device)
         print("*** Initializing stitches ***")
-        stitches = get_stitches(shortnet, longnet, NET_3_2_TO_NET_10_2_STITCHES)
+        stitches = get_stitches(shortnet, longnet, NET_3_2_TO_NET_4_2_STITCHES)
 
         # NOTE: this will log og accuracy!
         print("*** Training og nets (short) ***")
@@ -494,7 +494,7 @@ if __name__ == "__main__":
         print("*** Initializing RANDOM nets (short) ***")
         shortnet = Net(layers=NET_3_2).to(device)
         print("*** Initializing RANDOM nets (long) ***")
-        longnet = Net(layers=NET_10_2).to(device)
+        longnet = Net(layers=NET_4_2).to(device)
         print("*** NETS NOT TRAINED ***")
         print("*** Training Stitches on rand nets ***")
         for idx1, idx2s in stitches.items():
