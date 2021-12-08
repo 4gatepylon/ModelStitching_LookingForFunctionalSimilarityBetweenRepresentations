@@ -251,7 +251,13 @@ if __name__ == "__main__":
     
 
     train_loader, test_loader, device = init()
-    for model_pair in [("C32", C32, "C42", C42, C32T42, "C32T42"), ("C32", C32, "C42", C42, C32T102, "C32T102")]:
+    for model_pair in [
+        # Convolutional experiments
+        ("C32", C32, "C42", C42, C32T42, "C32T42"),
+        ("C32", C32, "C42", C42, C32T102, "C32T102"),
+        # FC Experiments
+        ("F3", F3, "F5", F5, F3T5, "F3T5"),
+        ("F3", F3, "F8", F8, F3T8, "F3T8")]:
         shortnet_name, shortnet_layers, longnet_name, longnet_layers, stitch_idx_dict, exp_prefix = model_pair
         run_experiments(
             exp_prefix,
