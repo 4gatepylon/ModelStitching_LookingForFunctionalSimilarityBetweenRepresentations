@@ -160,6 +160,151 @@ NET_4_2 = [
     
 ] + CLASSIFIER_2
 
+# An example network with 10 convolutional layers followed by a maxpool
+# followed by two linear layers and a classifier
+NET_10_2 = [
+    # First convolution
+    {
+        # 0
+        "layer_type": "Conv2d",
+        "kernel_size": 3,
+        "stride": 1,
+        "output_depth": 32,
+    },
+    {
+        # 1
+        "layer_type": "ReLU",
+    },
+    # Second convolution
+    {
+        # 2
+        "layer_type": "Conv2d",
+        "kernel_size": 3,
+        "stride": 1,
+        "output_depth": 64,
+    },
+    {
+        # 3
+        "layer_type": "ReLU",
+    },
+    # Third convolution
+    {
+        # 4
+        "layer_type": "Conv2d",
+        "kernel_size": 3,
+        "stride": 1,
+        "output_depth": 128,
+    },
+    {
+        # 5
+        "layer_type": "ReLU",
+    },
+    # Fourth convolution
+    {
+        # 6
+        "layer_type": "Conv2d",
+        "kernel_size": 3,
+        "stride": 1,
+        "output_depth": 256,
+    },
+    {
+        # 7
+        "layer_type": "ReLU",
+    },
+    # Fifth convolution
+    {
+        # 8
+        "layer_type": "Conv2d",
+        "kernel_size": 3,
+        "stride": 1,
+        "output_depth": 256,
+    },
+    {
+        # 9
+        "layer_type": "ReLU",
+    },
+    # Sixth convolution
+    {
+        # 10
+        "layer_type": "Conv2d",
+        "kernel_size": 3,
+        "stride": 1,
+        "output_depth": 256,
+    },
+    {
+        # 11
+        "layer_type": "ReLU",
+    },
+    # Seventh convolution
+    {
+        # 12
+        "layer_type": "Conv2d",
+        "kernel_size": 3,
+        "stride": 1,
+        "output_depth": 128,
+    },
+    {
+        # 13
+        "layer_type": "ReLU",
+    },
+    # Eighth convolution
+    {
+        # 14
+        "layer_type": "Conv2d",
+        "kernel_size": 3,
+        "stride": 1,
+        "output_depth": 64,
+    },
+    {
+        # 15
+        "layer_type": "ReLU",
+    },
+    # Ninth convolution
+    {
+        # 16
+        "layer_type": "Conv2d",
+        "kernel_size": 3,
+        "stride": 1,
+        "output_depth": 64,
+    },
+    {
+        # 17
+        "layer_type": "ReLU",
+    },
+    # Tenth convolution
+    {
+        # 18
+        "layer_type": "Conv2d",
+        "kernel_size": 3,
+        "stride": 1,
+        "output_depth": 64,
+    },
+    {
+        # 19
+        "layer_type": "ReLU",
+    },
+
+
+    # MaxPool
+    {
+        # 20
+        "layer_type": "MaxPool2d",
+        "kernel_size": 2,
+        "stride": 2,
+    },
+
+    # Flatten: 21
+
+    # First FC
+    # Linear: 22
+    # ReLU: 23
+
+    # Second FC + Classification
+    # Linear: 24
+    # LogSoftmax: 25
+
+] + CLASSIFIER_2
+
 NET_3_2_TO_NET_4_2_STITCHES = {
     # Convolutional layers after the ReLU into 
     
@@ -168,8 +313,20 @@ NET_3_2_TO_NET_4_2_STITCHES = {
     # neural network to actually take the input through the stitch.
     2: [2, 4, 6, 8],
     4: [2, 4, 6, 8],
+    6: [2, 4, 6, 8],
 
     # Linear layers (avoid the flatten since it's so big)
     10: [12, 13],
     11: [12, 13],
+}
+
+NET_3_2_TO_NET_10_2_STITCHES = {
+    # Similar to case from 3_2 to 4_2
+    2: [2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
+    4: [2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
+    6: [2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
+
+    # Linear layers
+    10: [24, 25],
+    11: [24, 25],
 }

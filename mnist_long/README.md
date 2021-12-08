@@ -1,12 +1,9 @@
-# Feature Requests
-1. Seperate number of training epochs for stitches vs. for source networks
-2. More efficient stitching; abandon stitch mode and instead adopt a superior method of indexing layers
-3. Sanity tests for frozen layers and unfrozen layers
-4. Baselines (random network, random stitch)
-5. Ability to give experiments concise and semantically relevant names and generate a readme inside them.
-6. Ability to disable RNG with seeds + sanity check for RNG + Ability
-7. Ability to run and compare multiple experiments (i.e. one experiment with seeds, one without)
-8. `TODO`
+# Things To Do
+1. Stitch into and out of a single layer (i.e. an "insertion" stitch instead of a swap)
+2. Sanity tests for frozen layers and unfrozen layers
+3. Documentation and library simplifcation for the model generation and stitch generation (read their code and see what they do)
+4. Find a way to analyze based on the accuracies
+5. Autogenerate examples from higher level information
 
 # Running on Supercloud
 More info the fixed folder.
@@ -26,4 +23,11 @@ cd mnist_long && rm -rf experiments && python3 main.py
 ```
 
 # Important
-PLEASE LEARN TO USE BATCH
+- Use batch for overnight runs instead of just interactive
+- Use all your 16 max possible usable GPUs
+
+# Ideas for the future
+- Constrained optimization or constrained stitch
+- Linearity as being constrained to subsets/sub-dimensions (i.e. this defines the "format")
+- What happens in you vary random initialization?
+- Deal with different input and output shapes that is not just hacky
