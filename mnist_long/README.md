@@ -1,7 +1,5 @@
 # TODO ASAP
-1. Debug! Get the experiments to run on supercloud `WITH BATCH (16 GPUs)`
-2. Add control stitching network to itself!
-3. Ensure that there are no memory problems (i.e. garbage collect yourself from GPU if necessary)
+Get the experiments to run on `16 GPUs at once running out of memory`!
 
 ## Immediately After ^ is done
 1. Stitch into and out of a single layer (i.e. an "insertion" stitch instead of a swap)
@@ -21,6 +19,11 @@ Run
 
 ```
 module load anaconda/2021a && module load cuda/11.2 && LLsub -i -s 20 -g volta:1
+```
+
+To run a batch job do
+```
+module load anaconda/2021a && module load cuda/11.2 && LLsub batch.sh -s 20 -g volta:1
 ```
 
 Then

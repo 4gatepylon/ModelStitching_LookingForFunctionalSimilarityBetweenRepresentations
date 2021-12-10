@@ -162,6 +162,34 @@ NET_8 = [
     # LogSoftmax 16
 ] + CLASSIFIER
 
+# Intra-network stitches check that you can stitch to yourself
+# (expect to work for corresponding layers)
+NET_3_TO_NET_3_STITCHES = {
+    3: [3, 5, 6],
+    5: [3, 5, 6],
+    6: [3, 5, 6],
+}
+NET_5_TO_NET_5_STITCHES = {
+    3: [3, 5, 7, 9, 10],
+    5: [3, 5, 7, 9, 10],
+    6: [3, 5, 7, 9, 10],
+    7: [3, 5, 7, 9, 10],
+    9: [3, 5, 7, 9, 10],
+    10: [3, 5, 7, 9, 10],
+}
+NET_8_TO_NET_8_STITCHES = {
+    3: [3, 5, 7, 9, 11, 13, 15, 16],
+    5: [3, 5, 7, 9, 11, 13, 15, 16],
+    6: [3, 5, 7, 9, 11, 13, 15, 16],
+    7: [3, 5, 7, 9, 11, 13, 15, 16],
+    9: [3, 5, 7, 9, 11, 13, 15, 16],
+    11: [3, 5, 7, 9, 11, 13, 15, 16],
+    13: [3, 5, 7, 9, 11, 13, 15, 16],
+    15: [3, 5, 7, 9, 11, 13, 15, 16],
+    16: [3, 5, 7, 9, 11, 13, 15, 16],
+}
+
+# Inter-network stitching checks whether different networks are doing similar things
 NET_3_TO_NET_5_STITCHES = {
     3: [3, 5, 7, 9, 10],
     5: [3, 5, 7, 9, 10],

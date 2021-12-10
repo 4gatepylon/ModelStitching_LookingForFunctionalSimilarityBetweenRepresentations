@@ -305,6 +305,46 @@ NET_10_2 = [
 
 ] + CLASSIFIER_2
 
+# Intra-network stitches try to see if two versions of the same
+# network are similar (expect the case to be true for 1:1 mapping
+# of the layers)
+NET_3_2_TO_NET_3_2_STITCHES = {
+    # Convs
+    2: [2, 4, 6],
+    4: [2, 4, 6],
+    6: [2, 4, 6],
+    # FCs
+    10: [10, 11],
+    11: [10, 11],
+}
+NET_4_2_TO_NET_4_2_STITCHES = {
+    # Convs
+    2: [2, 4, 6, 8],
+    4: [2, 4, 6, 8],
+    6: [2, 4, 6, 8],
+    8: [2, 4, 6, 8],
+    # FCs
+    12: [12, 13],
+    13: [12, 13],
+}
+NET_10_2_TO_NET_10_2_STITCHES = {
+    # Convs
+    2: [2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
+    4: [2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
+    6: [2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
+    8: [2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
+    10: [2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
+    12: [2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
+    14: [2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
+    16: [2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
+    18: [2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
+    20: [2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
+    # FCs
+    24: [24, 25],
+    25: [24, 25],
+}
+
+# Inter-network stitches try to see if different networks are similar
 NET_3_2_TO_NET_4_2_STITCHES = {
     # Convolutional layers after the ReLU into 
     

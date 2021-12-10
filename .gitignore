@@ -147,3 +147,4 @@ mnist_fixed/experiment-tensorboard-*/
 # We will put all our files into a folder called experiments
 mnist_long/experiments/
 mnist_long/experiments/**
+mnist_long/*.log

@@ -1,5 +1,5 @@
 # Switch to let you debug more easily!
-DEBUG = True
+DEBUG = False
 
 # Info per experiment
 DEFAULT_TRAIN_BATCH_SIZE = 64
@@ -14,8 +14,8 @@ DEFAULT_EPOCHS_OG = 40
 DEFAULT_EPOCHS_STITCH = 20
 
 # Run 10 experiments
-NUM_EXPERIMENTS = 10
-NUM_STITCH_EXPERIMENTS = 10
+NUM_EXPERIMENTS = 5
+NUM_STITCH_EXPERIMENTS = 5
 
 DOWNLOAD_DATASET = False
 

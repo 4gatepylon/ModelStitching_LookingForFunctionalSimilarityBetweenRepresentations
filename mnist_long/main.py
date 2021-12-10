@@ -16,6 +16,9 @@ from examples_cnn import (
     NET_3_2 as C32,
     NET_4_2 as C42,
     NET_10_2 as C102,
+    NET_3_2_TO_NET_3_2_STITCHES as C32T32,
+    NET_4_2_TO_NET_4_2_STITCHES as C42T42,
+    NET_10_2_TO_NET_10_2_STITCHES as C102T102,
     NET_3_2_TO_NET_4_2_STITCHES as C32T42,
     NET_3_2_TO_NET_10_2_STITCHES as C32T102,
 )
@@ -23,6 +26,9 @@ from examples_fc import (
     NET_3 as F3,
     NET_5 as F5,
     NET_8 as F8,
+    NET_3_TO_NET_3_STITCHES as F3T3,
+    NET_5_TO_NET_5_STITCHES as F5T5,
+    NET_8_TO_NET_8_STITCHES as F8T8,
     NET_3_TO_NET_5_STITCHES as F3T5,
     NET_3_TO_NET_8_STITCHES as F3T8,
 )
@@ -178,7 +184,7 @@ def run_experiments(
         shortnet_name = "{}_{}".format(shortnet_name_original, experiment_num)
         longnet_name = "{}_{}".format(longnet_name_original, experiment_num)
 
-        print("*** Initializing experiment {}/{} in {} ***".format(experiment_num, num_experiments, experiments_dir))
+        print("*** Initializing experiment {}/{} in {} for {}***".format(experiment_num, num_experiments, experiments_dir, experiments_prefix))
         exp_name = "{}/exp_{}_{}".format(experiments_dir, experiments_prefix, experiment_num)
         os.mkdir(exp_name)
         shortnet = Net(layers=shortnet_layers).to(device)
@@ -197,7 +203,7 @@ def run_experiments(
         
         # Do regular stitch experiments
         for stitch_experiment_num in range(num_stitch_experiments):
-            print("*** Trying Stitch Experiment {}/{} in {} ***".format(stitch_experiment_num, num_stitch_experiments, experiments_dir))
+            print("*** Trying Stitch Experiment {}/{} for {} ***".format(stitch_experiment_num, num_stitch_experiments, exp_name))
             stitch_exp_name = "stitch_exp_{}".format(stitch_experiment_num)
     
             stitches = get_stitches(shortnet, longnet, stitch_idx_dict)
@@ -220,13 +226,15 @@ def run_experiments(
         # to simply do one since we expect it to "fail" anyways. Note that we don't save the weights of
         # the random network since once again we assume they are not totally meaningful (the chance that
         # we can extract some pattern and find it to have impacted the result is astronomically low)
+        print("*** Setting up Untrained Control for experiment {} ***".format(exp_name))
         shortnet = Net(layers=shortnet_layers).to(device)
         longnet = Net(layers=longnet_layers).to(device)
         untrained_shortnet_name = "untrained_{}".format(shortnet_name)
         untrained_longnet_name = "untrained_{}".format(longnet_name)
+
+        print("*** Trying Stitch Untrained Control for experiment {} ***".format(exp_name))
         for idx1, idx2s in stitches.items():
             for idx2, stitch in idx2s.items():
-                print("*** Trying Stitch Untrained Control for experiment {} ***".format(exp_name))
                 stitch_exp_name = "stitch_untrained_exp_{}".format(stitch_experiment_num)
                 stitch = stitch.to(device)
                 train_stitch(
@@ -255,10 +263,21 @@ if __name__ == "__main__":
 
     train_loader, test_loader, device = init()
     for model_pair in [
-        # Convolutional experiments
+        # Convolutional Intra-network
+        ("C32", C32, "C32", C32, C32T32, "C32T32"),
+        ("C42", C42, "C42", C42, C42T42, "C42T42"),
+        ("C102", C102, "C102", C102, C102T102, "C102T102"),
+
+        # Convolutional Inter-network
         ("C32", C32, "C42", C42, C32T42, "C32T42"),
         ("C32", C32, "C42", C102, C32T102, "C32T102"),
-        # FC Experiments
+
+        # FC Intra-network
+        ("F3", F3, "F3", F5, F3T3, "F3T3"),
+        ("F5", F5, "F5", F5, F5T5, "F5T5"),
+        ("F8", F8, "F8", F5, F8T8, "F8T8"),
+
+        # FC Inter-network
         ("F3", F3, "F5", F5, F3T5, "F3T5"),
         ("F3", F3, "F8", F8, F3T8, "F3T8")]:
         shortnet_name, shortnet_layers, longnet_name, longnet_layers, stitch_idx_dict, exp_prefix = model_pair
