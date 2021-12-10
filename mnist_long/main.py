@@ -43,7 +43,6 @@ from hyperparams import (
     NUM_EXPERIMENTS,
     NUM_STITCH_EXPERIMENTS,
     DOWNLOAD_DATASET,
-    MODE
 )
 
 from net import (
@@ -250,8 +249,9 @@ def run_experiments(
                     exp_name, stitch_exp_name)
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
     parser.add_argument('--MODE', type=int, help="Different architectures or same")
-    parser.parse_args()
+    args = parser.parse_args()
     intras = [
         # Convolutional Intra-network
         ("C32", C32, "C32", C32, C32T32, "C32T32"),
@@ -272,12 +272,13 @@ if __name__ == "__main__":
     ]
     do = None
     do_str = None
+    print("Mode is {}".format(args.MODE))
     if args.MODE == 0:
         do = inters
         do_str = "inter"
     elif args.MODE == 1:
         do = intras
-        do_mode = "intra"
+        do_str = "intra"
     else:
         raise ValueError("Mode was {}, but it should be either {} (inters) or {} (intras)".format(MODE, INTER, INTRA))
     
