@@ -5,10 +5,9 @@ Get the experiments to run on `16 GPUs at once running out of memory`!
 1. Stitch into and out of a single layer (i.e. an "insertion" stitch instead of a swap)
 2. Sanity tests for frozen layers and unfrozen layers
 3. Documentation and library simplifcation for the model generation and stitch generation (read their code and see what they do)
-4. Find a way to analyze based on the accuracies
+4. Find a way to analyze succes or not based on accuracies. Parse files (important).
 5. Autogenerate examples from higher level information
 6. Start writing up Latex results... figure out how to visualize this nicely...
-7. Try "swapping out" matching modules (i.e. stitch and then stitch back)
 
 # Running on Supercloud
 More info the fixed folder.

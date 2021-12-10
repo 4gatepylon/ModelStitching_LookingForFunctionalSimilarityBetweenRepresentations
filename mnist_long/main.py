@@ -42,6 +42,7 @@ from hyperparams import (
     NUM_EXPERIMENTS,
     NUM_STITCH_EXPERIMENTS,
     DOWNLOAD_DATASET,
+    MODE
 )
 
 from net import (
@@ -249,37 +250,51 @@ def run_experiments(
 
 
 if __name__ == "__main__":
+    intras = [
+        # Convolutional Intra-network
+        ("C32", C32, "C32", C32, C32T32, "C32T32"),
+        ("C42", C42, "C42", C42, C42T42, "C42T42"),
+        ("C102", C102, "C102", C102, C102T102, "C102T102"),
+        # FC Intra-network
+        ("F3", F3, "F3", F5, F3T3, "F3T3"),
+        ("F5", F5, "F5", F5, F5T5, "F5T5"),
+        ("F8", F8, "F8", F5, F8T8, "F8T8"),
+    ]
+    inters = [
+        # Convolutional Inter-network
+        ("C32", C32, "C42", C42, C32T42, "C32T42"),
+        ("C32", C32, "C42", C102, C32T102, "C32T102"),
+        # FC Inter-network
+        ("F3", F3, "F5", F5, F3T5, "F3T5"),
+        ("F3", F3, "F8", F8, F3T8, "F3T8")
+    ]
+    do = None
+    do_str = None
+    if MODE == INTER:
+        do = inters
+        do_str = "inter"
+    if MODE == INTRA:
+        do = intras
+        do_mode = "intra"
+    else:
+        raise ValueError("Mode was {}, but it should be either {} (inters) or {} (intras)".format(MODE, INTER, INTRA))
+    
     # Make a folder for these experiments
-    date_prefix = datetime.now().strftime("%Y-%m-%d-%m-%s")
+    # You will not be running more than one set of experiments per minute...
+    date_prefix = datetime.now().strftime("%Y-%m-%d-%m")
     if not os.path.isdir("experiments"):
         print("Making experiments folder")
         os.mkdir("experiments")
     if os.path.isdir("experiments/{}".format(date_prefix)):
         raise RuntimeError("An experiment is already running for {}".format(date_prefix))
     print("Making experiment for date {}".format(date_prefix))
-    experiments_dir = "experiments/{}".format(date_prefix)
+    experiments_dir = "experiments/{}_{}".format(do_str, date_prefix)
     os.mkdir(experiments_dir)
     
 
     train_loader, test_loader, device = init()
-    for model_pair in [
-        # Convolutional Intra-network
-        ("C32", C32, "C32", C32, C32T32, "C32T32"),
-        ("C42", C42, "C42", C42, C42T42, "C42T42"),
-        ("C102", C102, "C102", C102, C102T102, "C102T102"),
 
-        # Convolutional Inter-network
-        ("C32", C32, "C42", C42, C32T42, "C32T42"),
-        ("C32", C32, "C42", C102, C32T102, "C32T102"),
-
-        # FC Intra-network
-        ("F3", F3, "F3", F5, F3T3, "F3T3"),
-        ("F5", F5, "F5", F5, F5T5, "F5T5"),
-        ("F8", F8, "F8", F5, F8T8, "F8T8"),
-
-        # FC Inter-network
-        ("F3", F3, "F5", F5, F3T5, "F3T5"),
-        ("F3", F3, "F8", F8, F3T8, "F3T8")]:
+    for model_pair in do:
         shortnet_name, shortnet_layers, longnet_name, longnet_layers, stitch_idx_dict, exp_prefix = model_pair
         run_experiments(
             exp_prefix,
