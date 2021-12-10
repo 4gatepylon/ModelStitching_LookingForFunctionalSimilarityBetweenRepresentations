@@ -20,9 +20,9 @@ Run
 module load anaconda/2021a && module load cuda/11.2 && LLsub -i -s 20 -g volta:1
 ```
 
-To run a batch job do
+To run a batch job do (though this might not work because "permission denied"... just copy the code it's a single line)
 ```
-module load anaconda/2021a && module load cuda/11.2 && LLsub batch.sh -s 20 -g volta:1
+./batch.sh
 ```
 
 Then
