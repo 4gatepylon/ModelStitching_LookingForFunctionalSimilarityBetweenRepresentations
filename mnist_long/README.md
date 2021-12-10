@@ -22,7 +22,7 @@ module load anaconda/2021a && module load cuda/11.2 && LLsub -i -s 20 -g volta:1
 
 To run a batch job do
 ```
-module load anaconda/2021a && module load cuda/11.2 && LLsub batch.sh -s 20 -g volta:1
+./batch.sh
 ```
 
 Then
