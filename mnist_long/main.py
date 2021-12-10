@@ -1,4 +1,5 @@
 import os
+import argparse
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
@@ -248,8 +249,9 @@ def run_experiments(
                         untrained_shortnet_name, idx1, untrained_longnet_name, idx2),
                     exp_name, stitch_exp_name)
 
-
 if __name__ == "__main__":
+    parser.add_argument('--MODE', type=int, help="Different architectures or same")
+    parser.parse_args()
     intras = [
         # Convolutional Intra-network
         ("C32", C32, "C32", C32, C32T32, "C32T32"),
@@ -270,10 +272,10 @@ if __name__ == "__main__":
     ]
     do = None
     do_str = None
-    if MODE == INTER:
+    if args.MODE == 0:
         do = inters
         do_str = "inter"
-    if MODE == INTRA:
+    elif args.MODE == 1:
         do = intras
         do_mode = "intra"
     else:

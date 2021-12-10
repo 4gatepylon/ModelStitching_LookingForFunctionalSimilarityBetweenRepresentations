@@ -1,12 +1,7 @@
-INTRA = 0
-INTER = 1
-
 # Switch to let you debug more easily!
 DEBUG = False          # Run a fast test
 MEMORY_CAREFUL = True  # Run only one of each test
 
-# Set to inter for one batch run, to intra for another batch run
-MODE = INTRA
 
 # Info per experiment
 DEFAULT_TRAIN_BATCH_SIZE = 64
