@@ -182,7 +182,7 @@ def run_experiments(
         exp_name = "{}/exp_{}_{}".format(experiments_dir, experiments_prefix, experiment_num)
         os.mkdir(exp_name)
         shortnet = Net(layers=shortnet_layers).to(device)
-        longnet = Net(layers=shortnet_layers).to(device)
+        longnet = Net(layers=longnet_layers).to(device)
 
         print("*** Training OG Models ***")
 
@@ -192,7 +192,7 @@ def run_experiments(
             shortnet, shortnet_name, exp_name,
             device, train_loader, test_loader, DEFAULT_EPOCHS_OG, "{}/{}_train.txt".format(exp_name, shortnet_name))
         train_og_model(
-            longnet, shortnet_name, exp_name,
+            longnet, longnet_name, exp_name,
             device, train_loader, test_loader, DEFAULT_EPOCHS_OG, "{}/{}_train.txt".format(exp_name, longnet_name))
         
         # Do regular stitch experiments
@@ -226,6 +226,8 @@ def run_experiments(
         untrained_longnet_name = "untrained_{}".format(longnet_name)
         for idx1, idx2s in stitches.items():
             for idx2, stitch in idx2s.items():
+                print("*** Trying Stitch Untrained Control for experiment {} ***".format(exp_name))
+                stitch_exp_name = "stitch_untrained_exp_{}".format(stitch_experiment_num)
                 stitch = stitch.to(device)
                 train_stitch(
                     shortnet, longnet, stitch,
@@ -234,7 +236,8 @@ def run_experiments(
                     train_loader, test_loader, DEFAULT_EPOCHS_STITCH,
                     "{}_{}_l{}_{}_l{}.txt".format(
                         stitch_exp_name,
-                        untrained_shortnet_name, idx1, untrained_longnet_name, idx2))
+                        untrained_shortnet_name, idx1, untrained_longnet_name, idx2),
+                    exp_name, stitch_exp_name)
 
 
 if __name__ == "__main__":
@@ -254,7 +257,7 @@ if __name__ == "__main__":
     for model_pair in [
         # Convolutional experiments
         ("C32", C32, "C42", C42, C32T42, "C32T42"),
-        ("C32", C32, "C42", C42, C32T102, "C32T102"),
+        ("C32", C32, "C42", C102, C32T102, "C32T102"),
         # FC Experiments
         ("F3", F3, "F5", F5, F3T5, "F3T5"),
         ("F3", F3, "F8", F8, F3T8, "F3T8")]:

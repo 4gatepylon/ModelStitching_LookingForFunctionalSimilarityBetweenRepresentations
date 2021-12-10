@@ -1,11 +1,16 @@
-# Things To Do
-1. Debug! Get the experiments to run on supercloud!
-2. Stitch into and out of a single layer (i.e. an "insertion" stitch instead of a swap)
-3. Sanity tests for frozen layers and unfrozen layers
-4. Documentation and library simplifcation for the model generation and stitch generation (read their code and see what they do)
-5. Find a way to analyze based on the accuracies
-6. Autogenerate examples from higher level information
-7. Start writing up Latex results... figure out how to visualize this nicely...
+# TODO ASAP
+1. Debug! Get the experiments to run on supercloud `WITH BATCH (16 GPUs)`
+2. Add control stitching network to itself!
+3. Ensure that there are no memory problems (i.e. garbage collect yourself from GPU if necessary)
+
+## Immediately After ^ is done
+1. Stitch into and out of a single layer (i.e. an "insertion" stitch instead of a swap)
+2. Sanity tests for frozen layers and unfrozen layers
+3. Documentation and library simplifcation for the model generation and stitch generation (read their code and see what they do)
+4. Find a way to analyze based on the accuracies
+5. Autogenerate examples from higher level information
+6. Start writing up Latex results... figure out how to visualize this nicely...
+7. Try "swapping out" matching modules (i.e. stitch and then stitch back)
 
 # Running on Supercloud
 More info the fixed folder.
@@ -23,10 +28,6 @@ Then
 ```
 cd mnist_long && rm -rf experiments && python3 main.py
 ```
-
-# Important
-- Use batch for overnight runs instead of just interactive
-- Use all your 16 max possible usable GPUs
 
 # Ideas for the future
 - Constrained optimization or constrained stitch

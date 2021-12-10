@@ -1,3 +1,6 @@
+# Switch to let you debug more easily!
+DEBUG = True
+
 # Info per experiment
 DEFAULT_TRAIN_BATCH_SIZE = 64
 DEFAULT_TEST_BATCH_SIZE = 1000
@@ -15,3 +18,10 @@ NUM_EXPERIMENTS = 10
 NUM_STITCH_EXPERIMENTS = 10
 
 DOWNLOAD_DATASET = False
+
+if DEBUG:
+    print("*** Debugging Mode ***")
+    DEFAULT_EPOCHS_OG = 1
+    DEFAULT_EPOCHS_STITCH = 1
+    NUM_EXPERIMENTS = 1
+    NUM_STITCH_EXPERIMENTS = 1

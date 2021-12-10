@@ -212,9 +212,10 @@ class StitchedForward(nn.Module):
         return stitch_forward(x, self.m1, self.m2, self.s, self.i1, self.i2)
 
 
-# Given two layer indices find the stitch from the output of layer1 to the input
-# if layer2. The output must be after a ReLU
-# NOTE: gets the stitch to compare layer1 - 1 and layer2
+# Given two layer indices find the stitch from the input of layer1 to the input
+# if layer2 (i.e. get the shape that layer 1 is outputting and get what was output INTO
+# it, then put that into layer 2)
+# NOTE: gets the stitch to compare layer1 - 1 and layer2 - 1
 def get_stitch(model1, model2, layer1_idx, layer2_idx):
     assert(type(model1) == Net)
     assert(type(model2) == Net)
@@ -223,42 +224,52 @@ def get_stitch(model1, model2, layer1_idx, layer2_idx):
     if layer1_idx == 0 or layer2_idx == 0:
         raise NotImplementedError
 
-    # Find the last layer that provided dimensions
-    # (so we know what dimensions we need to transform from)
+    # For these, if that was another waitless layer (of which the only allowable option is ReLU) then do so again
     layer1 = model1.layers[layer1_idx]
-    if type(layer1) in [nn.ReLU, nn.MaxPool2d, nn.AvgPool2d, nn.LogSoftmax]:
-        layer1 = model1.layers[layer1_idx - 1]
-    # Sometimes there will be a pool after a ReLU which we support, but NOT two pools in a row
-    if type(layer1) == nn.ReLU:
-        layer1 = model1.layers[layer1_idx - 2]
-    # And the last layer that provided dimensions for the recieving network
-    # (i.e. we need to provide the same dimensions)
-    dec_layer2 = False
     layer2 = model2.layers[layer2_idx]
+    dec_layer1 = False
+    dec_layer2 = False
+
+    if type(layer1) in [nn.ReLU, nn.MaxPool2d, nn.AvgPool2d, nn.LogSoftmax]:
+        dec_layer1 = True
+        layer1 = model1.layers[layer1_idx - 1]
+    if type(layer1) == nn.ReLU:
+        dec_layer1 = True
+        layer1 = model1.layers[layer1_idx - 2]
+    
     if type(layer2) in [nn.ReLU, nn.MaxPool2d, nn.AvgPool2d, nn.LogSoftmax]:
         dec_layer2 = True
         layer2 = model2.layers[layer2_idx - 1]
-    # Sometimes there will be a pool after a ReLU, which we support, but NOT
-    # two pools in a row... it's assumed that this implies index >= 2
     if type(layer2) == nn.ReLU:
         dec_layer2 = True
         layer2 = model2.layers[layer2_idx - 2]
-    
+
     if type(layer1) == nn.Linear and type(layer2) == nn.Linear:
         # For linear, since we pass vectors as colums the format becomes (output dim, input dim)
         # and we want to input the output dim of layer1 and output the output dim of layer2
-        input_dim, _ = layer1.weight.size()
-        output_dim, _ = layer2.weight.size()
+
+        # Format by default is
+        # OUTPUT, INPUT
+        _, input_dim = layer1.weight.size()
+        if dec_layer1:
+            input_dim, _ = layer1.weight.size()
+        _, output_dim = layer2.weight.size()
+        if dec_layer2:
+            output_dim, _ = layer2.weight.size()
         return nn.Linear(input_dim, output_dim)
     
     elif type(layer1) == nn.Conv2d and type(layer2) == nn.Conv2d:
-        # For convolution, the format is (output depth, input depth, kernel dim 1, kernel dim 2)
-        # and we want to use kernel dims 1x1 and take the input depth as the output depth of
-        # layer1 and the output depth as the output depth of layer2
-        input_depth, _, _, _ = layer1.weight.size()
-
         # Depending on whether we decrement or not, we want to use the output (of the previous layer)
-        # or the input (of the current layer)
+        # or the input (of the current layer). Remember that the layer indices tell us what layer would
+        # be recieving the output from network 1, and what layer WILL be recieving the output from network 2,
+        # or if decremented what layer will be GIVING the size in network 1, and what size would be given
+        # otherwise in network 2.
+
+        # Format by default is
+        # OUTPUT, INPUT, _, _ (so get input by default then if dec try output)
+        _, input_depth, _, _ = layer1.weight.size()
+        if dec_layer1:
+            input_depth, _, _, _ = layer1.weight.size()
         _, output_depth, _, _ = layer2.weight.size()
         if dec_layer2:
             output_depth, _, _, _ = layer2.weight.size()
