@@ -1,5 +1,5 @@
 # Switch to let you debug more easily!
-DEBUG = False
+DEBUG = True
 
 # Info per experiment
 DEFAULT_TRAIN_BATCH_SIZE = 64
