@@ -1,5 +1,7 @@
 # TODO ASAP
 Get the experiments to run on `16 GPUs at once running out of memory`!
+- https://stackoverflow.com/questions/57858433/how-to-clear-gpu-memory-after-pytorch-model-training-without-restarting-kernel
+- https://pytorch.org/docs/stable/generated/torch.nn.DataParallel.html
 
 ## Immediately After ^ is done
 1. Stitch into and out of a single layer (i.e. an "insertion" stitch instead of a swap)

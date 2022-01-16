@@ -1,0 +1,41 @@
+--- Structure ---
+1. Put citations in the BIB with a key in the beginning like so @article{thekey, ...}
+2. Write your paper in the iclr_2021_conference.tex
+3. Add any commonly-used command shortcuts in the math_commands.tex
+
+In the future some of these files may or may not be renamed...
+
+--- Guide is here ---
+https://pwsmith.github.io/2020/06/05/setting-up-a-text-editor-for-latex-vscode/
+
+I had a problem where the latex folder was not on my paths so this couldn't find
+the executables. I fixed it by just closing and re-opening atom. I think my terminal
+was just stale and needed to be re-sourced or something.
+
+--- More guides ---
+https://github.com/James-Yu/LaTeX-Workshop/wiki
+
+Something I'm not sure if it's outdated:
+https://www.tug.org/texlive/quickinstall.html
+
+
+--- File Extensions & Files ---
+BST: Bibtex Style Document
+BIB: Bibliogaphy document
+DVI: Knuth's original PDF-like Device Independent Format (no longer used)
+STY: Style Document
+TEX: TeX Document (where you write your paper and the formatting istructions)
+
+The STY files are basically defining macro-like styling points it seems to me. The FANCYHDR one gives you
+fancy headers and footers, while the ICLR... one gives you the general template and the NATBIB one gives
+you some sort of "interface" it claims that is "general" for citations. I'm not totally sure exactly what
+that means (i.e. interface to what).
+
+MATH_COMMANDS.TEX is defining commands that you can use (i.e. \tF can be used for a tensor F). You could add more
+commands to shorten your writing time there. You could also use VSCode's functionality with snippets. to auto-write.
+
+The BIB file stores citations in a bib format (which you can usually get from most good sites like SemanticScholar)
+and are then citeable in the TeX paper. The BST file is meant to help define the format of the BIB document (so that
+the compiler/engine can parse the BIB document, then turn it into TeX, I'm guessing, putting it into the iclr...
+document and then compiling the entire joint object).
+

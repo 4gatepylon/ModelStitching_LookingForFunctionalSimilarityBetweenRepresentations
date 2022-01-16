@@ -1,0 +1,8 @@
+*.dvi
+*.log
+# These seem to be logs
+*.fdb_latexmk
+*.fls
+
+# Unclear what this is
+*.synctex 
