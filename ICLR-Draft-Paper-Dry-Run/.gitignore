@@ -1,8 +1,21 @@
-*.dvi
-*.log
 # These seem to be logs
+*.log
 *.fdb_latexmk
 *.fls
 
 # Unclear what this is
-*.synctex 
+# I think it helps synchronize between the PDF and the TeX file itself
+# and it's gzipped sometimes for whatever reason.
+*.synctex.gz
+*.synctex
+*.synctex.gz(busy)
+*.synctex(busy)
+
+# Generated files
+# I'm guessing used to help build? I do not know, but I don't think it's totally important.
+*.out
+*.pdf
+*.aux
+*.dvi
+*.bbl
+*.blg

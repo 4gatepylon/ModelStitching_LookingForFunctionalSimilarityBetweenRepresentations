@@ -1,3 +1,9 @@
+--- When do I know it's done building? ---
+"[...] Successfully built .../Plato/ICLR-Draft-Paper-Dry-Run/iclr2021_conference.tex"
+
+--- Multifile? ---
+https://sharelatex.psi.ch/learn/Multi-file_LaTeX_projects
+
 --- Structure ---
 1. Put citations in the BIB with a key in the beginning like so @article{thekey, ...}
 2. Write your paper in the iclr_2021_conference.tex
