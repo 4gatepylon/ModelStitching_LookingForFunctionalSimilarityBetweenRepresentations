@@ -7,16 +7,19 @@
 \usepackage{hyperref}
 \usepackage{url}
 
+% I got these from this guide:
+% https://shantoroy.com/latex/how-to-write-algorithm-in-latex/
+% Which I use to highlight how we do the experiment.
+\usepackage{algorithm}
+\usepackage{arevmath}
+\usepackage[noend]{algpseudocode}
+
 
 \title{Exploring Neural Network Modularity \\ Using Model Stitching}
 
-% Authors must not appear in the submitted version. They should be hidden
-% as long as the \iclrfinalcopy macro remains commented out below.
-% Non-anonymous submissions will be rejected without review.
-
-\author{Adriano Hernandez, Rumen Dangovski \& Peter Y. Lu \thanks{ Use footnote for providing further information
-about author (webpage, alternative address)---\emph{not} for acknowledging
-funding agencies.  Funding acknowledgements go at the end of the paper.} \\
+% Authors must not appear in the submitted version, you uncomment a line below
+% which is labeled "iclrfinalcopy" to anonymize or not.
+\author{Adriano Hernandez, Rumen Dangovski \& Peter Y. Lu \thanks{You can find our other work at \url{http://www.a14z.blog/}, \url{http://super-ms.mit.edu/rumen.html}, and \url{https://peterparity.github.io/} respectively.} \\
 MIT EECS\\
 Cambridge, MA 02139, USA \\
 \texttt{\{adrianoh,rumenrd,lup\}@mit.edu}
@@ -40,7 +43,11 @@ Cambridge, MA 02139, USA \\
 \maketitle
 
 \begin{abstract}
-We expand \textit{model stitching} (Lenc \& Vedaldi 2015) as a methodology to compare neural networks. Previously, Bansal, Nakkiran \& Barak used it to compare the representations learned by differently seeded and/or trained neural networks. We use it to compare the representations learned by neural networks with different architectures. This gives us insight into the modular structure of neural networks, by helping us map consecutive sequences of layers from one network to those of another. We think of these sequences of layers as "modules" which may or may not have similar functionality to those of another network. Call the bottom-layers of a neural network a "prefix" and the top-layers a "suffix. Given two trained and frozen models, \textit{A} and \textit{B} we consider a "stitched" model formed by connecting the prefix of \textit{A} to the suffix of \textbf{B}, with a simple trainable layer between them. We try all possible prefix-suffix combinations on small computer vision networks.
+We expand \textit{model stitching} (Lenc \& Vedaldi 2015) as a methodology to compare neural networks.
+Previously, Bansal, Nakkiran \& Barak used it to compare the representations learned by differently seeded and/or trained neural networks.
+We use it to compare the representations learned by neural networks with different architectures.
+This gives us insight into the modular structure of neural networks, by helping us map consecutive sequences of layers from one network to those of another.
+We think of these sequences of layers as "modules" which may or may not have similar functionality to those of another network.
 \end{abstract}
 
 
@@ -127,138 +134,230 @@ We expand \textit{model stitching} (Lenc \& Vedaldi 2015) as a methodology to co
 % Multimodal neurons in artificial neural networks.
 %
 %
-\section{Submission of conference papers to ICLR 2021}
 
-ICLR requires electronic submissions, processed by
-\url{https://openreview.net/}. See ICLR's website for more instructions.
+% There is a strict upper limit to 8 pages
+% Do NOT refer to the line numbers it automatically generates in your paper
+% 
+% 
+% 
+\section{Introduction}
 
-If your paper is ultimately accepted, the statement {\tt
-  {\textbackslash}iclrfinalcopy} should be inserted to adjust the
-format to the camera ready requirements.
+\subsection{Motivation}
+This will discuss why we are doing this. The main goal is to understand neural networks, but we can think of this
+attempt to understand "modules" as a great boon to transfer learning and cheap computation since it may allow us to
+have the tools necessary to do a lot of iterative tinkering with architectures in an empirical way.
 
-The format for the submissions is a variant of the NeurIPS format.
-Please read carefully the instructions below, and follow them
-faithfully.
+\subsection{Stitching}
+This will discuss how stitching works on a high level. It will not introduce any mathematical formalisms or notation.
+Those will probably be used later.
 
-\subsection{Style}
+\subsection{Related Approaches}
+This will discuss things like CKA, CCA, Procrustes, and stitching without differnet architectures.
 
-Papers to be submitted to ICLR 2021 must be prepared according to the
-instructions presented here.
+\subsection{Preliminary Results}
+Here we will analyze our preliminary results and give a high level summary. Currently, my results are disorganized in a bunch
+of .txt log files. I need to get them into figures and tables that are interpretable by us humans (including me).
 
-%% Please note that we have introduced automatic line number generation
-%% into the style file for \LaTeXe. This is to help reviewers
-%% refer to specific lines of the paper when they make their comments. Please do
-%% NOT refer to these line numbers in your paper as they will be removed from the
-%% style file for the final version of accepted papers.
+% Notational notes for myself:
+%    %% Stitching %%
+% A_{i,j} is the module from i to j inclusive
+% A_{\leq N} is the prefix (i.e. module from 0 to N inclusive)
+% A_{\geq K} is the suffix of all layers after K.
+% AB_{i \rightsquigarrow | \rightarrow \not{\rightarrow} j} is the stitch from A to B from layer i to layer j
+%   depeneding on whether the accuracy is unknown, high, or low (so representations are unknown, similar, or differnet)
+% To refer to the outputs of networks we use the letter R for representation. For the output of network A
+% from layer i we use R_{A, i}. This'd be the input for network A at layer i + 1 or some sort of stitch.
+%    %% Mappings %%
+% A \rightarrow B
+% 
+% 
+\section{Experimental Setup}
+\subsection{Definitions}
+To explain our experiment and its goals we must define a few terms. These give us a simple language we may
+use to discuss the idea of "modular mappings" of neural networks, which is an idea meant to help us understand how
+neural networks are functionally similar.
 
-Authors are required to use the ICLR \LaTeX{} style files obtainable at the
-ICLR website. Please make sure you use the current files and
-not previous versions. Tweaking the style files may be grounds for rejection.
+\subsubsection*{Basic Definitions}
+\begin{itemize}
+   \item Prefix: the first \(N\) layers of a neural network, \(A\). The prefix has length \(N\). We may call the prefix function \(A_{\leq N}\).
+   \item Suffix: the last \(M\) layers of a neural network \(B\). The suffix has length \(M\). We may call the suffix function \(B_{\geq K}\) where if there are \(L\) layers, \(K=L-M+1\).
+   \item Module: a subsequence of consecutive layers in a neural network, similar to the notion of a "substring" in computer systems. It can also be thought of as a prefix of a suffix, or a suffix of a prefix. It is denoted with the start and ending layers (inclusive). For example "\(C_{2,3}\)" is the module with layers 2 and 3 of network \(C\). It takes in the output from the first layer outputs the third layer's output. Note that single layers can be modules (i.e. \(C_{1,1}\) is both the first layer and the first possible module of \(C\)).
+   \item Submodule: a module inside a module. for example, \(C_{2,2}\) is a submodule of \(C_{2,3}\).
+   \item Supermodule: a module within which there is a module.
+   \item MLP (Multilayer Perceptron): a network comprised only of (FC) fully connected layers. We use exclusively the ReLU activation function.
+   \item CNN (Convolutional Neural Network): a network whose prefix uses convolutional (Conv) layers and suffix uses one or two FC layers for classification. We only use the ReLU activation function.
+\end{itemize}
 
-\subsection{Retrieval of style files}
+\subsubsection*{Stitching}
+We define stitching in the same way as Bansal et. al. We stitch in only two ways: between fully-connected layers
+we stitch using linear layers, while between convolutional layers we use 1x1 convolutions. Say we wish to stitch
+two networks \(A\) and \(B\) with lengths \(a\) and \(b\). We will stitch the output of layer \(i\) from \(A\) into layer \(j+1\) in \(B\). That
+is to say we will input \(R_{A,i}\) where \(R_{B,j}\) is expected through a stitch (and thus be able to compare those two 
+representations using the accuracy of the network). We take our stitch \(S\) and define the stitched network \(AB_{i \rightsquigarrow j}\)
+as \(B_{\geq b-j+1} \circ S \circ A_{\leq i}\). If that resulting stitched network has a high accuracy, we infer that the
+aforementioned representations are similar and we use the notation \(AB_{i \rightarrow j}\). If the resulting network has low accuracy,
+we infer that the two representations are not similar and we use the notation \(AB_{i \not{\rightarrow} j}\). If the resulting network
+has high accuracy for a given stitch we say that the two networks are "stitchable" at those layers, and otherwise we say they are not
+stitchable.
 
-The style files for ICLR and other conference information are available online at:
-\begin{center}
-   \url{http://www.iclr.cc/}
-\end{center}
-The file \verb+iclr2021_conference.pdf+ contains these
-instructions and illustrates the
-various formatting requirements your ICLR paper must satisfy.
-Submissions must be made using \LaTeX{} and the style files
-\verb+iclr2021_conference.sty+ and \verb+iclr2021_conference.bst+ (to be used with \LaTeX{}2e). The file
-\verb+iclr2021_conference.tex+ may be used as a ``shell'' for writing your paper. All you
-have to do is replace the author, title, abstract, and text of the paper with
-your own.
+Recall that the stitch is a learned transformation. That is to say, we use gradient descent to approximate the best possible stitch
+for any given pair of layers, while freezing all the layers of the two networks.
 
-The formatting instructions contained in these style files are summarized in
-sections \ref{gen_inst}, \ref{headings}, and \ref{others} below.
+\subsubsection*{Representational Mappings}
+We frame them in terms
+of a mapping between pairs of networks \(A, B\), where \(A\) has at most as many layers as \(B\).
 
-\section{General formatting instructions}
-\label{gen_inst}
+We may roughly establish the mapping as follows: for each representation \(R_{A,i}\)
+in \(A\), where \(i\) denotes that the representation is the output of layer \(i\), the representation is associated (i.e. "mapped")
+to \(R_{B,j}\), the representation output by layer \(j\) in \(B\), if \(R_{B,j}\) is the most similar representation to \(R_{A,i}\) over all possible \(j\) and the similarity is nearly maximal (that is to say, the accuracy of the stitched network \(AB_{i \rightarrow j}\) is close to 100\%)\footnote{Note that we could also define it as "if it is sufficiently similar." We neglect this for now since we wish to enforce that the mapping be a mathematical mapping. If our analysis yields otherwise, then we will revise this definition.}.
+Intuitively this says that those two representations are, to an extent, interchangeable.  We hope that this mapping will be injective and monotonic.
+By monotonic we simply mean that if \(i_{1} < i_{2}\), \(i_{1}\) maps to \(j_{1}\), and \(i_{2}\) maps to \(j_{2}\), then it should be the case that \(j_{1} < j_{2}\).
 
-The text must be confined within a rectangle 5.5~inches (33~picas) wide and
-9~inches (54~picas) long. The left margin is 1.5~inch (9~picas).
-Use 10~point type with a vertical spacing of 11~points. Times New Roman is the
-preferred typeface throughout. Paragraphs are separated by 1/2~line space,
-with no indentation.
+The precise reader will note that while the representations may be interchangeable in one direction they may not be in both, depending on the type of stitch. That is to say, \(R_{A,i}\) may be stitchable into the layer expecting \(R_{B, j}\), while 
+it is not possible to stitch \(R_{B,j}\) into the layer expecting \(R_{A,i}\)\footnote{If it is necessary, we may henceforth call "the layer in network \(D\) execting \(X\) for any \(X\) to be the "expectant of \(X\) in \(D\)." Generally, I'd like to define some more terms and clean up my language, a lot, to make this easy to read.}.
+However, since we are using linear transformations or 1x1 convolutions are our stitches, this should only be the case for drastic changes in dimensionality. We will not explore this yet. Nonetheless, we will use a precise notation to specify whether two layers
+are stitchable in one direction, the other, or both. Specifcially, we use \(\rightarrow\) and \(\leftarrow\) to signify which layer\footnote{Or... representation. We need more precise language here.} can be stitched in which other. Generally, though
+we will use \(\rightarrow\) and simply swap the order of the operands if need be. If we wish to express that both directions are stitchable we will use \(\leftrightarrow\). Thus, if we can stitch layers \(i\) and \(j\) in networks \(A\) and \(B\) respectively,
+in both directions, we can refer to their stitched networks as \(AB_{i \leftrightarrow j}\) and \(BA_{j \leftrightarrow i}\), depending on the order of composition. Moreoer, when we define a representational mapping, we may define it in either direction or in both,
+using the following shorthand: \(A \rightarrow B\), \(B \rightarrow A\), \(A \leftrightarrow B\) or \(B \leftrightarrow A\). We define the two-way mapping as the mapping induced by all the layer pairs \(i\) and \(j\) in \(A\) and \(B\) respectively, such that those
+layers map to eachother in each of the one-way mappings (i.e. in either direction they are, colloquially speaking, the most similar layer)\footnote{This can also be defined as a union over the two mappings' pairs}. Note that the two-way mapping is not a mathematical
+mapping since not all elements in the domain are guaranteed an entry in the range\footnote{You can define the layers/their corresponding representations in one network in the domain and the others as the range, choosing which network is which based on what is most convenient to you.}.
 
-Paper title is 17~point, in small caps and left-aligned.
-All pages should start at 1~inch (6~picas) from the top of the page.
+\subsubsection*{Modular Mapping}
+Additionally to the notion of a representational mapping, we establish a more general notion\footnote{Representational mappings are the same as modular mappings of layers.} of
+a "modular" mapping based on modules: continuous subsequences of layers. The modular mapping allows us to
+create a meaningful mathematical mapping between two neural networks. It helps us describe which modules
+of each network are "interchangeable" with modules in the other network, giving us a notion of shared functionality\footnote{We have discussed a potential experiment in which we try to "swap out" intermediate sequences of layers for two networks. This is covered by the experimental scheme we have due to the fact that we do representational mappings in both ways. One only needs to interpret representational mappings to find modular mappings, not do more work. By finding two representational mappings for the ends of the module that was "swapped out" we can infer that it is possible to swap out.}.
 
-Authors' names are
-set in boldface, and each name is placed above its corresponding
-address. The lead author's name is to be listed first, and
-the co-authors' names are set to follow. Authors sharing the
-same address can be on the same line.
+A modular mapping is a mapping from modules of one network \(A\) to modules of another network \(B\). It is denoted by \(A \Rightarrow B\). Two modules \(A_{i_1,i_2}\) and \(B_{j_1, j_2}\) are mapped
+if \(\exists BA_{j_1-1 \rightarrow j_1} \land \exists AB_{i_2 \rightarrow j_2+1}\). Basically, if for some pair of stitches \(S_1, S_2\), the accuracy is high for \(B_{>j_2} \circ S_1 \circ A_{i_1,i_2} \circ S_2 \circ B_{<j_1}\).
+For a specific mapping of two modules we use the notation \(A_{i_1, i_2} \Rightarrow B_{j_1, j_2} \). Due to the unidirectional nature of representational mappings, modular mappings are also unidirectional. However, if a two-directional
+mapping exists on each end of each module\footnote{I think this is correct but very confusing. The reason is that the two-way representational mapping considers layer weights (i.e. edges) and not layer representations. The layer to which you map is not the layer from which you map in the reverse since it is the expectant. I've been super sloppy and need to do a better job here.}, then we can use the notation \(A_{i_1, i_2} \Leftrightarrow B_{j_1, j_2}\). If we consider only pairs that are two-way mappable we can define the two-way modular mapping \(A \Leftrightarrow B\).
 
-Please pay special attention to the instructions in section \ref{others}
-regarding figures, tables, acknowledgments, and references.
+We wish to find an ideally mononic modular mapping between two networks. We present a very simple algorithm\footnote{There is a factor of 2 optimization by calculating the representational similarity if you continue to assume/enforce monotonicity.}
+Our algorithm (shown below) finds the first modular mapping it can that is monotonic\footnote{A non-monotonic mapping can be found with a simple brute force which maybe I can outline in the appendix. It can be transformed into a modular mapping by iteratively merging modules where there is an order flip, if those are found. Also note this algorithm is a bit sloppy.}.
+\begin{algorithm}
+\caption{Monotonic Modular Mapping (informal)}
+\begin{algorithmic}[h]
+\Procedure{Find \(A \Rightarrow B\)}{} 
+      \State Pretrain \(A\) and \(B\) seperately
+      \State \(A\) has length \(N\)
+      \State \(B\) has length \(M\)
+      \State Find \(A\rightarrow B\)
+      \State Find \(B\rightarrow A\)
+      \State \(i_{start} = 0\)
+      \State \(j_{start} = 0\)
+      \For{\(i_{end} \in [0, N]\)}
+         \For{\(j_{end} \in [j_{start}, M]\)}
+            \If{\(A_{i_{end}} \rightarrow B_{j_{end}}\)}
+               \State Register \(A_{i_{start}, i_{end}} \Rightarrow B_{j_{start}, j_{end}}\)
+               \State \(i_{start} = i_{end} + 1\)
+               \State \(j_{start} = j_{end} + 1\)
+               \State Break Inner Loop
+            \EndIf
+         \EndFor
+      \EndFor
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
 
+\subsection{Hypotheses}
+Now that we know how to talk about modules, we introduce 4 main idealized cases that may present themselves when we
+try to modularly map two different neural networks of different sizes. We assume that these mappings are all monotonic.
+\begin{itemize}
+   \item Layer to layer (L2L) mapping: single layers (in shorter networks) may have the same functionality as single layers in longer networks. Additional layers in longer networks introduce new functionality. This mapping is injective, but not surjective.
+   \item Layer to module (L2M) mapping: single layers (in shorter networks) may have the same functionality as modules in longer networks. The long networks have the same functionality, but better. This mapping is injective and ideally surjective.
+   \item Module to module (M2M) mapping: modules (in shorter networks) may have the same functionality as modules in longer networks. This mapping is injective and ideally surjective.
+   \item No (N) mapping: single layers (in shorter networks) do not share any functionality with any layers in longer networks. This mapping is not surjective.
+\end{itemize}
 
-There will be a strict upper limit of 8 pages for the main text of the initial submission, with unlimited additional pages for citations. Note that the upper page limit differs from last year!Authors may use as many pages of appendices (after the bibliography) as they wish, but reviewers are not required to read these. During the rebuttal phase and for the camera ready version, authors are allowed one additional page for the main text, for a strict upper limit of 9 pages.
+Of course, it is possible that our mappings will not be monotonic. However, we will assume that they will be. Even under this assumption, it is also possible that we may have L2L 
+mapping within certain modules in any two networks, followed by L2M mapping, M2M mapping, or N mapping. We will seek to describe pairs of networks, such that both are sequences of supermodules,
+such that within each pair of corresponding supermodules the submodules pertain to only one of the four hypotheses (or more generally, follow an interpretable pattern).
+Informally, we may call these the "realms" of a modular mapping. The realms induce an informal, two-way, mapping of supermodules, where two supermodules are mapped to eachother if and only if
+within them there is a human-understandable, repeatable pattern to the modular mapping. So, if two networks have a one to one L2L mapping for their first 3 layers, then the two 3-layer prefixes of
+these networks form two supermodules that are mapped to eachother, forming an L2L realm. The subsequent modules in either network may form other realms, such as an N mapping realm. I will add a
+diagram for this, but you can find it on the powerpoint in the google drive. Because networks will have different numbers of layers, some realms will only include layers from one network (as in the
+the layers of an ideal L2L modular mapping between 2 networks of different lengths).
 
-\section{Headings: first level}
-\label{headings}
+Thus, due to the many types of mappings, we summarize to ensure that our ideas are perfectly clear to the reader. This summary is not mathematically rigorous, but
+only meant to highlight the key intuitions behind these terms. The mapping types are as follows:
+\begin{itemize}
+   \item (One-way) Representational mapping: a mapping where \(R_{A,i}\) is mapped to \(R_{B,j}\) if the former may be input through a stitch into the spot of the latter in \(B\). This is a one-way mapping.
+   \item Two-way representational mapping: a mapping where we only consider \(R_{A,i}\) mapped to \(R_{B,j}\) if they are both mapped to each other in the one-way mappings.
+   \item (One-way) Modular mapping: when a module from one network may be replaced through two stitches with that from another network. This is defined using two opposite way representational mappings into and out of the module.
+   \item Two-way Modular mapping: when two modules from two networks are both one-way modular mappable.
+   \item Realms (or Realm Mapping): a direction-agnostic pairing of supermodules such that across the pair of modules, mappings are either all L2L, L2M, M2M, N, or otherwise following an interpretable pattern. This can be defined for either one-way modular mapping or the two-way modular mapping.
+\end{itemize}
 
-First level headings are in small caps,
-flush left and in point size 12. One line space before the first level
-heading and 1/2~line space after the first level heading.
+\subsection{Goals}
+The goal for our experiments was to understand the similarities between different neural networks by searching
+for modular mappings. To help us understand if different architectures were learning the same sorts of solutions,
+we trained them seperately and tried to find elegant modular mappings between them. More broadly, we wish to confirm
+that modular mappings are exclusively monotonic and explore the different modular mapping realms that exist across pairs
+of relevant networks.
 
-\subsection{Headings: second level}
+%%% The more precise, concrete section begins here
+\subsection{Networks and Dataset}
+We focused on varying only the random seed of the neural network. To simplify our analysis we also used the MNIST dataset
+(do to its small size) and relatively small neural networks. We established two classes of networks: CNNs and MLPs.
+We only compared CNNs (Convolutional Neural Networks) with other CNNs and MLPs (Multilayer Perceptrons) with other MLPs.
+Our choice of networks were the following:
+\begin{itemize}
+   \item CNNs
+   \begin{itemize}
+      \item \(C_{3,2}\): a zero-padded CNN with 3 convolutional layers and 2 linear layers. Of the two linear layers, one is to flatten the tensor into a representation space and the other is to project it onto the ten classes and use a softmax.
+      \item \(C_{4,2}\): a zero-padded CNN with 4 convolutional layers and 2 linear layers. The linear layers are the same as \(C_{3,2}\) and first 3 convolutional layers are also the same.
+      \item \(C_{10,2}\): a zero-oadded CNN with 10 convolutional layers and 2 linear layers. The linear layers are the same as the previous two CNNs, while the first 4 convolutional layers are the same as those for \(C_{4,2}\).
+   \end{itemize}
+   \item MLPs
+   \begin{itemize}
+      \item \(F_{3}\): a 3 layer MLP.
+      \item \(F_{5}\): a 5 layer MLP whose first 3 layers are identical in architecture to those of \(F_{3}\).
+      \item \(F_{8}\): an 8 layer MLP whose first 5 layers are identical in architecture to those of \(F_{5}\).
+   \end{itemize}
+\end{itemize}
 
-Second level headings are in small caps,
-flush left and in point size 10. One line space before the second level
-heading and 1/2~line space after the second level heading.
+For training we trained for 40 epochs or until high accuracy using stochastic gradient descent with no
+weight decay or learning rate schedule. Batch normalization or other such techniques were not used.
 
-\subsubsection{Headings: third level}
+\subsection{Tests and Controls}
+TODO\footnote{I HAVE INSERTED THESE TODOS WHILE I WORK TO REMIND MYSELF OF WHAT REMAINS TO BE DONE.}
 
-Third level headings are in small caps,
-flush left and in point size 10. One line space before the third level
-heading and 1/2~line space after the third level heading.
+We established some basic controls to
+have a baseline for the similarities we'd expect between representations that we think are already similar
+as well as for similarities we'd expect from representations that we are fairly certain should be
+different. They are the following:
+\begin{itemize}
+   \item We stitched corresponding layers of differently seeded instances of the same archiecture. This is a control and we expect it to have high similarity.
+   \item We stitched non-corresponding layers of the same network. This is a control and we should expect it to be different.
+   \item We stitched non-corresponding layers of different instances of the same architecture. This is a control to give us additional information to the previous control.
+   \item For all pairs of different architectures in each class, we wanted to copmare each layer in each with each layer in the other, both ways. This enables us to infer modular mappings from respresentational mappings.
+\end{itemize}
 
-\section{Citations, figures, tables, references}
-\label{others}
+At the same time, we wished to make sure to test each instance various times so that we could ensure that the observed behavior was not spurious.
+To be able to test all these cases many times we ensured in the testing algorithm (expounded below) that the following cases were
+each tested multiple times:
+\begin{itemize}
+   \item Two copies of the same network architecture with the same weights
+   \item Two copies of the same network architecture with different weights
+   \item Each pair TODO
+\end{itemize}
 
-These instructions apply to everyone, regardless of the formatter being used.
+\subsection{Testing Algorithm}
+TODO
+%%% The precise, concrete section, describing the experiments, ends here
 
-\subsection{Citations within the text}
-
-Citations within the text should be based on the \texttt{natbib} package
-and include the authors' last names and year (with the ``et~al.'' construct
-for more than two authors). When the authors or the publication are
-included in the sentence, the citation should not be in parenthesis using \verb|\citet{}| (as
-in ``See \citet{Hinton06} for more information.''). Otherwise, the citation
-should be in parenthesis using \verb|\citep{}| (as in ``Deep learning shows promise to make progress
-towards AI~\citep{Bengio+chapter2007}.'').
-
-The corresponding references are to be listed in alphabetical order of
-authors, in the \textsc{References} section. As to the format of the
-references themselves, any style is acceptable as long as it is used
-consistently.
-
-\subsection{Footnotes}
-
-Indicate footnotes with a number\footnote{Sample of the first footnote} in the
-text. Place the footnotes at the bottom of the page on which they appear.
-Precede the footnote with a horizontal rule of 2~inches
-(12~picas).\footnote{Sample of the second footnote}
+\section{Results}
+\subsection{Summary}
+Here we will have a summary and repetition of our results. We will want some figures in general. This will
+include grid heatmaps (so we can see which layers were similar to which others), line plots of stitching loss
+for different pairs of networks for different 
 
 \subsection{Figures}
+Here we have some results' figures to highlight what happened.
 
-All artwork must be neat, clean, and legible. Lines should be dark
-enough for purposes of reproduction; art work should not be
-hand-drawn. The figure number and caption always appear after the
-figure. Place one line space before the figure caption, and one line
-space after the figure. The figure caption is lower case (except for
-first word and proper nouns); figures are numbered consecutively.
-
-Make sure the figure caption does not get separated from the figure.
-Leave sufficient space to avoid splitting the figure and figure caption.
-
-You may use color figures.
-However, it is best for the
-figure captions and the paper body to make sense if the paper is printed
-either in black/white or in color.
+% Figures that make sense when they are in black and white are ideal
 \begin{figure}[h]
 \begin{center}
 %\framebox[4.0in]{$\;$}
@@ -268,16 +367,9 @@ either in black/white or in color.
 \end{figure}
 
 \subsection{Tables}
+Here we have some tables.
 
-All tables must be centered, neat, clean and legible. Do not use hand-drawn
-tables. The table number and title always appear before the table. See
-Table~\ref{sample-table}.
-
-Place one line space before the table title, one line space after the table
-title, and one line space after the table. The table title must be lower case
-(except for first word and proper nouns); tables are numbered consecutively.
-
-\begin{table}[t]
+\begin{table}[h]
 \caption{Sample table title}
 \label{sample-table}
 \begin{center}
@@ -291,190 +383,36 @@ Soma             &Cell body (contains cell nucleus) \\
 \end{center}
 \end{table}
 
-\section{Default Notation}
+\subsection{Stitching CNNs with CNNs}
+This is where we will have visualizations and tables for what happened when
+we tried to stitch CNNs with CNNs.
 
-In an attempt to encourage standardized notation, we have included the
-notation file from the textbook, \textit{Deep Learning}
-\cite{goodfellow2016deep} available at
-\url{https://github.com/goodfeli/dlbook_notation/}.  Use of this style
-is not required and can be disabled by commenting out
-\texttt{math\_commands.tex}.
+\subsubsection{Stitching MLPs with MLPs}
+This is where we will have visualizations and tables to explore what happend
+when we tried to stitch MLP (Multi-layer-perceptron, i.e. FC end to end) networks.
 
+\subsubsection{Stitching MLPs with MLPs}
+Please flesh this out.
 
-\centerline{\bf Numbers and Arrays}
-\bgroup
-\def\arraystretch{1.5}
-\begin{tabular}{p{1in}p{3.25in}}
-$\displaystyle a$ & A scalar (integer or real)\\
-$\displaystyle \va$ & A vector\\
-$\displaystyle \mA$ & A matrix\\
-$\displaystyle \tA$ & A tensor\\
-$\displaystyle \mI_n$ & Identity matrix with $n$ rows and $n$ columns\\
-$\displaystyle \mI$ & Identity matrix with dimensionality implied by context\\
-$\displaystyle \ve^{(i)}$ & Standard basis vector $[0,\dots,0,1,0,\dots,0]$ with a 1 at position $i$\\
-$\displaystyle \text{diag}(\va)$ & A square, diagonal matrix with diagonal entries given by $\va$\\
-$\displaystyle \ra$ & A scalar random variable\\
-$\displaystyle \rva$ & A vector-valued random variable\\
-$\displaystyle \rmA$ & A matrix-valued random variable\\
-\end{tabular}
-\egroup
-\vspace{0.25cm}
+\section{Analysis and Interpretation of Results}
+\subsection{Interpretation}
+It didn't work.
 
-\centerline{\bf Sets and Graphs}
-\bgroup
-\def\arraystretch{1.5}
+\subsection{Significance}
+What this means for the future and the field.
 
-\begin{tabular}{p{1.25in}p{3.25in}}
-$\displaystyle \sA$ & A set\\
-$\displaystyle \R$ & The set of real numbers \\
-$\displaystyle \{0, 1\}$ & The set containing 0 and 1 \\
-$\displaystyle \{0, 1, \dots, n \}$ & The set of all integers between $0$ and $n$\\
-$\displaystyle [a, b]$ & The real interval including $a$ and $b$\\
-$\displaystyle (a, b]$ & The real interval excluding $a$ but including $b$\\
-$\displaystyle \sA \backslash \sB$ & Set subtraction, i.e., the set containing the elements of $\sA$ that are not in $\sB$\\
-$\displaystyle \gG$ & A graph\\
-$\displaystyle \parents_\gG(\ervx_i)$ & The parents of $\ervx_i$ in $\gG$
-\end{tabular}
-\vspace{0.25cm}
+\section{Conclusions}
+We'll write our conclusions in a nice format here.
 
-
-\centerline{\bf Indexing}
-\bgroup
-\def\arraystretch{1.5}
-
-\begin{tabular}{p{1.25in}p{3.25in}}
-$\displaystyle \eva_i$ & Element $i$ of vector $\va$, with indexing starting at 1 \\
-$\displaystyle \eva_{-i}$ & All elements of vector $\va$ except for element $i$ \\
-$\displaystyle \emA_{i,j}$ & Element $i, j$ of matrix $\mA$ \\
-$\displaystyle \mA_{i, :}$ & Row $i$ of matrix $\mA$ \\
-$\displaystyle \mA_{:, i}$ & Column $i$ of matrix $\mA$ \\
-$\displaystyle \etA_{i, j, k}$ & Element $(i, j, k)$ of a 3-D tensor $\tA$\\
-$\displaystyle \tA_{:, :, i}$ & 2-D slice of a 3-D tensor\\
-$\displaystyle \erva_i$ & Element $i$ of the random vector $\rva$ \\
-\end{tabular}
-\egroup
-\vspace{0.25cm}
-
-
-\centerline{\bf Calculus}
-\bgroup
-\def\arraystretch{1.5}
-\begin{tabular}{p{1.25in}p{3.25in}}
-% NOTE: the [2ex] on the next line adds extra height to that row of the table.
-% Without that command, the fraction on the first line is too tall and collides
-% with the fraction on the second line.
-$\displaystyle\frac{d y} {d x}$ & Derivative of $y$ with respect to $x$\\ [2ex]
-$\displaystyle \frac{\partial y} {\partial x} $ & Partial derivative of $y$ with respect to $x$ \\
-$\displaystyle \nabla_\vx y $ & Gradient of $y$ with respect to $\vx$ \\
-$\displaystyle \nabla_\mX y $ & Matrix derivatives of $y$ with respect to $\mX$ \\
-$\displaystyle \nabla_\tX y $ & Tensor containing derivatives of $y$ with respect to $\tX$ \\
-$\displaystyle \frac{\partial f}{\partial \vx} $ & Jacobian matrix $\mJ \in \R^{m\times n}$ of $f: \R^n \rightarrow \R^m$\\
-$\displaystyle \nabla_\vx^2 f(\vx)\text{ or }\mH( f)(\vx)$ & The Hessian matrix of $f$ at input point $\vx$\\
-$\displaystyle \int f(\vx) d\vx $ & Definite integral over the entire domain of $\vx$ \\
-$\displaystyle \int_\sS f(\vx) d\vx$ & Definite integral with respect to $\vx$ over the set $\sS$ \\
-\end{tabular}
-\egroup
-\vspace{0.25cm}
-
-\centerline{\bf Probability and Information Theory}
-\bgroup
-\def\arraystretch{1.5}
-\begin{tabular}{p{1.25in}p{3.25in}}
-$\displaystyle P(\ra)$ & A probability distribution over a discrete variable\\
-$\displaystyle p(\ra)$ & A probability distribution over a continuous variable, or over
-a variable whose type has not been specified\\
-$\displaystyle \ra \sim P$ & Random variable $\ra$ has distribution $P$\\% so thing on left of \sim should always be a random variable, with name beginning with \r
-$\displaystyle  \E_{\rx\sim P} [ f(x) ]\text{ or } \E f(x)$ & Expectation of $f(x)$ with respect to $P(\rx)$ \\
-$\displaystyle \Var(f(x)) $ &  Variance of $f(x)$ under $P(\rx)$ \\
-$\displaystyle \Cov(f(x),g(x)) $ & Covariance of $f(x)$ and $g(x)$ under $P(\rx)$\\
-$\displaystyle H(\rx) $ & Shannon entropy of the random variable $\rx$\\
-$\displaystyle \KL ( P \Vert Q ) $ & Kullback-Leibler divergence of P and Q \\
-$\displaystyle \mathcal{N} ( \vx ; \vmu , \mSigma)$ & Gaussian distribution %
-over $\vx$ with mean $\vmu$ and covariance $\mSigma$ \\
-\end{tabular}
-\egroup
-\vspace{0.25cm}
-
-\centerline{\bf Functions}
-\bgroup
-\def\arraystretch{1.5}
-\begin{tabular}{p{1.25in}p{3.25in}}
-$\displaystyle f: \sA \rightarrow \sB$ & The function $f$ with domain $\sA$ and range $\sB$\\
-$\displaystyle f \circ g $ & Composition of the functions $f$ and $g$ \\
-  $\displaystyle f(\vx ; \vtheta) $ & A function of $\vx$ parametrized by $\vtheta$.
-  (Sometimes we write $f(\vx)$ and omit the argument $\vtheta$ to lighten notation) \\
-$\displaystyle \log x$ & Natural logarithm of $x$ \\
-$\displaystyle \sigma(x)$ & Logistic sigmoid, $\displaystyle \frac{1} {1 + \exp(-x)}$ \\
-$\displaystyle \zeta(x)$ & Softplus, $\log(1 + \exp(x))$ \\
-$\displaystyle || \vx ||_p $ & $\normlp$ norm of $\vx$ \\
-$\displaystyle || \vx || $ & $\normltwo$ norm of $\vx$ \\
-$\displaystyle x^+$ & Positive part of $x$, i.e., $\max(0,x)$\\
-$\displaystyle \1_\mathrm{condition}$ & is 1 if the condition is true, 0 otherwise\\
-\end{tabular}
-\egroup
-\vspace{0.25cm}
-
-
-
-\section{Final instructions}
-Do not change any aspects of the formatting parameters in the style files.
-In particular, do not modify the width or length of the rectangle the text
-should fit into, and do not change font sizes (except perhaps in the
-\textsc{References} section; see below). Please note that pages should be
-numbered.
-
-\section{Preparing PostScript or PDF files}
-
-Please prepare PostScript or PDF files with paper size ``US Letter'', and
-not, for example, ``A4''. The -t
-letter option on dvips will produce US Letter files.
-
-Consider directly generating PDF files using \verb+pdflatex+
-(especially if you are a MiKTeX user).
-PDF figures must be substituted for EPS figures, however.
-
-Otherwise, please generate your PostScript and PDF files with the following commands:
-\begin{verbatim}
-dvips mypaper.dvi -t letter -Ppdf -G0 -o mypaper.ps
-ps2pdf mypaper.ps mypaper.pdf
-\end{verbatim}
-
-\subsection{Margins in LaTeX}
-
-Most of the margin problems come from figures positioned by hand using
-\verb+\special+ or other commands. We suggest using the command
-\verb+\includegraphics+
-from the graphicx package. Always specify the figure width as a multiple of
-the line width as in the example below using .eps graphics
-\begin{verbatim}
-   \usepackage[dvips]{graphicx} ...
-   \includegraphics[width=0.8\linewidth]{myfile.eps}
-\end{verbatim}
-or % Apr 2009 addition
-\begin{verbatim}
-   \usepackage[pdftex]{graphicx} ...
-   \includegraphics[width=0.8\linewidth]{myfile.pdf}
-\end{verbatim}
-for .pdf graphics.
-See section~4.4 in the graphics bundle documentation (\url{http://www.ctan.org/tex-archive/macros/latex/required/graphics/grfguide.ps})
-
-A number of width problems arise when LaTeX cannot properly hyphenate a
-line. Please give LaTeX hyphenation hints using the \verb+\-+ command.
-
-\subsubsection*{Author Contributions}
-If you'd like to, you may include  a section for author contributions as is done
-in many journals. This is optional and at the discretion of the authors.
-
-\subsubsection*{Acknowledgments}
-Use unnumbered third level headings for the acknowledgments. All
-acknowledgments, including those to funding agencies, go at the end of the paper.
-
+\section*{Acknowledgments}
+Thank you to the SuperUROP benefactors (MIT EECS) for funding this project.
 
 \bibliography{iclr2021_conference}
 \bibliographystyle{iclr2021_conference}
 
 \appendix
 \section{Appendix}
-You may include other additional sections here.
+More information will be added here with regards to less interpretable (or "failed")
+results, experimental details that were omitted in the previous section, and so forth.
 
 \end{document}
