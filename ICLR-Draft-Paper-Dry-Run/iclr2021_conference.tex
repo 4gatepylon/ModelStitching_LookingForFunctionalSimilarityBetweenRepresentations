@@ -173,95 +173,172 @@ of .txt log files. I need to get them into figures and tables that are interpret
 % 
 \section{Experimental Setup}
 \subsection{Definitions}
-To explain our experiment and its goals we must define a few terms. These give us a simple language we may
-use to discuss the idea of "modular mappings" of neural networks, which is an idea meant to help us understand how
-neural networks are functionally similar.
+We will define terminology so as to be able to discuss the representational and modular mappings
+which are the goal of our experiment. These mappings allow us to compare the functionality of
+different neural networks.
 
-\subsubsection*{Basic Definitions}
+\subsubsection*{Basic Definitions and Terminology}
 \begin{itemize}
-   \item Prefix: the first \(N\) layers of a neural network, \(A\). The prefix has length \(N\). We may call the prefix function \(A_{\leq N}\).
-   \item Suffix: the last \(M\) layers of a neural network \(B\). The suffix has length \(M\). We may call the suffix function \(B_{\geq K}\) where if there are \(L\) layers, \(K=L-M+1\).
-   \item Module: a subsequence of consecutive layers in a neural network, similar to the notion of a "substring" in computer systems. It can also be thought of as a prefix of a suffix, or a suffix of a prefix. It is denoted with the start and ending layers (inclusive). For example "\(C_{2,3}\)" is the module with layers 2 and 3 of network \(C\). It takes in the output from the first layer outputs the third layer's output. Note that single layers can be modules (i.e. \(C_{1,1}\) is both the first layer and the first possible module of \(C\)).
-   \item Submodule: a module inside a module. for example, \(C_{2,2}\) is a submodule of \(C_{2,3}\).
-   \item Supermodule: a module within which there is a module.
-   \item MLP (Multilayer Perceptron): a network comprised only of (FC) fully connected layers. We use exclusively the ReLU activation function.
-   \item CNN (Convolutional Neural Network): a network whose prefix uses convolutional (Conv) layers and suffix uses one or two FC layers for classification. We only use the ReLU activation function.
+   \item Representation: the intermediate output of a neural network, usually refered to as \(R_{A, i}\) if output from layer \(i\) of network \(A\).
+   \item Prefix: the first \(N\) layers of a neural network, \(A\). We may call the prefix function \(A_{\leq N}\) or \(A_{<N+1}\) if applicable.
+   \item Suffix: the last layers of a neural network \(B\), starting at layer \(K\). We may call the suffix function \(B_{\geq K}\) or \(B_{>K-1}\) if applicable.
+   \item Module: a subsequence of consecutive layers in a neural network, similar to the notion of a substring in computer systems. It can also be thought of as a prefix of a suffix, or a suffix of a prefix. It is denoted with the start and ending layers (inclusive). For example \(C_{2,3}\) is the module with layers 2 and 3 of network \(C\). During normal computation, the first layer outputs into it, and it outputs into the fourth layer. Note that single layers are also modules. \(C_{1,1}\) is both the first layer and the first possible module of \(C\). Moreover, prefixes and suffixes are modules.
+   \item Submodule: a module inside a module. for example, \(C_{2,2}\) is a submodule of \(C_{2,3}\). This will be used when we wish to describe the internals of modules.
+   \item Supermodule: a module within which there is a module. This will be used when we wish to group modules.
+   \item Sender: when, during normal computation, a module would recieve input from a previous module we call that previous module the sender. We may also say that a module is \emph{sending} when we wish to express that it is the sender.
+   \item Reciever: when, during normal computation, a module would send input to a subsequent module, we call that subsequent module the reciever. We may also say that a module is \emph{recieving} when we wish to express that it is the reciever.
+   \item Expected sender (or reciever): during normal computation, the module that would be the sender or the reciever to/from the current module.
+   \item Expected input (or output): the representation of the expected sender or reciever during normal computation.
 \end{itemize}
 
 \subsubsection*{Stitching}
-We define stitching in the same way as Bansal et. al. We stitch in only two ways: between fully-connected layers
-we stitch using linear layers, while between convolutional layers we use 1x1 convolutions. Say we wish to stitch
-two networks \(A\) and \(B\) with lengths \(a\) and \(b\). We will stitch the output of layer \(i\) from \(A\) into layer \(j+1\) in \(B\). That
-is to say we will input \(R_{A,i}\) where \(R_{B,j}\) is expected through a stitch (and thus be able to compare those two 
-representations using the accuracy of the network). We take our stitch \(S\) and define the stitched network \(AB_{i \rightsquigarrow j}\)
-as \(B_{\geq b-j+1} \circ S \circ A_{\leq i}\). If that resulting stitched network has a high accuracy, we infer that the
-aforementioned representations are similar and we use the notation \(AB_{i \rightarrow j}\). If the resulting network has low accuracy,
-we infer that the two representations are not similar and we use the notation \(AB_{i \not{\rightarrow} j}\). If the resulting network
-has high accuracy for a given stitch we say that the two networks are "stitchable" at those layers, and otherwise we say they are not
-stitchable.
+We define stitching in the same way as Bansal et. al. 
+Say we wish to stitch two networks \(A\) and \(B\).
+We will calculate the output of a prefix of \(A\),
+input it into our stitch \(S\), and then input the output
+of \(S\) into a suffix of \(B\). Say we take the
+output of \(A\) at layer \(i\), input it into \(S\),
+and then take the output of \(S\) and input it into
+\(B\) at layer \(j+1\). We say that layer \(i\) of
+\(A\) was stitched \emph{into} layer \(j+1\) of \(B\).
+The composition \(S \circ A_{\leq i}\) has replaced
+the expected sender, \(B_{\leq j}\) of \(B_{>j}\).
+As discussed by Bansal et. al, this enables us to compare
+the representations \(R_{A,i}\) and \(R_{B,j}\).
 
-Recall that the stitch is a learned transformation. That is to say, we use gradient descent to approximate the best possible stitch
-for any given pair of layers, while freezing all the layers of the two networks.
+The stitch \(S\) is a function whose domain is the set of possible \(R_{A,i}\)
+and whose range is in the same space as \(R_{B,j}\). It is constrained to use a simple
+function class. We choose to use exclusively 1x1 convolutions and linear layers for
+convolutional and fully-connected layers, respectively. Moreover we do not stitch from
+fully-connected layer representations (vectors) to convolutional layer representations (tensors)
+or vice versa, instead choosing to compare vectors with vectors and tensors with tensors of
+the same width and height. We also constrain \(i\) and \(j\) to those values such
+that \(j+1\) exists.
+
+The network formed with \(B_{\geq j+1} \circ S \circ A_{\leq i}\) is called the 
+\emph{stitched network} and is often denoted as \(AB_{i \rightsquigarrow j+1}\). The stitched 
+network is frozen in all layers except for \(S\), which is trained with gradient descent
+so as to approximate the best possible choice for \(S\). If the resulting accuracy
+is high
+\footnote{This will be defined in the experiment}, 
+then we refer to the stitched network as \(AB_{i \rightarrow j+1}\) and we say
+that \(A\) is \emph{stitchable} to \(B\) through those layers: \(\exists AB_{i \rightarrow j+1}\).
+If the resulting accuracy is low, we refer to the stitched network as \(AB_{i \not{\rightarrow} j+1}\)
+and we say that \(A\) is not stitchable to \(B\) through those layers.
 
 \subsubsection*{Representational Mappings}
-We frame them in terms
-of a mapping between pairs of networks \(A, B\), where \(A\) has at most as many layers as \(B\).
+A representational mapping between neural networks \(A\) of length and \(B\) is a mapping that assigns
+at most one \(R_{B,j}\) for every \(R_{A,i}\). We sometimes use the layer indices \(i\) and \(j\)
+as shorthand.
 
-We may roughly establish the mapping as follows: for each representation \(R_{A,i}\)
-in \(A\), where \(i\) denotes that the representation is the output of layer \(i\), the representation is associated (i.e. "mapped")
-to \(R_{B,j}\), the representation output by layer \(j\) in \(B\), if \(R_{B,j}\) is the most similar representation to \(R_{A,i}\) over all possible \(j\) and the similarity is nearly maximal (that is to say, the accuracy of the stitched network \(AB_{i \rightarrow j}\) is close to 100\%)\footnote{Note that we could also define it as "if it is sufficiently similar." We neglect this for now since we wish to enforce that the mapping be a mathematical mapping. If our analysis yields otherwise, then we will revise this definition.}.
-Intuitively this says that those two representations are, to an extent, interchangeable.  We hope that this mapping will be injective and monotonic.
-By monotonic we simply mean that if \(i_{1} < i_{2}\), \(i_{1}\) maps to \(j_{1}\), and \(i_{2}\) maps to \(j_{2}\), then it should be the case that \(j_{1} < j_{2}\).
+We establish the mapping as follows: for each valid \(i\) in \(A\), find the \(j\) in \(B\)
+such that \(R_{A,i}\) is most similar to \(R_{B,j}\) out of all possible \(j\) and
+\(\exists AB_{i \rightarrow j+1}\). We refer to the mapping as \(A \rightarrow B\)
+% Begin Footnote
+\footnote{Note that we could also define it as based on a threshold accuracy.
+We neglect this for now since we wish to enforce that the mapping is in fact a mapping}.
+% End Footnote
+Intuitively this says that those two representations are, to an extent, interchangeable.
+We hope that this mapping will be injective and monotonic.
+By monotonic we simply mean that if \(i_{1} < i_{2}\), \(i_{1}\) maps to \(j_{f1}\),
+and \(i_{2}\) maps to \(j_{2}\), then it should be the case that \(j_{1} < j_{2}\).
+\footnote{If we were to define some notion of the the abstraction of a layer's
+representation, monotonicity would be equivalent to transitivity of that notion}.
 
-The precise reader will note that while the representations may be interchangeable in one direction they may not be in both, depending on the type of stitch. That is to say, \(R_{A,i}\) may be stitchable into the layer expecting \(R_{B, j}\), while 
-it is not possible to stitch \(R_{B,j}\) into the layer expecting \(R_{A,i}\)\footnote{If it is necessary, we may henceforth call "the layer in network \(D\) execting \(X\) for any \(X\) to be the "expectant of \(X\) in \(D\)." Generally, I'd like to define some more terms and clean up my language, a lot, to make this easy to read.}.
-However, since we are using linear transformations or 1x1 convolutions are our stitches, this should only be the case for drastic changes in dimensionality. We will not explore this yet. Nonetheless, we will use a precise notation to specify whether two layers
-are stitchable in one direction, the other, or both. Specifcially, we use \(\rightarrow\) and \(\leftarrow\) to signify which layer\footnote{Or... representation. We need more precise language here.} can be stitched in which other. Generally, though
-we will use \(\rightarrow\) and simply swap the order of the operands if need be. If we wish to express that both directions are stitchable we will use \(\leftrightarrow\). Thus, if we can stitch layers \(i\) and \(j\) in networks \(A\) and \(B\) respectively,
-in both directions, we can refer to their stitched networks as \(AB_{i \leftrightarrow j}\) and \(BA_{j \leftrightarrow i}\), depending on the order of composition. Moreoer, when we define a representational mapping, we may define it in either direction or in both,
-using the following shorthand: \(A \rightarrow B\), \(B \rightarrow A\), \(A \leftrightarrow B\) or \(B \leftrightarrow A\). We define the two-way mapping as the mapping induced by all the layer pairs \(i\) and \(j\) in \(A\) and \(B\) respectively, such that those
-layers map to eachother in each of the one-way mappings (i.e. in either direction they are, colloquially speaking, the most similar layer)\footnote{This can also be defined as a union over the two mappings' pairs}. Note that the two-way mapping is not a mathematical
-mapping since not all elements in the domain are guaranteed an entry in the range\footnote{You can define the layers/their corresponding representations in one network in the domain and the others as the range, choosing which network is which based on what is most convenient to you.}.
+The precise reader will note that while the representations may be interchangeable in one direction
+they may not be in both, depending on the type of stitch. That is to say,  \(\exists AB_{i \rightarrow j+1}\)
+does not imply \(\exists BA_{j \rightarrow i+1}\), even with linear transformations and 1x1 convolutions
+because of the possibility of drastic changes in dimensionality. We use \(\rightarrow\) and \(\leftarrow\)
+or flip the order of the operands to differentiate the two directions.
+When we wish to express \(\exists AB_{i \rightarrow j+1} \land \exists BA_{j \rightarrow i+1}\),
+we may often say \(AB_{i \leftrightarrow j}\). We may also define a two-way representational mapping,
+\(A \leftrightarrow B = (A \rightarrow B) \cap (B \rightarrow A)\), though it is not a mapping
+in the mathematical sense, but instead a list of tuples.
+% Begin Footnote
+\footnote{For a set of tuples \(C\), Define the reverse tuple set \(V(C) = \{(b, a) \forall (a, b) \in C\}\).
+For a mapping \(f: D \to R\) we define its set of tuples, \(T(f) = \{(x, f(x)) \forall x \in D\}\).
+For \(f: D \to R, g: R \to D\), we define \(f \cap g = T(f) \cap V(T(g))\). We can also define
+\(f \cup g = T(f) \cup V(T(g))\). Note that \(f \cap g\) is always a subset of \(D x R\), and
+that \(f \cap g = V(g \cap f)\)}.
+% End Footnote
+
+The precise reader will also note that high accuracy should be relative to some baseline. We define what is high
+experimentally based on what accuracies are observed for stitches that we expect to be high (i.e. between identical
+network instances and/or network architectures). When stitching different architectures we compare the accuracy
+with that of the \emph{least accurate} architecture that went into the stitch. That means that if we stitch from
+a very large (or wide) network to a very small one, or vice versa, we should expect the smaller network to be a
+bottleneck on accuracy. It would be unrealistic to expect equal or better performance for, say,
+\(AB_{i \rightsquigarrow j+1}\) relative to \(A\), if \(B\) drastically reduced the dimensionality of suffix layers or depth of the recieving 
+suffix, and by the same token \(BA_{j \rightsquigarrow i+1}\) should not be expected to be at least as accurate as \(B\)
+if instead \(A\) vastly reduced the dimensionality of of prefix layers or the depth of the sending prefix.
 
 \subsubsection*{Modular Mapping}
-Additionally to the notion of a representational mapping, we establish a more general notion\footnote{Representational mappings are the same as modular mappings of layers.} of
-a "modular" mapping based on modules: continuous subsequences of layers. The modular mapping allows us to
-create a meaningful mathematical mapping between two neural networks. It helps us describe which modules
-of each network are "interchangeable" with modules in the other network, giving us a notion of shared functionality\footnote{We have discussed a potential experiment in which we try to "swap out" intermediate sequences of layers for two networks. This is covered by the experimental scheme we have due to the fact that we do representational mappings in both ways. One only needs to interpret representational mappings to find modular mappings, not do more work. By finding two representational mappings for the ends of the module that was "swapped out" we can infer that it is possible to swap out.}.
+Using our representational mappings, we establish a more general notion of modular mappings based on modules. A Modular mapping
+tells us about what modules in two different neural networks might have shared functionality based on representational similarity.
+Intuitively, if one module is mapped to another, then the latter can be swapped out for the former, with two stitches, in the latter's network.
+Informally, for two networks \(A\) and \(B\), \(A_{i_1, i_2}\) is mapped to \(B_{j_1, j_2}\) if we can find a pair of stitches \(S_1, S_2\), such that the accuracy is high for
+\(B_{>j_2} \circ S_1 \circ A_{i_1,i_2} \circ S_2 \circ B_{<j_1}\). Since it's possible to infer this from \(A \rightarrow B\) and \(B \rightarrow A\),
+however, we define it formally in a slightly different way.
 
-A modular mapping is a mapping from modules of one network \(A\) to modules of another network \(B\). It is denoted by \(A \Rightarrow B\). Two modules \(A_{i_1,i_2}\) and \(B_{j_1, j_2}\) are mapped
-if \(\exists BA_{j_1-1 \rightarrow j_1} \land \exists AB_{i_2 \rightarrow j_2+1}\). Basically, if for some pair of stitches \(S_1, S_2\), the accuracy is high for \(B_{>j_2} \circ S_1 \circ A_{i_1,i_2} \circ S_2 \circ B_{<j_1}\).
-For a specific mapping of two modules we use the notation \(A_{i_1, i_2} \Rightarrow B_{j_1, j_2} \). Due to the unidirectional nature of representational mappings, modular mappings are also unidirectional. However, if a two-directional
-mapping exists on each end of each module\footnote{I think this is correct but very confusing. The reason is that the two-way representational mapping considers layer weights (i.e. edges) and not layer representations. The layer to which you map is not the layer from which you map in the reverse since it is the expectant. I've been super sloppy and need to do a better job here.}, then we can use the notation \(A_{i_1, i_2} \Leftrightarrow B_{j_1, j_2}\). If we consider only pairs that are two-way mappable we can define the two-way modular mapping \(A \Leftrightarrow B\).
+For any two modules, \(A_{i_1, i_2}, B_{j_1, j_2}\), from two neural networks, \(A\) with length \(N\) and \(B\) with length \(M\), we define the \emph{interchangeability}
+predicate \(I(i_1, i_2, j_1, j_2) = \exists BA_{j_1 - 1 \rightarrow i_1} \land \exists AB_{i_2 \rightarrow j_2 + 1}\).
+We assume that \(i_1 \in [1, N-1], i_2 \in [i_1, N-1], j_1 \in [1, M-1], j_2 \in [j_1, M-1]\) and that those choices for
+\(i_1, i_2, j_1, j_2\) enable valid stitches: 1x1 convolutions between two tensors of the same width and height or
+linear layers between two vectors (whose widths may vary). Denoting whether it is valid to stitch from \(i\) into \(j+1\) with \(V(i, j)\),
+the modular mapping is then defined as the set of tuples
+\(A \Rightarrow B = \{(A_{i_1, i_2}, B_{j_1, j_2}) \forall i_1, i_2, j_1, j_2 \mid V(j_1-1, i_1) \land V(i_2, j_2+1) \land I(i_1, i_2, j_1, j_2)\}\).
 
-We wish to find an ideally mononic modular mapping between two networks. We present a very simple algorithm\footnote{There is a factor of 2 optimization by calculating the representational similarity if you continue to assume/enforce monotonicity.}
-Our algorithm (shown below) finds the first modular mapping it can that is monotonic\footnote{A non-monotonic mapping can be found with a simple brute force which maybe I can outline in the appendix. It can be transformed into a modular mapping by iteratively merging modules where there is an order flip, if those are found. Also note this algorithm is a bit sloppy.}.
+
+For two modules \(M_A = A_{i_1, i_2}, M_B = B_{j_1, j_2}\), if \((M_A, M_B) \in (A \Rightarrow B)\) then we say \(M_A \Rightarrow M_B\). If it is
+also the case that \(M_B \Rightarrow M_A\) then we say \(M_1 \Leftrightarrow M_2\). The set of such possible two-way mappings is defined as
+\(A \Leftrightarrow B = (A \Rightarrow B) \cap (B \Rightarrow A)\). As with representational mappings, we may use the indices
+\(i_1, i_2, j_1, j_2\) as shorthand.
+
+To find these modular mappings we can simply brute force for all possible indices, \(i_1, i_2, j_1, j_2\),
+given our pre-computed representational mappings. If we denote the length (in layers) of \(A\) as \(N_1\) and
+that of \(B\) as \(N_2\), The runtime of the brute force algorithm is \(\mathcal{O}(\alpha N_1 N_2)\) where \(\alpha\) is
+the worst-case time necessary to optimize a stitch between any pair of layers.
+
+However, we would prefer to try and enforce monotonicity of the modular mapping. If two modules, \(M_1 = A_{i_1, i_2}, M_2 = A_{i_3, i_4}\),
+have the property that \(i_2 < i_3\), we say that \(M_1 < M_2\). Monotonicity means that of we have any two modules in \(A\),
+\(M_{A_1}, M_{A_2}\), and any two modules in \(B\), \(M_{B_1}, M_{B_2}\), such that \(M_{A_1} \Rightarrow M_{B_1}\)
+and \(M_{A_2} \Rightarrow M_{B_2}\), then \(M_{A_1} < M_{A_2}\)implies \(M_{B_1} < M_{B_2}\). Monotonicity is preferable, because
+it makes the mapping more interpretable. It may not be the case that the modular mapping is monotonic, but we can instead choose to
+focus on a subset it that is. We present an algorithm below which given two neural networks finds a monotonic subset of
+\(A \Rightarrow B\).
+%Begin Footnote
+\footnote{It can trivially be augmented to consider only elements of \(A \Leftrightarrow B\) or those that satisfy some predicate
+simply by taking an interesect with the corresponding set.}
+%End Footnote
+
 \begin{algorithm}
-\caption{Monotonic Modular Mapping (informal)}
+\caption{Find A Monotonic Modular Mapping Subset}
 \begin{algorithmic}[h]
-\Procedure{Find \(A \Rightarrow B\)}{} 
-      \State Pretrain \(A\) and \(B\) seperately
+\Procedure{MFind(\(A\), \(B\))}{}
+      \State Pretrain and Freeze \(A\) and \(B\) seperately
       \State \(A\) has length \(N\)
       \State \(B\) has length \(M\)
-      \State Find \(A\rightarrow B\)
-      \State Find \(B\rightarrow A\)
-      \State \(i_{start} = 0\)
-      \State \(j_{start} = 0\)
-      \For{\(i_{end} \in [0, N]\)}
-         \For{\(j_{end} \in [j_{start}, M]\)}
-            \If{\(A_{i_{end}} \rightarrow B_{j_{end}}\)}
-               \State Register \(A_{i_{start}, i_{end}} \Rightarrow B_{j_{start}, j_{end}}\)
+      \State Find \(A\rightarrow B\) through brute force
+      \State Find \(B\rightarrow A\) through brute force
+      \State \(i_{start} = 1\)
+      \State \(j_{start} = 1\)
+      \State Initialize \(MM = \{\}\)
+      \For{\(i_{end} \in [1, N-1]\)}
+         \For{\(j_{end} \in [j_{start}, M-1]\)}
+            \If{\((B_{j_{start}-1} \rightarrow A_{i_{start}}) \land (A_{i_{end}} \rightarrow B_{j_{end}+1})\)}
+               \State Add \((A_{i_{start}, i_{end}}, B_{j_{start}, j_{end}})\) to \(MM\)
                \State \(i_{start} = i_{end} + 1\)
                \State \(j_{start} = j_{end} + 1\)
                \State Break Inner Loop
             \EndIf
          \EndFor
       \EndFor
+      \State Return \(MM\)
 \EndProcedure
 \end{algorithmic}
 \end{algorithm}
 
-\subsection{Hypotheses}
+\subsection{Hypotheses TODO}
 Now that we know how to talk about modules, we introduce 4 main idealized cases that may present themselves when we
 try to modularly map two different neural networks of different sizes. We assume that these mappings are all monotonic.
 \begin{itemize}
@@ -290,7 +367,7 @@ only meant to highlight the key intuitions behind these terms. The mapping types
    \item Realms (or Realm Mapping): a direction-agnostic pairing of supermodules such that across the pair of modules, mappings are either all L2L, L2M, M2M, N, or otherwise following an interpretable pattern. This can be defined for either one-way modular mapping or the two-way modular mapping.
 \end{itemize}
 
-\subsection{Goals}
+\subsection{Goals TODO}
 The goal for our experiments was to understand the similarities between different neural networks by searching
 for modular mappings. To help us understand if different architectures were learning the same sorts of solutions,
 we trained them seperately and tried to find elegant modular mappings between them. More broadly, we wish to confirm
@@ -298,7 +375,7 @@ that modular mappings are exclusively monotonic and explore the different modula
 of relevant networks.
 
 %%% The more precise, concrete section begins here
-\subsection{Networks and Dataset}
+\subsection{Networks and Dataset TODO}
 We focused on varying only the random seed of the neural network. To simplify our analysis we also used the MNIST dataset
 (do to its small size) and relatively small neural networks. We established two classes of networks: CNNs and MLPs.
 We only compared CNNs (Convolutional Neural Networks) with other CNNs and MLPs (Multilayer Perceptrons) with other MLPs.
@@ -321,7 +398,7 @@ Our choice of networks were the following:
 For training we trained for 40 epochs or until high accuracy using stochastic gradient descent with no
 weight decay or learning rate schedule. Batch normalization or other such techniques were not used.
 
-\subsection{Tests and Controls}
+\subsection{Tests and Controls TODO}
 TODO\footnote{I HAVE INSERTED THESE TODOS WHILE I WORK TO REMIND MYSELF OF WHAT REMAINS TO BE DONE.}
 
 We established some basic controls to
