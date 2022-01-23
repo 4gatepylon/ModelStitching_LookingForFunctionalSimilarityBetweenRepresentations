@@ -1,15 +1,31 @@
-from examples_cnn import NET_3_2 as C32
+import os
+import argparse
+from tkinter.messagebox import NO
+from unittest.mock import DEFAULT
+import torch
+import torch.optim as optim
+
+from datetime import datetime
+from torch.optim.lr_scheduler import StepLR
+
+from examples_cnn import (
+    NET_3_2 as C32,
+    NET_3_2_TO_NET_3_2_STITCHES as C32T32,
+)
+from examples_tinycnn import (
+    NET_CTINY as CT,
+    NET_CTINY_TO_NET_CTINY_STITCHES as CT2T,
+)
 
 from hyperparams import (
-    DEFAULT_TRAIN_BATCH_SIZE,
-    DEFAULT_TEST_BATCH_SIZE,
+    # NOTE these are default form the Pytorch MNIST example
+    # (and so are train and test batch size)
     DEFAULT_LR,
     DEFAULT_LR_EXP_DROP,
+
+    # NOTE these may require some tweaking
     DEFAULT_EPOCHS_OG,
     DEFAULT_EPOCHS_STITCH,
-    NUM_EXPERIMENTS,
-    NUM_STITCH_EXPERIMENTS,
-    DOWNLOAD_DATASET,
 )
 
 from net import (
@@ -17,6 +33,14 @@ from net import (
     get_stitches,
     StitchedForward,   
 )
+
+from training import (
+    init,
+    train1epoch,
+    test,
+)
+
+DEFAULT_SANITY_INSTANCES = 5
 
 # This file is going to do basically what main does, but only sanity checks
 # Sanity checks are going to be simple. We illustrate one sanity check below. We will do
@@ -73,77 +97,174 @@ from net import (
 #   VISUALIZE AvgPenalty by creating a heat-map grid with each row or column being
 #     j and k - 1. Very importantly, note that all the j, k elements go to -> j, k - 1.
 #     This allows us to compare the representations as we wanted to do to begin with.
+#
 
-def train_n(train_func, n):
-    models = [None] * n
-    accs = [0] * n
-    for _ in range(n):
-        models[i], accs[i] = train_func()
-    return models
+def train_og(model, device, train_loader, test_loader, epochs=DEFAULT_EPOCHS_OG):        
+    # NOTE we may want to use vanilla gradient descent in the future, but this should be fine (it's default).
+    # https://pytorch.org/docs/stable/generated/torch.optim.SGD.html
+    # https://pytorch.org/docs/stable/generated/torch.optim.Adadelta.html
+    # https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.StepLR.html
+    optimizer = optim.SGD(model.parameters(), lr=DEFAULT_LR)
+    scheduler = StepLR(optimizer, step_size=1, gamma=DEFAULT_LR_EXP_DROP)
 
-def stitch_all(stitch_func, valid_st_func, models, accs, num_layers,  pivot_idx=0):
-    # penalties[n][num_layers * num_layers]
-    # index penalties[i][j][k] as penalties[i][j*num_layers + k]
-    # assuming k < num_layers and j < num_layers
-    stitches = [None] * n
-    penalties = [None] * n
-    for i in range(n):
-        penalties[i] = [None] * (num_layers * num_layers)
-        stitches[i] = [None] * (num_layers * num_layers)
-    
-    pivot = models[pivot_idx]
-    for i in range(len(models)):
-        compared = models[i]
-        # exclude the last layer as outputting
-        # do not "output" the image
-        for layer_1_outputting in range(1, num_layers):
-            # include the last layer as inputting
-            # do not input into the first layer
-            for layer_2_inputting in range(2, num_layers+1):
-                if valid_st_func(layer_1_outputting, layer_2_inputting):
-                    # we are comparing layers j with k by inputting j's output
-                    # into k+1's input (expecting k's output) through a stitch
-                    # this is a little different from the docs above, so keep it in mind
-                    j = layer_1_outputting
-                    k = layer_2_inputting - 1
-                    stitched, st_acc = stitch_func(pivot, compared, layer_1_outputting, layer_2_inputting)
-                    stitches[i][j * num_layers + k] = stitched
+    for epoch in range(1, epochs):
+        print("Training og epoch {}".format(epoch))
+        train1epoch(model, device, train_loader, optimizer)
+        test(model, device, test_loader)
+        scheduler.step()
+    train1epoch(model, device, train_loader, optimizer)
+    _, test_acc = test(model, device, test_loader)
+    return test_acc
 
-                    # note that we can recover the st_accs using accs, so no need to store
-                    penalties[i][j * num_layers + k] = min(accs[pivot_idx], accs[i]) - st_acc
-    
-    # note that for the sanity checks it may not be necessary to store
-    # stitches and instead we may prefer to delete to lower memory consumption
-    return stitches, penalties
+# NOTE that we use reciever format
+def train_stitch(model1, model2,
+    layer1_idx, layer2_idx,
+    stitch,
+    device, train_loader, test_loader, epochs):
+    stitched_model = StitchedForward(model1, model2, stitch, layer1_idx, layer2_idx)
 
-# find L1, L2, etcetera...
-def derive_penalty_statistics(penalties):
-    avg, L1, L2 = None, None, None
-    return avg, L1, L2 # TODO
+    # we only optimize the parameters in the stitch
+    for p in model1.parameters():
+        p.requires_grad = False
+    for p in model2.parameters():
+        p.requires_grad = False
 
-def make_sanity_checks(
-    num_layers,
-    penalties, avg_penalties, L1_penalties, L2_penalties, 
-    epsilon0, epsilon1, epsilonl1, epsilonl2, delta):
-    # make sure that models were self-stitchable for single models
-    for n in range(penalties):
-        for i in range(num_layers):
-            assert penalties[n][i][i] <= epsilon0
-    
-    # make sure that models were self-stitchable for a given architecture
-    # and that this was the case consistently
-    for i in range(num_layers):
-        assert avg_penalties[i][i] <= epsilon
-        assert L1_penalties[i][i] <= epsilonl1
-        assert L2_penalties[i][i] <= epsilonl2
-    
-    # make sure that layers that really should be different were not similar
-    for i in range(num_layers):
-        for j in range(0, i):
-            assert avg_penalties[i][j] >= delta
-        for j in range(i+1, num_layers):
-            assert avg_penalties[i][j] >= delta
+    # NOTE we may want to use vanilla gradient descent in the future but this should be
+    # fine since it's default.
+    optimizer = optim.Adadelta(stitch.parameters(), lr=DEFAULT_LR)
+    scheduler = StepLR(optimizer, step_size=1, gamma=DEFAULT_LR_EXP_DROP)
 
-# TODO visualizations
-# 1. Grid heatmap (of average penalties)
-# 2. Depth dimension of that grid ^ (i.e. not the average, but the distribution): one per i, j pair
+    for _ in range(1, epochs):
+        train1epoch(stitched_model, device, train_loader, optimizer)
+        test(stitched_model, device, test_loader)
+        scheduler.step()
+        # TODO logging (and VISUALIZE here using tensorboardX... use a better format, once more,
+        # than we did in "main")
+    train1epoch(stitched_model, device, train_loader, optimizer)
+    _, test_acc = test(stitched_model, device, test_loader)
+    return test_acc
+
+if __name__ == "__main__":
+    train_loader, test_loader, device = init()
+
+    # For each type of model, train DEFAULT_SANITY_INSTANCES of them (right under the import statement)
+    for net_layers, net_valid_stitches, net_name in [
+        (CT, CT2T, "CT"),
+        # (C32, C32T32, "C32"),
+    ]:
+        print("Sanity checking stitches {}->{}".format(net_name, net_name))
+        # models will store each model
+        # stitches will store dictionaries of each layer to layer stitch (unique per pair: pivot, models[i])
+        # penalties will store the difference in new loss minus minimum original loss
+        # accs will store the accuracies of each of the trained models, originally
+        # pivot_idx is the index of the models which is to be the pivot
+        models = [None] * DEFAULT_SANITY_INSTANCES
+        stitches = [None] * DEFAULT_SANITY_INSTANCES
+        accs = [None] * DEFAULT_SANITY_INSTANCES
+        penalties = [None] * DEFAULT_SANITY_INSTANCES
+        pivot_idx = 0
+        print("Training {} instances".format(DEFAULT_SANITY_INSTANCES))
+        for i in range(DEFAULT_SANITY_INSTANCES):
+            print("On Instance {}".format(i))
+            models[i] =  Net(layers=net_layers).to(device)
+            accs[i] = train_og(models[i], device, test_loader, train_loader, epochs=DEFAULT_EPOCHS_OG)
+            stitches[i] = get_stitches(models[pivot_idx], models[i], net_valid_stitches)
+            
+            # Stitch each pair (pivot, model) and get the penalties
+            penalties[i] = {}
+            for l1_recv, l2_recvs in net_valid_stitches.items():
+                penalties[i][l1_recv] = {}
+                for l2_recv in l2_recvs:
+                    l1_send = l1_recv - 1
+                    l1_send = l2_recv - 1
+                    assert l1_send > 0
+                    assert l1_send > 0
+                    print("Training a stitch from {} to {}".format(l1_recv-1, l2_recv-1))
+
+                    st = stitches[i][l1_recv][l2_recv]
+                    st_acc = train_stitch(models[pivot_idx], models[i], l1_recv, l2_recv, st, device, train_loader, test_loader, DEFAULT_EPOCHS_STITCH)
+                    pen = min(accs[pivot_idx], accs[i]) - st_acc
+                    penalties[i][l1_recv][l2_recv] = pen
+                    print("Got acc {} and penalty {}".format(st_acc, pen))
+        
+        # NOTE we do sanity checks without tensors because of the asymmetry present
+        # in certain cases like C32.
+
+        # Initialize errors
+        errors = [1 - acc for acc in accs]
+
+        # Initialize avg penalties
+        avg_penalties = {}
+        for key, value in penalties[pivot_idx].items():
+            avg_penalties[key] = {}
+            for vkey in value.keys():
+                avg_penalties[key][vkey] = 0.0
+        # Fill avg penalties (sum) and then divide
+        for key, value in avg_penalties.items():
+            for vkey in avg_penalties.keys():
+                for i in range(DEFAULT_SANITY_INSTANCES):
+                    avg_penalties[key][vkey] += penalties[i][key][vkey]
+                avg_penalties[key][vkey] /= DEFAULT_SANITY_INSTANCES
+        
+        # We are going to create a matrix which is indexxed by [i][j] where
+        # i is the model (up to DEFAULT_SANITY_INSTANCES) and j is the layer in the model
+        # that was self-stitched. We use two dictionaries: key2idx, and idx2key to remember
+        # which idx in the matrix (in j: the row) corresponds to what layer
+        key2idx = {}
+        idx2key = {}
+        matrix = [None] * DEFAULT_SANITY_INSTANCES
+        for key, value in penalties[pivot_idx].items():
+            if key in value:
+                key2idx[key] = len(key2idx)
+                idx2key[len(idx2key)] = key
+        num_layers_self_stitch = len(key2idx)
+        # Here we fill in the matrix
+        for i in range(DEFAULT_SANITY_INSTANCES):
+            matrix[i] = [penalties[i][idx2key[j]][idx2key[j]] for j in range(num_layers_self_stitch)]
+
+        matrix = torch.tensor(matrix).float()
+        avg_penalties_self = matrix.mean(0)
+        l2_penalties_self = matrix.var(0)
+
+        # The error percentage (1 - acc[i]) should be under 10%
+        org = 0.1
+
+        # The average penalty percentage (1 - penalty[:][l1][l2 = l1]) should be under 0.2 and the
+        # specific penalty percentage (1 - penalty[i][l1][l2 = l1]) should be under 0.15
+        epsilon = 0.2
+        epsilon0 = 0.15
+
+        # The average displacement and average squared displacement (variance) of 
+        # (1 - penalty[:][l1][l1]) should be under 20% and 30%
+        epsilon_L1 = 0.2
+        epsilon_L2 = 0.3
+
+        # The average penalty percentage (1 - penalty[:][l1][l2 != l1]) should be over 50%
+        # (note that totally random is 10% accuracy which is a 90% error percentage)
+        delta = 0.5
+        
+        # At this point all the penalties should be loaded in memory as should the accs, the models, and the stitches
+        for i in range(DEFAULT_SANITY_INSTANCES):
+            print("Model {} had error {} should < {}".format(i, errors[i], org))
+        # Check that the exact self-stitching penalty is low
+        for i in range(DEFAULT_SANITY_INSTANCES):
+            for key, value in penalties[i].items():
+                if key in value:
+                    print("Model {} Penalty from layer {} to itself was {} should < {}".format(i, key, penalties[i][key][key], epsilon0))
+        # Check that average self-stitching penalty is low
+        for j in range(num_layers_self_stitch):
+            print("Avg Penalty from layer {} to itself was {} should < {}".format(idx2key[j], avg_penalties_self[j], epsilon))
+        # Check that the non-self stitching penalty is high
+        for key, value in avg_penalties.items():
+            for vkey, val in value.items():
+                if key != vkey:
+                    print("Avg Penalty from layer {} to {} was {} should > {}".format(key, vkey, avg_penalties[key][vkey], delta))
+        
+        
+        # TODO L1
+        # TODO visualizations
+        # 1. Grid heatmap (of average penalties)
+        # 2. Depth dimension of that grid ^ (i.e. not the average, but the distribution): one per i, j pair
+        # TODO save the models (as state dicts or something else which does not depend on this namespace)
+        # 1. models
+        # 2. stitches

@@ -5,6 +5,7 @@ from torchvision import datasets, transforms
 from hyperparams import (
     DEFAULT_TRAIN_BATCH_SIZE,
     DEFAULT_TEST_BATCH_SIZE,
+    DOWNLOAD_DATASET,
 )
 
 # Simple train function to run a single epoch of training

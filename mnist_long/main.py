@@ -37,7 +37,6 @@ from hyperparams import (
     DEFAULT_EPOCHS_STITCH,
     NUM_EXPERIMENTS,
     NUM_STITCH_EXPERIMENTS,
-    DOWNLOAD_DATASET,
 )
 
 from net import (
@@ -198,6 +197,9 @@ if __name__ == "__main__":
         ("F5", F5, "F5", F5, F5T5, "F5T5"),
         ("F8", F8, "F8", F5, F8T8, "F8T8"),
     ]
+    # NOTE: inter-network is not totally worked out since we don't know
+    # what stitches are valid (at least, explicitely... we have to infer from
+    # the fact that C3 is a prefix of C4 and C10 and that C4 is a prefix of C10).
     inters = [
         # Convolutional Inter-network
         ("C32", C32, "C42", C42, C32T42, "C32T42"),
