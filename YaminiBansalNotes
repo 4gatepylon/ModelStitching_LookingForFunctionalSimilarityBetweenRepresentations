@@ -1,0 +1,7 @@
+Sorry for the wait. I looked into the repository and have attached a version of it. Unfortunately, this repository is a monolith that I have used for a lot of other projects, so there will be a lot of legacy/unrelated code in it. I will not have the time to refactor it in the next few weeks, so I thought I'll send whatever I have in case it's helpful.
+
+1. To get started, you want to look into the folder 'stitching-public/run_scripts/'. This contains a list of all the hyperparameters used for training. For eg: The file stitch_r18k_cf10_numsamples.py will have the parameters for the experiment with stitching networks with different number of samples. 
+2. As this file also shows, the main python file to perform stitching is source/noise_ens_dev.py
+3. The stitching code is in source/utils/model_stitching.py
+
+I apologize again that the code is not in a clean, runnable state, but if you want to use it to cross-reference hyperparameter values or see design choices for stitching, it can still be helpful. I am also happy to do a 15 min call if you want a walk-through of the code design or if you have any questions. But unfortunately I won't have time to clean it up to a runnable state :/

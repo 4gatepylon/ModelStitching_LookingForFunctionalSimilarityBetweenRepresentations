@@ -1,0 +1,495 @@
+\documentclass{article} % For LaTeX2e
+\usepackage{iclr2021_conference,times}
+
+% Optional math commands from https://github.com/goodfeli/dlbook_notation.
+\input{math_commands.tex}
+
+\usepackage{hyperref}
+\usepackage{url}
+
+% I got these from this guide:
+% https://shantoroy.com/latex/how-to-write-algorithm-in-latex/
+% Which I use to highlight how we do the experiment.
+\usepackage{algorithm}
+\usepackage{arevmath}
+\usepackage[noend]{algpseudocode}
+
+
+\title{Exploring Neural Network Modularity \\ Using Model Stitching}
+
+% Authors must not appear in the submitted version, you uncomment a line below
+% which is labeled "iclrfinalcopy" to anonymize or not.
+\author{Adriano Hernandez, Rumen Dangovski \& Peter Y. Lu \thanks{You can find our other work at \url{http://www.a14z.blog/}, \url{http://super-ms.mit.edu/rumen.html}, and \url{https://peterparity.github.io/} respectively.} \\
+MIT EECS\\
+Cambridge, MA 02139, USA \\
+\texttt{\{adrianoh,rumenrd,lup\}@mit.edu}
+}
+
+% The \author macro works with any number of authors. There are two commands
+% used to separate the names and addresses of multiple authors: \And and \AND.
+%
+% Using \And between authors leaves it to \LaTeX{} to determine where to break
+% the lines. Using \AND forces a linebreak at that point. So, if \LaTeX{}
+% puts 3 of 4 authors names on the first line, and the last on the second
+% line, try using \AND instead of \And before the third author name.
+
+\newcommand{\fix}{\marginpar{FIX}}
+\newcommand{\new}{\marginpar{NEW}}
+
+\iclrfinalcopy % Uncomment for camera-ready version, but NOT for submission.
+\begin{document}
+
+
+\maketitle
+
+\begin{abstract}
+We expand \textit{model stitching} (Lenc \& Vedaldi 2015) as a methodology to compare neural networks.
+Previously, Bansal, Nakkiran \& Barak used it to compare the representations learned by differently seeded and/or trained neural networks.
+We use it to compare the representations learned by neural networks with different architectures.
+This gives us insight into the modular structure of neural networks, by helping us map consecutive sequences of layers from one network to those of another.
+We think of these sequences of layers as "modules" which may or may not have similar functionality to those of another network.
+\end{abstract}
+
+
+%
+%
+% Everything below this line
+% is the original ICLR template.
+% I keep it here specifically for
+% the purpose of reminding me of how to do various things...
+% I need to figure out how to get citations in there...
+% 
+% Papers to cite:
+% https://arxiv.org/abs/2106.07682 (Revisiting Model Stitching)
+%
+%
+%
+%
+%%
+% https://arxiv.org/abs/2108.01661 (Grounding Representation Similarity with Statistical Testing)
+%
+% Start here: https://bair.berkeley.edu/blog/2021/11/08/similarity/.
+% From this one they basically are trying to create a benchmark to test if a test of similarity is
+% good or not. So for example you give them something like CKA or CCA and then they find whether it's
+% a good measure or not. However, this "good measure" measure is for A SPECIFIC TASK. So, they are testing
+% if FOR A SPECIFIC TASK the measure of similarity is able to discern differences (where accuracy is used
+% to tell if the two models are actually different). I'm guessing it's rather harder to use just accuracy
+% because it's unclear how you should compare specific layers. They use linear probes (linear classifiers
+% trained on top of the intermediate layers we want to compare). They also use accuracy of the whole
+% network (though unless you isolate the specific section you change in the network).
+%
+% Sensitivity: meaningful change is made to a representation => the similarity measure should reflect it.
+% Specificity: non-meaningful change is made to a representation => similarity does not change much.
+%
+% Principle components refers to the principle components as defined by Principle Component Analysis (PCA)
+% Read: https://en.wikipedia.org/wiki/Principal_component_analysis. The most informative components
+% are the largest ones according to PCA (or at least they can be sorted that way).
+%
+% It was hard for me to understand what the similarity measures were doing. I need to take a statistics class.
+% I also need to review, probably, some aspects of linear algebra or optimization.
+%
+% I did not totally finish this paper since it was hard to read for me. I will want to write or speak about
+% what they are measuring. Here (below) is an outline:
+% 1. Definitions of similarity metrics f (OOD and/or linear probe accuracy).
+% 2. Definitions of models S (NLP and Vision) and how they were trained
+% 3. Descriptions of intuitive tests. We run a test and measure f over it.
+%   a. Sensitivity: 
+%   b. Specificity: 
+% 4. Description of a more rigorous operation
+%  a. Definition: pick f (a function from the representation to a real number) as our "accuracy metric"
+%  and S as our set of representations to measure similarity. Pick an A inside S (probably the one from the
+%  the model with the highest accuracy, or just pick arbitrarily). For all B in S (including cases where
+%  A = B) find d(A, B) using the similarity or dissimilarity metric "d" which we are testing, and also find
+%  |f(A) - f(B)| which is the variation in "accuracy." Then find Corr(d(A, B), |f(A) - f(B)|) where Corr is
+%  a measure of correlation. They use "Tau" and "Rho" which are the Kendall and Spearman measures of
+%  correlation, respectively.
+%  b. Benchmark 1: layer depth (i.e. which layer).
+%  c. Benchmark 2: principle component deletion.
+%  d. Pre-training Seed and/or Fine-tuning Seed. For the layer depths the pre-training seed is also varied.
+%  For vision the training seed is used (they are Res-Net-14's trained from scratch). For vision no tests seem
+%  to be done for PWCCA. I did not read why.
+%
+% Things that remain to be understood by me:
+% 1. The specifics of their experiments (the models, the data, etcetera).
+% 2. The definitions of correlation and whether a better "Corr" function might exist.
+% 3. The relation between the Wikipedia definitions of "sensitivity" and "specificity" and the usage
+%  of those words in the paper (I think it's just meant colloquially, but it's not totally clear).
+% 4. The computation and meaning of principle components.
+% 5. The meaning and computation of the different similarity metrics. Not only did I not understand them
+%  very well, at times I did not even parse them properly.
+
+%%
+%% From Revisiting Model Stitching %%
+% Understanding intermediate layers using linear classifier probes
+% Learning internal representations by error propagation
+% Towards understanding learning representations: To what extent do different neural networks learn the same representation, 2018
+% Do wide and deep networks learn the same things? uncovering how neural network representations vary with width and depth
+% Convergent learning: Do different neural networks learn the same representations?
+% Bad global minima exist and sgd can reach them. 
+% Insights on representational similarity in neural networks with canonical correlation
+% Similarity of neural network representations revisited
+% Deep residual learning for image recognition
+% Linear mode connectivity and the lottery ticket hypothesis
+% On the surprising similarities between supervised and self-supervised models
+% Multimodal neurons in artificial neural networks.
+%
+%
+
+% There is a strict upper limit to 8 pages
+% Do NOT refer to the line numbers it automatically generates in your paper
+% 
+% 
+% 
+\section{Introduction}
+
+\subsection{Motivation}
+This will discuss why we are doing this. The main goal is to understand neural networks, but we can think of this
+attempt to understand "modules" as a great boon to transfer learning and cheap computation since it may allow us to
+have the tools necessary to do a lot of iterative tinkering with architectures in an empirical way.
+
+\subsection{Stitching}
+This will discuss how stitching works on a high level. It will not introduce any mathematical formalisms or notation.
+Those will probably be used later.
+
+\subsection{Related Approaches}
+This will discuss things like CKA, CCA, Procrustes, and stitching without differnet architectures.
+
+\subsection{Preliminary Results}
+Here we will analyze our preliminary results and give a high level summary. Currently, my results are disorganized in a bunch
+of .txt log files. I need to get them into figures and tables that are interpretable by us humans (including me).
+
+% Notational notes for myself:
+%    %% Stitching %%
+% A_{i,j} is the module from i to j inclusive
+% A_{\leq N} is the prefix (i.e. module from 0 to N inclusive)
+% A_{\geq K} is the suffix of all layers after K.
+% AB_{i \rightsquigarrow | \rightarrow \not{\rightarrow} j} is the stitch from A to B from layer i to layer j
+%   depeneding on whether the accuracy is unknown, high, or low (so representations are unknown, similar, or differnet)
+% To refer to the outputs of networks we use the letter R for representation. For the output of network A
+% from layer i we use R_{A, i}. This'd be the input for network A at layer i + 1 or some sort of stitch.
+%    %% Mappings %%
+% A \rightarrow B
+% 
+% 
+\section{Experimental Setup}
+\subsection{Definitions}
+We will define terminology so as to be able to discuss the representational and modular mappings
+which are the goal of our experiment. These mappings allow us to compare the functionality of
+different neural networks.
+
+\subsubsection*{Basic Definitions and Terminology}
+\begin{itemize}
+   \item Representation: the intermediate output of a neural network, usually refered to as \(R_{A, i}\) if output from layer \(i\) of network \(A\).
+   \item Prefix: the first \(N\) layers of a neural network, \(A\). We may call the prefix function \(A_{\leq N}\) or \(A_{<N+1}\) if applicable.
+   \item Suffix: the last layers of a neural network \(B\), starting at layer \(K\). We may call the suffix function \(B_{\geq K}\) or \(B_{>K-1}\) if applicable.
+   \item Module: a subsequence of consecutive layers in a neural network, similar to the notion of a substring in computer systems. It can also be thought of as a prefix of a suffix, or a suffix of a prefix. It is denoted with the start and ending layers (inclusive). For example \(C_{2,3}\) is the module with layers 2 and 3 of network \(C\). During normal computation, the first layer outputs into it, and it outputs into the fourth layer. Note that single layers are also modules. \(C_{1,1}\) is both the first layer and the first possible module of \(C\). Moreover, prefixes and suffixes are modules.
+   \item Submodule: a module inside a module. for example, \(C_{2,2}\) is a submodule of \(C_{2,3}\). This will be used when we wish to describe the internals of modules.
+   \item Supermodule: a module within which there is a module. This will be used when we wish to group modules.
+   \item Sender: when, during normal computation, a module would recieve input from a previous module we call that previous module the sender. We may also say that a module is \emph{sending} when we wish to express that it is the sender.
+   \item Reciever: when, during normal computation, a module would send input to a subsequent module, we call that subsequent module the reciever. We may also say that a module is \emph{recieving} when we wish to express that it is the reciever.
+   \item Expected sender (or reciever): during normal computation, the module that would be the sender or the reciever to/from the current module.
+   \item Expected input (or output): the representation of the expected sender or reciever during normal computation.
+\end{itemize}
+
+\subsubsection*{Stitching}
+We define stitching in the same way as Bansal et. al. 
+Say we wish to stitch two networks \(A\) and \(B\).
+We will calculate the output of a prefix of \(A\),
+input it into our stitch \(S\), and then input the output
+of \(S\) into a suffix of \(B\). Say we take the
+output of \(A\) at layer \(i\), input it into \(S\),
+and then take the output of \(S\) and input it into
+\(B\) at layer \(j+1\). We say that layer \(i\) of
+\(A\) was stitched \emph{into} layer \(j+1\) of \(B\).
+The composition \(S \circ A_{\leq i}\) has replaced
+the expected sender, \(B_{\leq j}\) of \(B_{>j}\).
+As discussed by Bansal et. al, this enables us to compare
+the representations \(R_{A,i}\) and \(R_{B,j}\).
+
+The stitch \(S\) is a function whose domain is the set of possible \(R_{A,i}\)
+and whose range is in the same space as \(R_{B,j}\). It is constrained to use a simple
+function class. We choose to use exclusively 1x1 convolutions and linear layers for
+convolutional and fully-connected layers, respectively. Moreover we do not stitch from
+fully-connected layer representations (vectors) to convolutional layer representations (tensors)
+or vice versa, instead choosing to compare vectors with vectors and tensors with tensors of
+the same width and height. We also constrain \(i\) and \(j\) to those values such
+that \(j+1\) exists.
+
+The network formed with \(B_{\geq j+1} \circ S \circ A_{\leq i}\) is called the 
+\emph{stitched network} and is often denoted as \(AB_{i \rightsquigarrow j+1}\). The stitched 
+network is frozen in all layers except for \(S\), which is trained with gradient descent
+so as to approximate the best possible choice for \(S\). If the resulting accuracy
+is high
+\footnote{This will be defined in the experiment}, 
+then we refer to the stitched network as \(AB_{i \rightarrow j+1}\) and we say
+that \(A\) is \emph{stitchable} to \(B\) through those layers: \(\exists AB_{i \rightarrow j+1}\).
+If the resulting accuracy is low, we refer to the stitched network as \(AB_{i \not{\rightarrow} j+1}\)
+and we say that \(A\) is not stitchable to \(B\) through those layers.
+
+\subsubsection*{Representational Mappings}
+A representational mapping between neural networks \(A\) of length and \(B\) is a mapping that assigns
+at most one \(R_{B,j}\) for every \(R_{A,i}\). We sometimes use the layer indices \(i\) and \(j\)
+as shorthand.
+
+We establish the mapping as follows: for each valid \(i\) in \(A\), find the \(j\) in \(B\)
+such that \(R_{A,i}\) is most similar to \(R_{B,j}\) out of all possible \(j\) and
+\(\exists AB_{i \rightarrow j+1}\). We refer to the mapping as \(A \rightarrow B\)
+% Begin Footnote
+\footnote{Note that we could also define it as based on a threshold accuracy.
+We neglect this for now since we wish to enforce that the mapping is in fact a mapping}.
+% End Footnote
+Intuitively this says that those two representations are, to an extent, interchangeable.
+We hope that this mapping will be injective and monotonic.
+By monotonic we simply mean that if \(i_{1} < i_{2}\), \(i_{1}\) maps to \(j_{f1}\),
+and \(i_{2}\) maps to \(j_{2}\), then it should be the case that \(j_{1} < j_{2}\).
+\footnote{If we were to define some notion of the the abstraction of a layer's
+representation, monotonicity would be equivalent to transitivity of that notion}.
+
+The precise reader will note that while the representations may be interchangeable in one direction
+they may not be in both, depending on the type of stitch. That is to say,  \(\exists AB_{i \rightarrow j+1}\)
+does not imply \(\exists BA_{j \rightarrow i+1}\), even with linear transformations and 1x1 convolutions
+because of the possibility of drastic changes in dimensionality. We use \(\rightarrow\) and \(\leftarrow\)
+or flip the order of the operands to differentiate the two directions.
+When we wish to express \(\exists AB_{i \rightarrow j+1} \land \exists BA_{j \rightarrow i+1}\),
+we may often say \(AB_{i \leftrightarrow j}\). We may also define a two-way representational mapping,
+\(A \leftrightarrow B = (A \rightarrow B) \cap (B \rightarrow A)\), though it is not a mapping
+in the mathematical sense, but instead a list of tuples.
+% Begin Footnote
+\footnote{For a set of tuples \(C\), Define the reverse tuple set \(V(C) = \{(b, a) \forall (a, b) \in C\}\).
+For a mapping \(f: D \to R\) we define its set of tuples, \(T(f) = \{(x, f(x)) \forall x \in D\}\).
+For \(f: D \to R, g: R \to D\), we define \(f \cap g = T(f) \cap V(T(g))\). We can also define
+\(f \cup g = T(f) \cup V(T(g))\). Note that \(f \cap g\) is always a subset of \(D x R\), and
+that \(f \cap g = V(g \cap f)\)}.
+% End Footnote
+
+The precise reader will also note that high accuracy should be relative to some baseline. We define what is high
+experimentally based on what accuracies are observed for stitches that we expect to be high (i.e. between identical
+network instances and/or network architectures). When stitching different architectures we compare the accuracy
+with that of the \emph{least accurate} architecture that went into the stitch. That means that if we stitch from
+a very large (or wide) network to a very small one, or vice versa, we should expect the smaller network to be a
+bottleneck on accuracy. It would be unrealistic to expect equal or better performance for, say,
+\(AB_{i \rightsquigarrow j+1}\) relative to \(A\), if \(B\) drastically reduced the dimensionality of suffix layers or depth of the recieving 
+suffix, and by the same token \(BA_{j \rightsquigarrow i+1}\) should not be expected to be at least as accurate as \(B\)
+if instead \(A\) vastly reduced the dimensionality of of prefix layers or the depth of the sending prefix.
+
+\subsubsection*{Modular Mapping}
+Using our representational mappings, we establish a more general notion of modular mappings based on modules. A Modular mapping
+tells us about what modules in two different neural networks might have shared functionality based on representational similarity.
+Intuitively, if one module is mapped to another, then the latter can be swapped out for the former, with two stitches, in the latter's network.
+Informally, for two networks \(A\) and \(B\), \(A_{i_1, i_2}\) is mapped to \(B_{j_1, j_2}\) if we can find a pair of stitches \(S_1, S_2\), such that the accuracy is high for
+\(B_{>j_2} \circ S_1 \circ A_{i_1,i_2} \circ S_2 \circ B_{<j_1}\). Since it's possible to infer this from \(A \rightarrow B\) and \(B \rightarrow A\),
+however, we define it formally in a slightly different way.
+
+For any two modules, \(A_{i_1, i_2}, B_{j_1, j_2}\), from two neural networks, \(A\) with length \(N\) and \(B\) with length \(M\), we define the \emph{interchangeability}
+predicate \(I(i_1, i_2, j_1, j_2) = \exists BA_{j_1 - 1 \rightarrow i_1} \land \exists AB_{i_2 \rightarrow j_2 + 1}\).
+We assume that \(i_1 \in [1, N-1], i_2 \in [i_1, N-1], j_1 \in [1, M-1], j_2 \in [j_1, M-1]\) and that those choices for
+\(i_1, i_2, j_1, j_2\) enable valid stitches: 1x1 convolutions between two tensors of the same width and height or
+linear layers between two vectors (whose widths may vary). Denoting whether it is valid to stitch from \(i\) into \(j+1\) with \(V(i, j)\),
+the modular mapping is then defined as the set of tuples
+\(A \Rightarrow B = \{(A_{i_1, i_2}, B_{j_1, j_2}) \forall i_1, i_2, j_1, j_2 \mid V(j_1-1, i_1) \land V(i_2, j_2+1) \land I(i_1, i_2, j_1, j_2)\}\).
+
+
+For two modules \(M_A = A_{i_1, i_2}, M_B = B_{j_1, j_2}\), if \((M_A, M_B) \in (A \Rightarrow B)\) then we say \(M_A \Rightarrow M_B\). If it is
+also the case that \(M_B \Rightarrow M_A\) then we say \(M_1 \Leftrightarrow M_2\). The set of such possible two-way mappings is defined as
+\(A \Leftrightarrow B = (A \Rightarrow B) \cap (B \Rightarrow A)\). As with representational mappings, we may use the indices
+\(i_1, i_2, j_1, j_2\) as shorthand.
+
+To find these modular mappings we can simply brute force for all possible indices, \(i_1, i_2, j_1, j_2\),
+given our pre-computed representational mappings. If we denote the length (in layers) of \(A\) as \(N_1\) and
+that of \(B\) as \(N_2\), The runtime of the brute force algorithm is \(\mathcal{O}(\alpha N_1 N_2)\) where \(\alpha\) is
+the worst-case time necessary to optimize a stitch between any pair of layers.
+
+However, we would prefer to try and enforce monotonicity of the modular mapping. If two modules, \(M_1 = A_{i_1, i_2}, M_2 = A_{i_3, i_4}\),
+have the property that \(i_2 < i_3\), we say that \(M_1 < M_2\). Monotonicity means that of we have any two modules in \(A\),
+\(M_{A_1}, M_{A_2}\), and any two modules in \(B\), \(M_{B_1}, M_{B_2}\), such that \(M_{A_1} \Rightarrow M_{B_1}\)
+and \(M_{A_2} \Rightarrow M_{B_2}\), then \(M_{A_1} < M_{A_2}\)implies \(M_{B_1} < M_{B_2}\). Monotonicity is preferable, because
+it makes the mapping more interpretable. It may not be the case that the modular mapping is monotonic, but we can instead choose to
+focus on a subset it that is. We present an algorithm below which given two neural networks finds a monotonic subset of
+\(A \Rightarrow B\).
+%Begin Footnote
+\footnote{It can trivially be augmented to consider only elements of \(A \Leftrightarrow B\) or those that satisfy some predicate
+simply by taking an interesect with the corresponding set.}
+%End Footnote
+
+\begin{algorithm}
+\caption{Find A Monotonic Modular Mapping Subset}
+\begin{algorithmic}[h]
+\Procedure{MFind(\(A\), \(B\))}{}
+      \State Pretrain and Freeze \(A\) and \(B\) seperately
+      \State \(A\) has length \(N\)
+      \State \(B\) has length \(M\)
+      \State Find \(A\rightarrow B\) through brute force
+      \State Find \(B\rightarrow A\) through brute force
+      \State \(i_{start} = 1\)
+      \State \(j_{start} = 1\)
+      \State Initialize \(MM = \{\}\)
+      \For{\(i_{end} \in [1, N-1]\)}
+         \For{\(j_{end} \in [j_{start}, M-1]\)}
+            \If{\((B_{j_{start}-1} \rightarrow A_{i_{start}}) \land (A_{i_{end}} \rightarrow B_{j_{end}+1})\)}
+               \State Add \((A_{i_{start}, i_{end}}, B_{j_{start}, j_{end}})\) to \(MM\)
+               \State \(i_{start} = i_{end} + 1\)
+               \State \(j_{start} = j_{end} + 1\)
+               \State Break Inner Loop
+            \EndIf
+         \EndFor
+      \EndFor
+      \State Return \(MM\)
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Hypotheses TODO}
+Now that we know how to talk about modules, we introduce 4 main idealized cases that may present themselves when we
+try to modularly map two different neural networks of different sizes. We assume that these mappings are all monotonic.
+\begin{itemize}
+   \item Layer to layer (L2L) mapping: single layers (in shorter networks) may have the same functionality as single layers in longer networks. Additional layers in longer networks introduce new functionality. This mapping is injective, but not surjective.
+   \item Layer to module (L2M) mapping: single layers (in shorter networks) may have the same functionality as modules in longer networks. The long networks have the same functionality, but better. This mapping is injective and ideally surjective.
+   \item Module to module (M2M) mapping: modules (in shorter networks) may have the same functionality as modules in longer networks. This mapping is injective and ideally surjective.
+   \item No (N) mapping: single layers (in shorter networks) do not share any functionality with any layers in longer networks. This mapping is not surjective.
+\end{itemize}
+
+Of course, it is possible that our mappings will not be monotonic. However, we will assume that they will be. Even under this assumption, it is also possible that we may have L2L 
+mapping within certain modules in any two networks, followed by L2M mapping, M2M mapping, or N mapping. We will seek to describe pairs of networks, such that both are sequences of supermodules,
+such that within each pair of corresponding supermodules the submodules pertain to only one of the four hypotheses (or more generally, follow an interpretable pattern).
+Informally, we may call these the "realms" of a modular mapping. The realms induce an informal, two-way, mapping of supermodules, where two supermodules are mapped to eachother if and only if
+within them there is a human-understandable, repeatable pattern to the modular mapping. So, if two networks have a one to one L2L mapping for their first 3 layers, then the two 3-layer prefixes of
+these networks form two supermodules that are mapped to eachother, forming an L2L realm. The subsequent modules in either network may form other realms, such as an N mapping realm. I will add a
+diagram for this, but you can find it on the powerpoint in the google drive. Because networks will have different numbers of layers, some realms will only include layers from one network (as in the
+the layers of an ideal L2L modular mapping between 2 networks of different lengths).
+
+Thus, due to the many types of mappings, we summarize to ensure that our ideas are perfectly clear to the reader. This summary is not mathematically rigorous, but
+only meant to highlight the key intuitions behind these terms. The mapping types are as follows:
+\begin{itemize}
+   \item (One-way) Representational mapping: a mapping where \(R_{A,i}\) is mapped to \(R_{B,j}\) if the former may be input through a stitch into the spot of the latter in \(B\). This is a one-way mapping.
+   \item Two-way representational mapping: a mapping where we only consider \(R_{A,i}\) mapped to \(R_{B,j}\) if they are both mapped to each other in the one-way mappings.
+   \item (One-way) Modular mapping: when a module from one network may be replaced through two stitches with that from another network. This is defined using two opposite way representational mappings into and out of the module.
+   \item Two-way Modular mapping: when two modules from two networks are both one-way modular mappable.
+   \item Realms (or Realm Mapping): a direction-agnostic pairing of supermodules such that across the pair of modules, mappings are either all L2L, L2M, M2M, N, or otherwise following an interpretable pattern. This can be defined for either one-way modular mapping or the two-way modular mapping.
+\end{itemize}
+
+\subsection{Goals TODO}
+The goal for our experiments was to understand the similarities between different neural networks by searching
+for modular mappings. To help us understand if different architectures were learning the same sorts of solutions,
+we trained them seperately and tried to find elegant modular mappings between them. More broadly, we wish to confirm
+that modular mappings are exclusively monotonic and explore the different modular mapping realms that exist across pairs
+of relevant networks.
+
+%%% The more precise, concrete section begins here
+\subsection{Networks and Dataset TODO}
+We focused on varying only the random seed of the neural network. To simplify our analysis we also used the MNIST dataset
+(do to its small size) and relatively small neural networks. We established two classes of networks: CNNs and MLPs.
+We only compared CNNs (Convolutional Neural Networks) with other CNNs and MLPs (Multilayer Perceptrons) with other MLPs.
+Our choice of networks were the following:
+\begin{itemize}
+   \item CNNs
+   \begin{itemize}
+      \item \(C_{3,2}\): a zero-padded CNN with 3 convolutional layers and 2 linear layers. Of the two linear layers, one is to flatten the tensor into a representation space and the other is to project it onto the ten classes and use a softmax.
+      \item \(C_{4,2}\): a zero-padded CNN with 4 convolutional layers and 2 linear layers. The linear layers are the same as \(C_{3,2}\) and first 3 convolutional layers are also the same.
+      \item \(C_{10,2}\): a zero-oadded CNN with 10 convolutional layers and 2 linear layers. The linear layers are the same as the previous two CNNs, while the first 4 convolutional layers are the same as those for \(C_{4,2}\).
+   \end{itemize}
+   \item MLPs
+   \begin{itemize}
+      \item \(F_{3}\): a 3 layer MLP.
+      \item \(F_{5}\): a 5 layer MLP whose first 3 layers are identical in architecture to those of \(F_{3}\).
+      \item \(F_{8}\): an 8 layer MLP whose first 5 layers are identical in architecture to those of \(F_{5}\).
+   \end{itemize}
+\end{itemize}
+
+For training we trained for 40 epochs or until high accuracy using stochastic gradient descent with no
+weight decay or learning rate schedule. Batch normalization or other such techniques were not used.
+
+\subsection{Tests and Controls TODO}
+TODO\footnote{I HAVE INSERTED THESE TODOS WHILE I WORK TO REMIND MYSELF OF WHAT REMAINS TO BE DONE.}
+
+We established some basic controls to
+have a baseline for the similarities we'd expect between representations that we think are already similar
+as well as for similarities we'd expect from representations that we are fairly certain should be
+different. They are the following:
+\begin{itemize}
+   \item We stitched corresponding layers of differently seeded instances of the same archiecture. This is a control and we expect it to have high similarity.
+   \item We stitched non-corresponding layers of the same network. This is a control and we should expect it to be different.
+   \item We stitched non-corresponding layers of different instances of the same architecture. This is a control to give us additional information to the previous control.
+   \item For all pairs of different architectures in each class, we wanted to copmare each layer in each with each layer in the other, both ways. This enables us to infer modular mappings from respresentational mappings.
+\end{itemize}
+
+At the same time, we wished to make sure to test each instance various times so that we could ensure that the observed behavior was not spurious.
+To be able to test all these cases many times we ensured in the testing algorithm (expounded below) that the following cases were
+each tested multiple times:
+\begin{itemize}
+   \item Two copies of the same network architecture with the same weights
+   \item Two copies of the same network architecture with different weights
+   \item Each pair TODO
+\end{itemize}
+
+\subsection{Testing Algorithm}
+TODO
+%%% The precise, concrete section, describing the experiments, ends here
+
+\section{Results}
+\subsection{Summary}
+Here we will have a summary and repetition of our results. We will want some figures in general. This will
+include grid heatmaps (so we can see which layers were similar to which others), line plots of stitching loss
+for different pairs of networks for different 
+
+\subsection{Figures}
+Here we have some results' figures to highlight what happened.
+
+% Figures that make sense when they are in black and white are ideal
+\begin{figure}[h]
+\begin{center}
+%\framebox[4.0in]{$\;$}
+\fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
+\end{center}
+\caption{Sample figure caption.}
+\end{figure}
+
+\subsection{Tables}
+Here we have some tables.
+
+\begin{table}[h]
+\caption{Sample table title}
+\label{sample-table}
+\begin{center}
+\begin{tabular}{ll}
+\multicolumn{1}{c}{\bf PART}  &\multicolumn{1}{c}{\bf DESCRIPTION}
+\\ \hline \\
+Dendrite         &Input terminal \\
+Axon             &Output terminal \\
+Soma             &Cell body (contains cell nucleus) \\
+\end{tabular}
+\end{center}
+\end{table}
+
+\subsection{Stitching CNNs with CNNs}
+This is where we will have visualizations and tables for what happened when
+we tried to stitch CNNs with CNNs.
+
+\subsubsection{Stitching MLPs with MLPs}
+This is where we will have visualizations and tables to explore what happend
+when we tried to stitch MLP (Multi-layer-perceptron, i.e. FC end to end) networks.
+
+\subsubsection{Stitching MLPs with MLPs}
+Please flesh this out.
+
+\section{Analysis and Interpretation of Results}
+\subsection{Interpretation}
+It didn't work.
+
+\subsection{Significance}
+What this means for the future and the field.
+
+\section{Conclusions}
+We'll write our conclusions in a nice format here.
+
+\section*{Acknowledgments}
+Thank you to the SuperUROP benefactors (MIT EECS) for funding this project.
+
+\bibliography{iclr2021_conference}
+\bibliographystyle{iclr2021_conference}
+
+\appendix
+\section{Appendix}
+More information will be added here with regards to less interpretable (or "failed")
+results, experimental details that were omitted in the previous section, and so forth.
+
+\end{document}
