@@ -1,12 +1,17 @@
+from operator import mod
 import os
 import argparse
 from tkinter.messagebox import NO
 from unittest.mock import DEFAULT
+from sympy import sring
 import torch
 import torch.optim as optim
 
 from datetime import datetime
 from torch.optim.lr_scheduler import StepLR
+
+from pprint import PrettyPrinter
+pp = PrettyPrinter()
 
 from examples_cnn import (
     NET_3_2 as C32,
@@ -40,7 +45,12 @@ from training import (
     test,
 )
 
-DEFAULT_SANITY_INSTANCES = 5
+DEFAULT_SANITY_INSTANCES = 2 # TODO change me to a bigger number!
+ASSERT_FROZEN_RIGHT = True
+ASSERT_STITCHES_DIFF_PTR = True
+def ASSERT(bool, string):
+    if not bool:
+        raise AssertionError(string)
 
 # This file is going to do basically what main does, but only sanity checks
 # Sanity checks are going to be simple. We illustrate one sanity check below. We will do
@@ -99,6 +109,8 @@ DEFAULT_SANITY_INSTANCES = 5
 #     This allows us to compare the representations as we wanted to do to begin with.
 #
 
+# NOTE that accs are in percentages
+
 def train_og(model, device, train_loader, test_loader, epochs=DEFAULT_EPOCHS_OG):        
     # NOTE we may want to use vanilla gradient descent in the future, but this should be fine (it's default).
     # https://pytorch.org/docs/stable/generated/torch.optim.SGD.html
@@ -110,17 +122,22 @@ def train_og(model, device, train_loader, test_loader, epochs=DEFAULT_EPOCHS_OG)
     for epoch in range(1, epochs):
         print("Training og epoch {}".format(epoch))
         train1epoch(model, device, train_loader, optimizer)
-        test(model, device, test_loader)
+        _, acc = test(model, device, test_loader)
+        print("og epoch {} acc {}".format(epoch, acc))
         scheduler.step()
     train1epoch(model, device, train_loader, optimizer)
     _, test_acc = test(model, device, test_loader)
-    return test_acc
+    print("Final test acc for og model: {}".format(test_acc))
+
+    # NOTE that the acc returned is as a percentage
+    return test_acc / 100.0
 
 # NOTE that we use reciever format
 def train_stitch(model1, model2,
     layer1_idx, layer2_idx,
     stitch,
     device, train_loader, test_loader, epochs):
+    print("TRAINING STITCH")
     stitched_model = StitchedForward(model1, model2, stitch, layer1_idx, layer2_idx)
 
     # we only optimize the parameters in the stitch
@@ -134,15 +151,39 @@ def train_stitch(model1, model2,
     optimizer = optim.Adadelta(stitch.parameters(), lr=DEFAULT_LR)
     scheduler = StepLR(optimizer, step_size=1, gamma=DEFAULT_LR_EXP_DROP)
 
-    for _ in range(1, epochs):
+    # We use this to debug our stitching functionality regarding freezing
+    # NOTE we may also want to make sure that the same stitch is not being used in different places
+    # NOTE the input has shape (N, 1, 28, 28)
+    # NOTE for each layer you will see the bias parameter as a subsequent tensor
+    pclone = lambda model: [p.data.detach().clone() for p in model.parameters()]
+    listeq = lambda l1, l2: min((torch.eq(a, b).int().min().item() for a, b in zip(l1, l2))) == 1
+    tcm1, tcm2, tcs = None, None, None
+    if ASSERT_FROZEN_RIGHT:
+        tcm1, tcm2, tcs = pclone(model1), pclone(model2), pclone(stitch)
+
+    for epoch in range(1, epochs):
         train1epoch(stitched_model, device, train_loader, optimizer)
-        test(stitched_model, device, test_loader)
+
+        # The stitched model should have weights for model1 and model2 not changing,
+        # but the weights SHOULD change for the stitch
+        if ASSERT_FROZEN_RIGHT:
+            tcm1c, tcm2c, tcsc = pclone(model1), pclone(model2), pclone(stitch)
+            ASSERT(listeq(tcm1, tcm1c), "FAIL: NOT Old Model 1 Weights = Model 1 Weights")
+            ASSERT(listeq(tcm2, tcm2c), "FAIL: NOT Old Model 2 Weights = Model 2 Weights")
+            ASSERT(not listeq(tcs, tcsc), "FAIL: NOT Old Stitch Weights != Stitch")
+            tcm1, tcm2, tcs = tcm1c, tcm2c, tcsc
+        
+        _, acc = test(stitched_model, device, test_loader)
+        print("stitch (from->into) {}->{} epoch {} acc % = {}".format(layer1_idx-1, layer2_idx, epoch, acc))
         scheduler.step()
         # TODO logging (and VISUALIZE here using tensorboardX... use a better format, once more,
         # than we did in "main")
     train1epoch(stitched_model, device, train_loader, optimizer)
     _, test_acc = test(stitched_model, device, test_loader)
-    return test_acc
+    print("final stitch (from->into) {}->{} acc % = {}".format(layer1_idx-1, layer2_idx, test_acc))
+
+    # NOTE that the acc returned is a percentage
+    return test_acc / 100.0
 
 if __name__ == "__main__":
     train_loader, test_loader, device = init()
@@ -159,17 +200,46 @@ if __name__ == "__main__":
         # accs will store the accuracies of each of the trained models, originally
         # pivot_idx is the index of the models which is to be the pivot
         models = [None] * DEFAULT_SANITY_INSTANCES
-        stitches = [None] * DEFAULT_SANITY_INSTANCES
+        stitches_from_pivot = [None] * DEFAULT_SANITY_INSTANCES
         accs = [None] * DEFAULT_SANITY_INSTANCES
         penalties = [None] * DEFAULT_SANITY_INSTANCES
         pivot_idx = 0
+
+        # Initialize and train all the instances
         print("Training {} instances".format(DEFAULT_SANITY_INSTANCES))
         for i in range(DEFAULT_SANITY_INSTANCES):
-            print("On Instance {}".format(i))
+            print("*** On Instance {} ***".format(i))
             models[i] =  Net(layers=net_layers).to(device)
             accs[i] = train_og(models[i], device, test_loader, train_loader, epochs=DEFAULT_EPOCHS_OG)
-            stitches[i] = get_stitches(models[pivot_idx], models[i], net_valid_stitches)
-            
+            stitches_from_pivot[i] = get_stitches(models[pivot_idx], models[pivot_idx], net_valid_stitches)
+        print("\n")
+
+        # We need to make sure that all stitches are different in memory (that is,
+        # no two networks are going to share the same stitch form the pivot and no two pairs
+        # of layers will share the same weights inter or intra network)
+        if ASSERT_STITCHES_DIFF_PTR:
+            # for each pair of networks
+            for i in range(DEFAULT_SANITY_INSTANCES):
+                for j in range(i+1, DEFAULT_SANITY_INSTANCES):
+                    # for each stitch (layer pair)
+                    for ki, vi in stitches_from_pivot[i].items():
+                        for kki, vvi in vi.items():
+                            # for each other stitch (layer pair)
+                            for kj, vj in stitches_from_pivot[j].items():
+                                for kkj, vvj in vj.items():
+                                    # make sure they aren't the same data neither for bias nor weight
+                                    for ii, pi in enumerate(vvi.parameters()):
+                                        for jj, pj in enumerate(vvj.parameters()):
+                                            ASSERT(
+                                                not (pi.data.data_ptr() == pj.data.data_ptr()), 
+                                                "FAIL: stitch model({}->{})layers({}->{})param({}) and model({}->{})layers({}-{})param({}) SAME ptr = {}".format(
+                                                    pivot_idx, i, ki, kki, ii,
+                                                    pivot_idx, j, kj, kkj, jj,
+                                                    pi.data_ptr()))
+            print("All stitches have different pointers\n")
+        
+        print("Stitching from instance {} to all other instances for valid pairs of layers per instance pair".format(pivot_idx))
+        for i in range(DEFAULT_SANITY_INSTANCES):
             # Stitch each pair (pivot, model) and get the penalties
             penalties[i] = {}
             for l1_recv, l2_recvs in net_valid_stitches.items():
@@ -179,14 +249,15 @@ if __name__ == "__main__":
                     l1_send = l2_recv - 1
                     assert l1_send > 0
                     assert l1_send > 0
-                    print("Training a stitch from {} to {}".format(l1_recv-1, l2_recv-1))
+                    print("Training a stitch from {}->{} (compare {} and {})".format(l1_recv-1, l2_recv, l1_recv-1, l2_recv-1))
 
-                    st = stitches[i][l1_recv][l2_recv]
+                    st = stitches_from_pivot[i][l1_recv][l2_recv]
                     st_acc = train_stitch(models[pivot_idx], models[i], l1_recv, l2_recv, st, device, train_loader, test_loader, DEFAULT_EPOCHS_STITCH)
                     pen = min(accs[pivot_idx], accs[i]) - st_acc
                     penalties[i][l1_recv][l2_recv] = pen
                     print("Got acc {} and penalty {}".format(st_acc, pen))
-        
+            print("\n")
+
         # NOTE we do sanity checks without tensors because of the asymmetry present
         # in certain cases like C32.
 
@@ -225,6 +296,10 @@ if __name__ == "__main__":
         matrix = torch.tensor(matrix).float()
         avg_penalties_self = matrix.mean(0)
         l2_penalties_self = matrix.var(0)
+
+        print("MATRIX IS\n")
+        print(matrix)
+        print("\n\n")
 
         # The error percentage (1 - acc[i]) should be under 10%
         org = 0.1
