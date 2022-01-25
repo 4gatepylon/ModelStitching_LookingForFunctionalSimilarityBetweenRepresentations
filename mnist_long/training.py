@@ -19,7 +19,7 @@ def train1epoch(model, device, train_loader, optimizer):
         # NOTE: very important to use MODEL zero grad because it is possible that
         # not all the parameters are in the optimizer!
         model.zero_grad()
-        output = model(data)
+        output = model(data).to(device)
         loss = F.nll_loss(output, target)
         loss.backward()
         optimizer.step()

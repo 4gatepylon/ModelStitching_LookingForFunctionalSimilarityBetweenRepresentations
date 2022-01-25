@@ -40,7 +40,7 @@ from training import (
     test,
 )
 
-DEFAULT_SANITY_INSTANCES = 2 # TODO change me to a bigger number!
+DEFAULT_SANITY_INSTANCES = 5
 ASSERT_TRAINING_OG = True
 ASSERT_FROZEN_RIGHT = True
 ASSERT_STITCHES_DIFF_PTR = True
@@ -332,6 +332,8 @@ if __name__ == "__main__":
         print("\n\n")
 
         # Turn this matrix into a heatmap
+        # NOTE this matrix is from every model to every model of CORRESPONDING
+        # layers... it should ALL be HIGH in ACCURACY/SIMILARITY and LOW in PENALTY
         npmat = matrix.numpy()
         plt.imshow(npmat, cmap='hot', interpolation='nearest')
         plt.savefig('matrix.png')
@@ -341,6 +343,8 @@ if __name__ == "__main__":
         print("Index to key!")
         pp.pprint(idx2key)
         print("\n")
+
+        # TODO heatmap for pairs of networks where the indices are the layers!
 
         # The error percentage (1 - acc[i]) should be under 10%
         org = 0.1
