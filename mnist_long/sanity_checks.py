@@ -46,6 +46,7 @@ from training import (
 )
 
 DEFAULT_SANITY_INSTANCES = 2 # TODO change me to a bigger number!
+ASSERT_TRAINING_OG = True
 ASSERT_FROZEN_RIGHT = True
 ASSERT_STITCHES_DIFF_PTR = True
 def ASSERT(bool, string):
@@ -110,41 +111,74 @@ def ASSERT(bool, string):
 #
 
 # NOTE that accs are in percentages
+pclone = lambda model: [p.data.detach().clone() for p in model.parameters()]
+listeq = lambda l1, l2: min((torch.eq(a, b).int().min().item() for a, b in zip(l1, l2))) == 1
 
 def train_og(model, device, train_loader, test_loader, epochs=DEFAULT_EPOCHS_OG):        
     # NOTE we may want to use vanilla gradient descent in the future, but this should be fine (it's default).
     # https://pytorch.org/docs/stable/generated/torch.optim.SGD.html
     # https://pytorch.org/docs/stable/generated/torch.optim.Adadelta.html
     # https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.StepLR.html
-    optimizer = optim.SGD(model.parameters(), lr=DEFAULT_LR)
+    optimizer = optim.Adadelta(model.parameters(), lr=DEFAULT_LR)
     scheduler = StepLR(optimizer, step_size=1, gamma=DEFAULT_LR_EXP_DROP)
+
+    tm = None
+    if ASSERT_TRAINING_OG:
+        tm =  pclone(model)
 
     for epoch in range(1, epochs):
         print("Training og epoch {}".format(epoch))
         train1epoch(model, device, train_loader, optimizer)
+
+        # If the OG model is not training, something is dead wrong with what we're doing
+        if ASSERT_TRAINING_OG:
+            tmc = pclone(model)
+            ASSERT(not listeq(tm, tmc), "FAIL: NOT Old OG Weights != OG Weights")
+            tm = tmc
+
         _, acc = test(model, device, test_loader)
-        print("og epoch {} acc {}".format(epoch, acc))
+        print("og epoch {} acc {}".format(epoch, acc/100.))
         scheduler.step()
     train1epoch(model, device, train_loader, optimizer)
     _, test_acc = test(model, device, test_loader)
-    print("Final test acc for og model: {}".format(test_acc))
+    print("Final test acc for og model: {}".format(test_acc/100.))
 
     # NOTE that the acc returned is as a percentage
-    return test_acc / 100.0
+    return test_acc / 100.
 
 # NOTE that we use reciever format
 def train_stitch(model1, model2,
     layer1_idx, layer2_idx,
     stitch,
-    device, train_loader, test_loader, epochs):
+    device, train_loader, test_loader, epochs, SAME_MODEL=False):
     print("TRAINING STITCH")
     stitched_model = StitchedForward(model1, model2, stitch, layer1_idx, layer2_idx)
 
-    # we only optimize the parameters in the stitch
-    for p in model1.parameters():
-        p.requires_grad = False
-    for p in model2.parameters():
-        p.requires_grad = False
+    # NOTE we don't zero grad because we need to propagate backwards!
+    # https://discuss.pytorch.org/t/passing-to-the-optimizers-frozen-parameters/83358
+
+    # Make sure the sttich is not frozen in a simpler way
+    _sp = list(stitch.parameters())
+    assert _sp[0].requires_grad
+    assert _sp[1].requires_grad
+    assert len(_sp) == 2
+
+    # Make sure that the stitched model has all the parameters (again, just sanity)
+    _smp = list(stitched_model.parameters())
+    _m1p = list(model1.parameters())
+    _m2p = list(model2.parameters())
+    ASSERT(len(_smp) > 0, "FAIL: NOT There are >0 stitched model parameters")
+    ASSERT(len(_m1p) > 0, "FAIL: NOT There are >0 model 1 parameters")
+    ASSERT(len(_m2p) > 0, "FAIL: NOT There are >0 model 2 parameters")
+    ASSERT(len(_sp) > 0, "FAIL: NOT there are >0 stitch parameters")
+    if SAME_MODEL:
+        ASSERT(len(_smp) == len(_m1p) + len(_sp),
+            "FAIL: stitched model (pivot to pivot) parameters had mystery number of parameters: {} != {} + {}".format(
+                len(_smp), len(_m1p), len(_sp)))
+    else:
+        ASSERT(len(_smp) == len(_m1p) + len(_sp) + len(_m2p),
+            "FAIL: stitched model parameters had a mystery number of parameters {} != {} + {} + {}".format(
+                len(_smp), len(_m1p), len(_sp), len(_m2p)))
 
     # NOTE we may want to use vanilla gradient descent in the future but this should be
     # fine since it's default.
@@ -155,8 +189,6 @@ def train_stitch(model1, model2,
     # NOTE we may also want to make sure that the same stitch is not being used in different places
     # NOTE the input has shape (N, 1, 28, 28)
     # NOTE for each layer you will see the bias parameter as a subsequent tensor
-    pclone = lambda model: [p.data.detach().clone() for p in model.parameters()]
-    listeq = lambda l1, l2: min((torch.eq(a, b).int().min().item() for a, b in zip(l1, l2))) == 1
     tcm1, tcm2, tcs = None, None, None
     if ASSERT_FROZEN_RIGHT:
         tcm1, tcm2, tcs = pclone(model1), pclone(model2), pclone(stitch)
@@ -174,16 +206,16 @@ def train_stitch(model1, model2,
             tcm1, tcm2, tcs = tcm1c, tcm2c, tcsc
         
         _, acc = test(stitched_model, device, test_loader)
-        print("stitch (from->into) {}->{} epoch {} acc % = {}".format(layer1_idx-1, layer2_idx, epoch, acc))
+        print("stitch (from->into) {}->{} epoch {} acc % = {}".format(layer1_idx-1, layer2_idx, epoch, acc/100.))
         scheduler.step()
         # TODO logging (and VISUALIZE here using tensorboardX... use a better format, once more,
         # than we did in "main")
     train1epoch(stitched_model, device, train_loader, optimizer)
     _, test_acc = test(stitched_model, device, test_loader)
-    print("final stitch (from->into) {}->{} acc % = {}".format(layer1_idx-1, layer2_idx, test_acc))
+    print("final stitch (from->into) {}->{} acc % = {}".format(layer1_idx-1, layer2_idx, test_acc/100.))
 
     # NOTE that the acc returned is a percentage
-    return test_acc / 100.0
+    return test_acc / 100.
 
 if __name__ == "__main__":
     train_loader, test_loader, device = init()
@@ -252,7 +284,7 @@ if __name__ == "__main__":
                     print("Training a stitch from {}->{} (compare {} and {})".format(l1_recv-1, l2_recv, l1_recv-1, l2_recv-1))
 
                     st = stitches_from_pivot[i][l1_recv][l2_recv]
-                    st_acc = train_stitch(models[pivot_idx], models[i], l1_recv, l2_recv, st, device, train_loader, test_loader, DEFAULT_EPOCHS_STITCH)
+                    st_acc = train_stitch(models[pivot_idx], models[i], l1_recv, l2_recv, st, device, train_loader, test_loader, DEFAULT_EPOCHS_STITCH, SAME_MODEL=(pivot_idx == i))
                     pen = min(accs[pivot_idx], accs[i]) - st_acc
                     penalties[i][l1_recv][l2_recv] = pen
                     print("Got acc {} and penalty {}".format(st_acc, pen))

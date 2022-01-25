@@ -16,7 +16,9 @@ def train1epoch(model, device, train_loader, optimizer):
     num_batches = 0
     for batch_idx, (data, target) in enumerate(train_loader):
         data, target = data.to(device), target.to(device)
-        optimizer.zero_grad()
+        # NOTE: very important to use MODEL zero grad because it is possible that
+        # not all the parameters are in the optimizer!
+        model.zero_grad()
         output = model(data)
         loss = F.nll_loss(output, target)
         loss.backward()

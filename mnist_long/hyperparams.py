@@ -28,8 +28,8 @@ if MEMORY_CAREFUL:
 
 if DEBUG:
     print("*** Debugging Mode ***")
-    DEFAULT_EPOCHS_OG = 1
-    # We use 2 because we want to grab a chunk of code inside the loop
+    # We use 2 because we want to grab a chunk of code inside the loop (to test for updating OK)
+    DEFAULT_EPOCHS_OG = 2
     DEFAULT_EPOCHS_STITCH = 2
     NUM_EXPERIMENTS = 1
     NUM_STITCH_EXPERIMENTS = 1
