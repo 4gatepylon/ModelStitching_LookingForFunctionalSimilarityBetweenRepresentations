@@ -1,17 +1,12 @@
-from operator import mod
-import os
-import argparse
-from tkinter.messagebox import NO
-from unittest.mock import DEFAULT
-from sympy import sring
 import torch
 import torch.optim as optim
-
-from datetime import datetime
 from torch.optim.lr_scheduler import StepLR
 
 from pprint import PrettyPrinter
 pp = PrettyPrinter()
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 from examples_cnn import (
     NET_3_2 as C32,
@@ -139,6 +134,9 @@ def train_og(model, device, train_loader, test_loader, epochs=DEFAULT_EPOCHS_OG)
         _, acc = test(model, device, test_loader)
         print("og epoch {} acc {}".format(epoch, acc/100.))
         scheduler.step()
+        # TODO logging (and VISUALIZE here using tensorboardX... use a better format, once more,
+        # than we did in "main")
+    
     train1epoch(model, device, train_loader, optimizer)
     _, test_acc = test(model, device, test_loader)
     print("Final test acc for og model: {}".format(test_acc/100.))
@@ -332,6 +330,17 @@ if __name__ == "__main__":
         print("MATRIX IS\n")
         print(matrix)
         print("\n\n")
+
+        # Turn this matrix into a heatmap
+        npmat = matrix.numpy()
+        plt.imshow(npmat, cmap='hot', interpolation='nearest')
+        plt.savefig('matrix.png')
+        # Clear the figure so that we can plot other things later
+        plt.clf()
+        # Print a map so we know which layers are which
+        print("Index to key!")
+        pp.pprint(idx2key)
+        print("\n")
 
         # The error percentage (1 - acc[i]) should be under 10%
         org = 0.1
