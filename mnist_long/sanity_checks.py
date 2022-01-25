@@ -222,8 +222,8 @@ if __name__ == "__main__":
 
     # For each type of model, train DEFAULT_SANITY_INSTANCES of them (right under the import statement)
     for net_layers, net_valid_stitches, net_name in [
-        (CT, CT2T, "CT"),
-        # (C32, C32T32, "C32"),
+        # (CT, CT2T, "CT"),
+        (C32, C32T32, "C32"),
     ]:
         print("Sanity checking stitches {}->{}".format(net_name, net_name))
         # models will store each model

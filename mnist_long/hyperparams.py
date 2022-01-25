@@ -1,5 +1,5 @@
 # Switch to let you debug more easily!
-DEBUG = True          # Run a fast test
+DEBUG = False          # Run a fast test
 MEMORY_CAREFUL = True  # Run only one of each test
 
 
