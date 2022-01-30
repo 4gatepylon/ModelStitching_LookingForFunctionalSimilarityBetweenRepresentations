@@ -142,7 +142,7 @@ def run_experiments(
             print("*** Trying Stitch Experiment {}/{} for {} ***".format(stitch_experiment_num, num_stitch_experiments, exp_name))
             stitch_exp_name = "stitch_exp_{}".format(stitch_experiment_num)
     
-            stitches = get_stitches(shortnet, longnet, stitch_idx_dict)
+            stitches = get_stitches(shortnet, longnet, stitch_idx_dict, device)
             for idx1, idx2s in stitches.items():
                 for idx2, stitch in idx2s.items():
                     stitch = stitch.to(device)

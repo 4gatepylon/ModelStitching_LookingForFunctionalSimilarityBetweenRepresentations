@@ -26,6 +26,7 @@ from hyperparams import (
     # NOTE these may require some tweaking
     DEFAULT_EPOCHS_OG,
     DEFAULT_EPOCHS_STITCH,
+    DEFAULT_SANITY_INSTANCES,
 )
 
 from net import (
@@ -40,7 +41,6 @@ from training import (
     test,
 )
 
-DEFAULT_SANITY_INSTANCES = 5
 ASSERT_TRAINING_OG = True
 ASSERT_FROZEN_RIGHT = True
 ASSERT_STITCHES_DIFF_PTR = True
@@ -241,7 +241,7 @@ if __name__ == "__main__":
             print("*** On Instance {} ***".format(i))
             models[i] =  Net(layers=net_layers).to(device)
             accs[i] = train_og(models[i], device, test_loader, train_loader, epochs=DEFAULT_EPOCHS_OG)
-            stitches_from_pivot[i] = get_stitches(models[pivot_idx], models[pivot_idx], net_valid_stitches)
+            stitches_from_pivot[i] = get_stitches(models[pivot_idx], models[pivot_idx], net_valid_stitches, device)
         print("\n")
 
         # We need to make sure that all stitches are different in memory (that is,

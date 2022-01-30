@@ -162,6 +162,7 @@ NET_4_2 = [
 
 # An example network with 10 convolutional layers followed by a maxpool
 # followed by two linear layers and a classifier
+
 NET_10_2 = [
     # First convolution
     {

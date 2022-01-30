@@ -219,7 +219,7 @@ class StitchedForward(nn.Module):
 # if layer2 (i.e. get the shape that layer 1 is outputting and get what was output INTO
 # it, then put that into layer 2)
 # NOTE: gets the stitch to compare layer1 - 1 and layer2 - 1
-def get_stitch(model1, model2, layer1_idx, layer2_idx):
+def get_stitch(model1, model2, layer1_idx, layer2_idx, device):
     assert(type(model1) == Net)
     assert(type(model2) == Net)
 
@@ -259,7 +259,7 @@ def get_stitch(model1, model2, layer1_idx, layer2_idx):
         _, output_dim = layer2.weight.size()
         if dec_layer2:
             output_dim, _ = layer2.weight.size()
-        return nn.Linear(input_dim, output_dim)
+        return nn.Linear(input_dim, output_dim).to(device)
     
     elif type(layer1) == nn.Conv2d and type(layer2) == nn.Conv2d:
         # Depending on whether we decrement or not, we want to use the output (of the previous layer)
@@ -281,7 +281,7 @@ def get_stitch(model1, model2, layer1_idx, layer2_idx):
         # and note that nothing else can change the width or height since
         # either there was a ReLU after this (does nothing to the dimensions)
         # or we will raise NotImplementedError
-        return nn.Conv2d(input_depth, output_depth, 1, stride=1)
+        return nn.Conv2d(input_depth, output_depth, 1, stride=1).to(device)
         
     else:
         # We do not support linear -> conv, conv-> linear, or any other fancy things
@@ -292,5 +292,5 @@ def get_stitch(model1, model2, layer1_idx, layer2_idx):
 # {index in model 1: [list of indices in model2 that we want to try to stitch with]}
 # return a dictionary {index in model 1 : {index in model 2: stitch layer}}
 # NOTE: idx1 should always be the layer we output from and idx2 should be the layer we input to
-def get_stitches(model1, model2, idxs):
-    return {idx1 : {idx2 : get_stitch(model1, model2, idx1, idx2) for idx2 in idx2s} for idx1, idx2s in idxs.items()}
+def get_stitches(model1, model2, idxs, device):
+    return {idx1 : {idx2 : get_stitch(model1, model2, idx1, idx2, device) for idx2 in idx2s} for idx1, idx2s in idxs.items()}
