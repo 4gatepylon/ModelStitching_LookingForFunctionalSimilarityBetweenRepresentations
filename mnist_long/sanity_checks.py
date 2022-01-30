@@ -132,14 +132,16 @@ def train_og(model, device, train_loader, test_loader, epochs=DEFAULT_EPOCHS_OG)
             tm = tmc
 
         _, acc = test(model, device, test_loader)
-        print("og epoch {} acc {}".format(epoch, acc/100.))
+        acc /= 100.
+        print("og epoch {} acc {}".format(epoch, acc))
         scheduler.step()
         # TODO logging (and VISUALIZE here using tensorboardX... use a better format, once more,
         # than we did in "main")
     
     train1epoch(model, device, train_loader, optimizer)
     _, test_acc = test(model, device, test_loader)
-    print("Final test acc for og model: {}".format(test_acc/100.))
+    test_acc /= 100.
+    print("Final test acc for og model: {}".format(test_acc))
 
     # NOTE that the acc returned is as a percentage
     return test_acc / 100.
@@ -204,13 +206,15 @@ def train_stitch(model1, model2,
             tcm1, tcm2, tcs = tcm1c, tcm2c, tcsc
         
         _, acc = test(stitched_model, device, test_loader)
-        print("stitch (from->into) {}->{} epoch {} acc % = {}".format(layer1_idx-1, layer2_idx, epoch, acc/100.))
+        acc /= 100.
+        print("stitch (from->into) {}->{} epoch {} acc = {}".format(layer1_idx-1, layer2_idx, epoch, acc))
         scheduler.step()
         # TODO logging (and VISUALIZE here using tensorboardX... use a better format, once more,
         # than we did in "main")
     train1epoch(stitched_model, device, train_loader, optimizer)
     _, test_acc = test(stitched_model, device, test_loader)
-    print("final stitch (from->into) {}->{} acc % = {}".format(layer1_idx-1, layer2_idx, test_acc/100.))
+    test_acc /= 100.
+    print("final stitch (from->into) {}->{} acc = {}".format(layer1_idx-1, layer2_idx, test_acc))
 
     # NOTE that the acc returned is a percentage
     return test_acc / 100.
@@ -302,7 +306,7 @@ if __name__ == "__main__":
                 avg_penalties[key][vkey] = 0.0
         # Fill avg penalties (sum) and then divide
         for key, value in avg_penalties.items():
-            for vkey in avg_penalties.keys():
+            for vkey in value.keys():
                 for i in range(DEFAULT_SANITY_INSTANCES):
                     avg_penalties[key][vkey] += penalties[i][key][vkey]
                 avg_penalties[key][vkey] /= DEFAULT_SANITY_INSTANCES
