@@ -1,9 +1,12 @@
 # January ASAP
-`NOTE: This is the most important, we are aiming for Jan 25th (Tuesday)`
-1. Finish sanity checks and test on the tiny cnn. Make sure to visualize! You can store shit in memory. Make sure it's freezing.
-2. Test sanity checks on the large cnn. Make sure to visualize!
-3. Investigate what the status of "main" is. It is very odd because inter-stitching is not well defined for validity.
-4. Create a declarative language for stitching so I don't have to struggle with this nonsense later. Create a "compiler" of sorts for your language.
+1. Figure out why sanity checks are not sane. Use visualizations
+2. Re-read the paper and take detailed notes + thoughts
+3. Create a declarative language for stitching.
+
+# Helpful tips
+You can pipe into a file with `python3 mything.py > myfile.txt`.
+
+You can copy files by `scp ahernandez@txe1-login.mit.edu:/home/gridsan/ahernandez/git/Plato/mnist_long/myfile mynewfile`. You can use `-r` to copy a directory by ommitting the second file.
 
 # Notes from December
 For large experiments, get the experiments to run on `16 GPUs at once running out of memory`!
