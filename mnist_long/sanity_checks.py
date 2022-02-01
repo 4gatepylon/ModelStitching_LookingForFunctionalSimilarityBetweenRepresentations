@@ -10,7 +10,11 @@ import numpy as np
 
 from examples_cnn import (
     NET_3_2 as C32,
+    NET_4_2 as C42,
+    NET_10_2 as C102,
     NET_3_2_TO_NET_3_2_STITCHES as C32T32,
+    NET_4_2_TO_NET_4_2_STITCHES as C42T42,
+    NET_10_2_TO_NET_10_2_STITCHES as C102T102,
 )
 from examples_tinycnn import (
     NET_CTINY as CT,
@@ -40,6 +44,8 @@ from training import (
     train1epoch,
     test,
 )
+
+# MEGA_LOG = open('sanity_megalog.txt', 'a')
 
 ASSERT_TRAINING_OG = True
 ASSERT_FROZEN_RIGHT = True
@@ -226,8 +232,10 @@ if __name__ == "__main__":
     for net_layers, net_valid_stitches, net_name in [
         # (CT, CT2T, "CT"),
         (C32, C32T32, "C32"),
+        (C42, C42T42, "C42"),
+        (C102, C102T102, "C102"),
     ]:
-        print("Sanity checking stitches {}->{}".format(net_name, net_name))
+        print("*** *** *** Sanity checking stitches {}->{}".format(net_name, net_name))
         # models will store each model
         # stitches will store dictionaries of each layer to layer stitch (unique per pair: pivot, models[i])
         # penalties will store the difference in new loss minus minimum original loss
@@ -310,7 +318,11 @@ if __name__ == "__main__":
                 for i in range(DEFAULT_SANITY_INSTANCES):
                     avg_penalties[key][vkey] += penalties[i][key][vkey]
                 avg_penalties[key][vkey] /= DEFAULT_SANITY_INSTANCES
-        
+
+        print("*** avg penalties")
+        pp.pprint(avg_penalties)
+        print("\n")
+
         # We are going to create a matrix which is indexxed by [i][j] where
         # i is the model (up to DEFAULT_SANITY_INSTANCES) and j is the layer in the model
         # that was self-stitched. We use two dictionaries: key2idx, and idx2key to remember
@@ -385,6 +397,8 @@ if __name__ == "__main__":
                     print("Avg Penalty from layer {} to {} was {} should > {}".format(key, vkey, avg_penalties[key][vkey], delta))
         
         
+        print("*** *** ***")
+
         # TODO L1
         # TODO visualizations
         # 1. Grid heatmap (of average penalties)
@@ -392,3 +406,6 @@ if __name__ == "__main__":
         # TODO save the models (as state dicts or something else which does not depend on this namespace)
         # 1. models
         # 2. stitches
+
+    # Outside the loop
+    # MEGA_LOG.close()
