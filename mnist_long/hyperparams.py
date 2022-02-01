@@ -12,8 +12,8 @@ DEFAULT_LR = 1.0
 DEFAULT_LR_EXP_DROP = 0.7 # also called 'gamma'
 
 # NOTE change this to test (by scaling down) or scale it up!
-DEFAULT_EPOCHS_OG = 10
-DEFAULT_EPOCHS_STITCH = 5
+DEFAULT_EPOCHS_OG = 40
+DEFAULT_EPOCHS_STITCH = 20
 
 # Run 10 experiments
 NUM_EXPERIMENTS = 5
