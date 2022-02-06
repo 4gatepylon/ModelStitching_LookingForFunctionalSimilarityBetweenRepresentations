@@ -149,7 +149,7 @@ class Net(nn.Module):
     # NOTE:
     # YOU are responsible for declaring ReLU and classification layers. YOU are responsible for knowing
     # what to stitch or not to stitch!
-    def __init__(self, layers=None):
+    def __init__(self, layers=None, input_shape=(1,28,28), mode_cnn=True):
         super(Net, self).__init__()
         if layers is None:
             raise NotImplementedError
@@ -160,11 +160,12 @@ class Net(nn.Module):
         self.pools_idxs = []
 
         # Input width will be re-used for fully connected layers to be the width of the linear layer
+        _input_depth, _input_height, _input_width = input_shape
         kwargs = {
-            "mode_cnn": True,
-            "input_depth": 1,
-            "input_height": 28,
-            "input_width": 28,
+            "mode_cnn": mode_cnn,
+            "input_depth": _input_depth,
+            "input_height": _input_height,
+            "input_width": _input_width,
         }
 
         # Layers are just nn layers... you must already know where to stitch!

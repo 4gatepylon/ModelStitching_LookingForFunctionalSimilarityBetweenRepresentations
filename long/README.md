@@ -1,50 +1,46 @@
-# January ASAP
-1. Figure out why sanity checks are not sane. Use visualizations
-2. Re-read the paper and take detailed notes + thoughts
-3. Create a declarative language for stitching.
+# Note
+This readme is somewhat deprecated.
+
+# What is left for sanity
+Use visualizations, re-read the paper and compare ideas.
 
 # Helpful tips
+To create a batch run for sanity tests run `module load anaconda/2021a && module load cuda/11.2 && LLsub sanity_batch.sh -s 20 -g volta:1`.
+
+Make sure that sanity_batch has the right file: `mnist_sanity` or `cifar_sanity` depending on which one you want to run.
+
+Note that the CIFAR sanity has less testing and is optimized for runtime, while the mnist sanity runnable is meant for testing (and thus has assertions intersperesed everywhere). Make sure to run with `python3 -O (mnist_sanity | cifar_sanity).py` so that you can avoid assertions if you want to do so (though you will still run their loops in many cases for mnist since we did not optimize for that).
+
 You can pipe into a file with `python3 mything.py > myfile.txt`.
 
 You can copy files by `scp ahernandez@txe1-login.mit.edu:/home/gridsan/ahernandez/git/Plato/mnist_long/myfile mynewfile`. You can use `-r` to copy a directory by ommitting the second file.
 
-# Notes from December
+# Things to consider doing:
 For large experiments, get the experiments to run on `16 GPUs at once running out of memory`!
 - https://stackoverflow.com/questions/57858433/how-to-clear-gpu-memory-after-pytorch-model-training-without-restarting-kernel
 - https://pytorch.org/docs/stable/generated/torch.nn.DataParallel.html
 
-## Immediately After ^ is done
-1. Stitch into and out of a single layer (i.e. an "insertion" stitch instead of a swap)
-2. Sanity tests for frozen layers and unfrozen layers
-3. Documentation and library simplifcation for the model generation and stitch generation (read their code and see what they do)
-4.  Find a way to analyze succes or not based on accuracies. Parse files (important).
-5. `I DO NOT KNOW WHAT THIS IS` Autogenerate examples from higher level information
-6. `ONGOING` Start writing up Latex results... figure out how to visualize this nicely...
+Stitch into and out of a single layer (i.e. an "insertion" stitch instead of a swap). Alternatively, try two-way stitching.
 
-# Running on Supercloud
-More info the fixed folder.
+Documentation and library simplifcation for the model generation and stitch generation (read their code and see what they do)
 
-Make sure to copy data with `scp` or something like `transfer.sh` (using `wget` on the upload URL)
+Writeup latex results and interpret behavior.
 
-Run
-
+# Running Interactive
 ```
 module load anaconda/2021a && module load cuda/11.2 && LLsub -i -s 20 -g volta:1
-```
-
-To run a batch job do (though this might not work because "permission denied"... just copy the code it's a single line)
-```
-./batch.sh
-```
-
-Then
-
-```
-cd mnist_long && rm -rf experiments && python3 main.py
 ```
 
 # Ideas for the future
 - Constrained optimization or constrained stitch
 - Linearity as being constrained to subsets/sub-dimensions (i.e. this defines the "format")... This is beginning to be explored in my "outline" in google doc. I had to pause it to focus on what was highest priority.
-- What happens in you vary random initialization?
+- What happens if you vary random initialization?
 - Deal with different input and output shapes that is not just hacky! This could be related to the "linearity as being constrained to subsets/sub-dimensions"
+
+# If you ever end up using deprecated_main...
+
+You want to launch two batch jobs, one for each mode (0 and 1):
+```
+#!/bin/bash
+python3 main.py --MODE=0
+```
