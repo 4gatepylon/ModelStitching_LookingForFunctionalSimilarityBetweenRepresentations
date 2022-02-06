@@ -1,3 +1,4 @@
+# NOTE this is sanity testing in MNIST and is basically deprecated at this point...
 import torch
 import torch.optim as optim
 from torch.optim.lr_scheduler import StepLR
@@ -40,7 +41,7 @@ from net import (
 )
 
 from training import (
-    init,
+    init_mnist as init,
     train1epoch,
     test,
 )

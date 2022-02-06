@@ -1,3 +1,5 @@
+# NOTE this file is now deprecated
+# NOTE it used go in mnist_long/ and now should go in long/
 import os
 import argparse
 import torch
@@ -5,7 +7,6 @@ import torch.optim as optim
 
 from datetime import datetime
 from torch.optim.lr_scheduler import StepLR
-
 
 # These are two hard-coded examples with 3 and 10 convolutions respectively
 # of sizes hard-coded by me. They both have 2 FCs followed by an FC classifier
@@ -48,7 +49,7 @@ from net import (
 from training import (
     train1epoch,
     test,
-    init,
+    init_mnist as init,
 )
 
 # Run train and test for each epoch that exists after initializing an optimizer and log to a file for

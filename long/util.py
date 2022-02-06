@@ -35,4 +35,4 @@ def ensure_not_none(*args):
 def ensure_none(*args):
     for arg in args:
         if not arg is None:
-            raise validity("Argument was not None")
+            raise ValueError("Argument was not None")

@@ -9,7 +9,7 @@ from hyperparams import (
 )
 
 # Simple train function to run a single epoch of training
-def train1epoch(model, device, train_loader, optimizer):
+def train1epoch(model, device, train_loader, optimizer, criterion=F.nll_loss):
     model.train()
 
     avg_loss = 0.0
@@ -20,7 +20,7 @@ def train1epoch(model, device, train_loader, optimizer):
         # not all the parameters are in the optimizer!
         model.zero_grad()
         output = model(data).to(device)
-        loss = F.nll_loss(output, target)
+        loss = criterion(output, target)
         loss.backward()
         optimizer.step()
         
@@ -32,7 +32,7 @@ def train1epoch(model, device, train_loader, optimizer):
     return avg_loss
 
 # Simple testing function (can be used every epoch, at the end, or whenever)
-def test(model, device, test_loader):
+def test(model, device, test_loader, criterion=F.nll_loss):
     model.eval()
     test_loss = 0
     correct = 0
@@ -40,7 +40,7 @@ def test(model, device, test_loader):
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
             output = model(data)
-            test_loss += F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
+            test_loss += criterion(output, target, reduction='sum').item()  # sum up batch loss
             pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
             correct += pred.eq(target.view_as(pred)).sum().item()
 
@@ -50,7 +50,7 @@ def test(model, device, test_loader):
     return test_loss, percent_correct
 
 # Function initialize datasets/dataloaders, return the correct device to use (i.e. cuda if it exists), and set up testing params
-def init():
+def init_mnist():
     # Initialize the datasets (assuming already downloaded)
     transform=transforms.Compose([
         transforms.ToTensor(),
