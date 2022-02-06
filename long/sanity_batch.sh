@@ -1,2 +1,2 @@
 #!/bin/bash
-python3 sanity_checks.py > sanity_megalog.txt
+python -O cifar.py --mode run > sanity_megalog.txt

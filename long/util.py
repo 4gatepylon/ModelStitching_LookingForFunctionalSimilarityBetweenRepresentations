@@ -1,5 +1,7 @@
 import math
 
+DATA_FOLDER = "../data"
+
 # Calculate the width and height of a convolutional layer
 # from the input width and height as well as the (assumed symmetric)
 # width and stride. Assume no padding. Same for pools.
