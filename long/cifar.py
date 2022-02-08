@@ -3,7 +3,7 @@
 # Some parts are from https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html.
 
 # Utility
-import tqdm
+from tqdm import tqdm
 from argparse import ArgumentParser
 
 # Pytorch for ML models and datasets
@@ -87,6 +87,7 @@ def create_dataloaders(device):
       order=OrderOption.RANDOM,
       drop_last=(name == 'train'),
       pipelines={'image': image_pipeline,'label': label_pipeline})
+  return loaders
 
 # TODO first get training to work and the model to reach high accuracy and add the ability to save models
 # Only AFTER that should you add stitching from the sanity we had going before... Maybe get resnets to work before.
@@ -134,7 +135,7 @@ def run():
         loss = criterion(out, lbls)
 
         scaler.scale(loss).backward()
-        scaler.step(opt)
+        scaler.step(optimizer)
         scaler.update()
   
   # Evaluate
