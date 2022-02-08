@@ -41,7 +41,8 @@ from examples_cnn import (
     NET_4_2 as C42,
     NET_10_2 as C102,
 )
-# TODO Resnets, make sure to follow up with Yamini
+# Yamini's ResNet18 for CIFAR (we are trying to get a model that can get high acc)
+from resnet import resnet18k_cifar
 
 from util import DATA_FOLDER
 def download_datasets():
@@ -109,7 +110,8 @@ def run():
   cifar_input_shape = (3, 32, 32)
 
   # We store it with format channels last according the FFCV tutorial
-  model = Net(layers=C32, input_shape=cifar_input_shape)
+  use_resnet = True
+  model = resnet18k_cifar(num_classes=len(classes)) if use_resnet else Net(layers=C102, input_shape=cifar_input_shape)
   model = model.to(device, memory_format=torch.channels_last)
 
   # Loss function and optimizer
