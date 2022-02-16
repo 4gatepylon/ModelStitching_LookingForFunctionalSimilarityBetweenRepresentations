@@ -12,6 +12,15 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import numpy as np
 
+# Torchinfo is great for visualizing shapes!
+# It doesn't work for me when I run python, but it does work
+# in the interpreter... wierd! I've pasted a resnet
+# summary at the very end. Try this (batch size 1 for speed):
+#
+# from torchinfo import summary
+# model = resnet18k_cifar(k=64, num_classes=10)
+# summary(model, (1, 3, 32, 32))
+
 # Pytorch for ML models and datasets
 import torch
 import torchvision as tv
@@ -252,3 +261,99 @@ if __name__ == "__main__":
     run()
   else:
     raise ValueError
+
+# We will be trying to stitch the block output shapes
+# We see that they are:
+# [batch, k, 32, 32]
+# [batch, k*2, 16, 16]
+# [batch, k*4, 8, 8]
+# [batch, k*8, 4, 4]
+#
+# Which for k=64 (which is fine for our purposes, we just need to get better optimization hyperparams)
+# and ignoring batch size:
+# 1: 64, 32, 32
+# 2: 128, 16, 16
+# 3: 256, 8, 8
+# 4: 512, 4, 4
+# which means that we simply need to do a 2x upsampling per to enable stitching how we want...
+# we can use https://pytorch.org/docs/stable/generated/torch.nn.Upsample.html
+# with either nearest or bilinear... I think that if we use nearest it should be possible
+# to learn using convolutions... I'll start by trying nearest
+
+# 1 -> 1 (same): nn 1x1 conv (64 -> 64), stride 1
+# 1 -> 2 (down): nn 2x2 conv (64 -> 128), stride 2
+# 1 -> 3 (down): nn 4x4 conv (128 -> 256), stride 4
+# 1 -> 4 (down): nn 8x8 conv (256 -> 512), stride 8
+
+# 2 -> 1 (up):   F upsample (scale_factor 2, mode nearest) -> 1x1 conv (128 -> 64), stride 1
+# 2 -> 2 (same): nn 1x1 conv (128 -> 128), stride 1
+# 2 -> 3 (down): nn 2x2 conv (128 -> 256), stride 2
+# 2 -> 4 (down): nn 4x4 conv (128 -> 512), stride 4
+
+# 3 -> 1 (up):   F upsample (scale_factor 4, mode nearest) -> 1x1 conv (256 -> 64), stride 1
+# 3 -> 2 (up):   F upsample (scale_factor 2, mode nearest) -> 1x1 conv (256 -> 128), stride 1
+# 3 -> 3 (same): nn 1x1 conv (256 -> 256), stride 1
+# 3 -> 4 (down): nn 2x2 conv (256 -> 512), stride 2
+
+# 4 -> 1 (up):   F upsample (scale_factor 8, mode nearest) -> 1x1 conv (128 -> 64), stride 1
+# 4 -> 2 (up):   F upsample (scale_factor 4, mode nearest) -> 1x1 conv (512 -> 128), stride 1
+# 4 -> 3 (up):   F upsample (scale_factor 2, mode nearest) -> 1x1 conv (512 -> 256), stride 1
+# 4 -> 4 (same): nn 1x1 conv (512 -> 512), stride 1
+
+# How might we generalize this?
+  
+# Sometimes torchsummary fails for some reason (i.e. I get some wierd libiomp5.dylib error)
+# So here is the torch summary pasted for your convenience for a resnet18 for cifar w/
+# batch size 512:
+#
+# PreActResNet                             --                        --
+# ├─Conv2d: 1-1                            [512, 64, 32, 32]         1,728
+# ├─Sequential: 1-2                        [512, 64, 32, 32]         --
+# │    └─PreActBlock: 2-1                  [512, 64, 32, 32]         --
+# │    │    └─BatchNorm2d: 3-1             [512, 64, 32, 32]         128
+# │    │    └─Conv2d: 3-2                  [512, 64, 32, 32]         36,864
+# │    │    └─BatchNorm2d: 3-3             [512, 64, 32, 32]         128
+# │    │    └─Conv2d: 3-4                  [512, 64, 32, 32]         36,864
+# │    └─PreActBlock: 2-2                  [512, 64, 32, 32]         --
+# │    │    └─BatchNorm2d: 3-5             [512, 64, 32, 32]         128
+# │    │    └─Conv2d: 3-6                  [512, 64, 32, 32]         36,864
+# │    │    └─BatchNorm2d: 3-7             [512, 64, 32, 32]         128
+# │    │    └─Conv2d: 3-8                  [512, 64, 32, 32]         36,864
+# ├─Sequential: 1-3                        [512, 128, 16, 16]        --
+# │    └─PreActBlock: 2-3                  [512, 128, 16, 16]        --
+# │    │    └─BatchNorm2d: 3-9             [512, 64, 32, 32]         128
+# │    │    └─Sequential: 3-10             [512, 128, 16, 16]        8,192
+# │    │    └─Conv2d: 3-11                 [512, 128, 16, 16]        73,728
+# │    │    └─BatchNorm2d: 3-12            [512, 128, 16, 16]        256
+# │    │    └─Conv2d: 3-13                 [512, 128, 16, 16]        147,456
+# │    └─PreActBlock: 2-4                  [512, 128, 16, 16]        --
+# │    │    └─BatchNorm2d: 3-14            [512, 128, 16, 16]        256
+# │    │    └─Conv2d: 3-15                 [512, 128, 16, 16]        147,456
+# │    │    └─BatchNorm2d: 3-16            [512, 128, 16, 16]        256
+# │    │    └─Conv2d: 3-17                 [512, 128, 16, 16]        147,456
+# ├─Sequential: 1-4                        [512, 256, 8, 8]          --
+# │    └─PreActBlock: 2-5                  [512, 256, 8, 8]          --
+# │    │    └─BatchNorm2d: 3-18            [512, 128, 16, 16]        256
+# │    │    └─Sequential: 3-19             [512, 256, 8, 8]          32,768
+# │    │    └─Conv2d: 3-20                 [512, 256, 8, 8]          294,912
+# │    │    └─BatchNorm2d: 3-21            [512, 256, 8, 8]          512
+# │    │    └─Conv2d: 3-22                 [512, 256, 8, 8]          589,824
+# │    └─PreActBlock: 2-6                  [512, 256, 8, 8]          --
+# │    │    └─BatchNorm2d: 3-23            [512, 256, 8, 8]          512
+# │    │    └─Conv2d: 3-24                 [512, 256, 8, 8]          589,824
+# │    │    └─BatchNorm2d: 3-25            [512, 256, 8, 8]          512
+# │    │    └─Conv2d: 3-26                 [512, 256, 8, 8]          589,824
+# ├─Sequential: 1-5                        [512, 512, 4, 4]          --
+# │    └─PreActBlock: 2-7                  [512, 512, 4, 4]          --
+# │    │    └─BatchNorm2d: 3-27            [512, 256, 8, 8]          512
+# │    │    └─Sequential: 3-28             [512, 512, 4, 4]          131,072
+# │    │    └─Conv2d: 3-29                 [512, 512, 4, 4]          1,179,648
+# │    │    └─BatchNorm2d: 3-30            [512, 512, 4, 4]          1,024
+# │    │    └─Conv2d: 3-31                 [512, 512, 4, 4]          2,359,296
+# │    └─PreActBlock: 2-8                  [512, 512, 4, 4]          --
+# │    │    └─BatchNorm2d: 3-32            [512, 512, 4, 4]          1,024
+# │    │    └─Conv2d: 3-33                 [512, 512, 4, 4]          2,359,296
+# │    │    └─BatchNorm2d: 3-34            [512, 512, 4, 4]          1,024
+# │    │    └─Conv2d: 3-35                 [512, 512, 4, 4]          2,359,296
+# ├─Linear: 1-6                            [512, 10]                 5,130
+

@@ -62,12 +62,16 @@ class PreActResNet(nn.Module):
             self.in_planes = planes * block.expansion
         return nn.Sequential(*layers)
 
-    def forward(self, x):
+    # Modified to enable stitching!
+    def forward(self, x, out_layer=None):
+        assert 0 < out_layer and out_layer < 5
+
         out = self.conv1(x)
-        out = self.layer1(out)
-        out = self.layer2(out)
-        out = self.layer3(out)
-        out = self.layer4(out)
+        # Enable intermediate outputs, might be a little slower
+        for idx, layer in enumerate([self.layer1, self.layer2, self.layer3, self.layer4]):
+            out = layer(out)
+            if out_layer == idx + 1:
+                return out
         out = F.avg_pool2d(out, 4)
         out = out.view(out.size(0), -1)
         out = self.linear(out)
