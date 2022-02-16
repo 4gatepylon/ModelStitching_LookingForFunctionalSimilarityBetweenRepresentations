@@ -2,10 +2,12 @@
 ### NOTE this copied from stitching-public
 ###
 
-import torch
 import torch.nn as nn
-from torch.autograd import Variable
 import torch.nn.functional as F
+
+# For more information look at
+# https://www.kaggle.com/greatcodes/pytorch-cnn-resnet18-cifar10
+# http://pytorch.org/vision/master/_modules/torchvision/models/resnet.html#resnet18
 
 ## ResNet18 for CIFAR
 ## Based on: https://github.com/kuangliu/pytorch-cifar/blob/master/models/preact_resnet.py
