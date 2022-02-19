@@ -52,15 +52,22 @@ try:
 except:
   warn("Failed to find FFCV, might not be able to run")
 
-# Libraries to define and train/test networks (we re-write some of it for speed)
-from net import Net
-from examples_cnn import (
-    NET_3_2 as C32,
-    NET_4_2 as C42,
-    NET_10_2 as C102,
+# We have a 3-layer conv followed by a 5-layer MLP that we will test
+from net import (
+  Net,
+  get_stitches as get_stitches_raw,
+  StitchedForward,   
 )
-# Yamini's ResNet18 for CIFAR (we are trying to get a model that can get high acc)
-from resnet import resnet18k_cifar
+from c35 import (
+  NET_3_5 as c35_net,
+  NET_3_5_TO_NET_3_5_STITCHES_INTO_FMT as c35_stitches_into_fmt,
+)
+# As well as Yamini's ResNet18 for CIFAR (we are trying to get a model that can get high acc)
+from resnet import (
+  resnet18k_cifar,
+  RESNET18_SELF_STITCHES_COMPARE_FMT as resnet_stitches_compare_fmt,
+  stitches_resnet
+)
 
 from util import DATA_FOLDER
 def download_datasets():
@@ -107,11 +114,28 @@ def create_dataloaders(device):
       pipelines={'image': image_pipeline,'label': label_pipeline})
   return loaders
 
+def eval_model(model, testloader):
+  model.eval()
+  with torch.no_grad():
+    total_correct, total_num = 0., 0.
+    for imgs, lbls in tqdm(testloader):
+      with autocast():
+        # Choose the average of the model of either the image or the image flipped
+        out = (model(imgs) + model(torch.fliplr(imgs))) / 2.
+        total_correct += out.argmax(1).eq(lbls).sum().cpu().item()
+        total_num += imgs.shape[0]
+  return total_correct / total_num
+
 # TODO first get training to work and the model to reach high accuracy and add the ability to save models
 # Only AFTER that should you add stitching from the sanity we had going before... Maybe get resnets to work before.
 # If you run out of time just enable MLP stitching since that in itself will also already be pretty interesting.
-EPOCHS = 24
-def run():
+TRAIN_EPOCHS = 200
+PRINT_EVERY = 20
+
+CLASSES = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+CIFAR_INPUT_SHAPE = (3, 32, 32)
+
+def train_networks():
   use_cuda = torch.cuda.is_available()
   device = torch.device("cuda" if use_cuda else "cpu")
   if use_cuda:
@@ -124,49 +148,114 @@ def run():
   trainloader = dataloaders['train']
   testloader = dataloaders['test']
 
-  # Classes is to help us with interpretability
-  classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
-  cifar_input_shape = (3, 32, 32)
-
   # We store it with format channels last according the FFCV tutorial
-  use_resnet = True
-  model = resnet18k_cifar(num_classes=len(classes)) if use_resnet else Net(layers=C102, input_shape=cifar_input_shape)
-  model = model.to(device, memory_format=torch.channels_last)
+  cnn = resnet18k_cifar(num_classes=len(CLASSES))
+  mlp = Net(layers=c35_net, input_shape=CIFAR_INPUT_SHAPE)
+  cnn = cnn.to(device, memory_format=torch.channels_last)
+  mlp = mlp.to(device, memory_format=torch.channels_last)
 
   # Loss function and optimizer
   criterion = F.cross_entropy
-  optimizer = opt.SGD(model.parameters(), lr=0.001, momentum=0.9)
+  optimizer = opt.SGD(cnn.parameters(), lr=0.001, momentum=0.9)
   scaler = GradScaler()
 
   # NOTE how we use fancy autocasting and grad scaling to enable differnt precisions
   # (that is from the FFCV tutorial)
-  print(f"Training For {EPOCHS} epochs")
+  # NOTE you will want to pipe each of these into some text file
+  for model, model_name in [(cnn, "ResNet18"), (mlp, "C35")]:
+    # TODO tensorboardX and saving the models! this will speed up our further iteration
+    print(f"Training {model_name} For {TRAIN_EPOCHS} epochs")
+    
+    model.train()
+    for epoch in range(0, TRAIN_EPOCHS):
+      if epoch % PRINT_EVERY == 0:
+        acc = eval_model(model, testloader)
+        print(f"Epoch {epoch}, Accuracy: {acc * 100:.1f}%")
+        model.train()
+      # Train one epoch
+      for imgs, lbls in tqdm(trainloader):
+        optimizer.zero_grad(set_to_none=True)
+        with autocast():
+          out = model(imgs)
+          loss = criterion(out, lbls)
 
-  # Train
-  model.train()
-  for epoch in range(1, EPOCHS+1):
-    # Train one epoch
-    for imgs, lbls in tqdm(trainloader):
-      optimizer.zero_grad(set_to_none=True)
-      with autocast():
-        out = model(imgs)
-        loss = criterion(out, lbls)
-
-        scaler.scale(loss).backward()
-        scaler.step(optimizer)
-        scaler.update()
+          scaler.scale(loss).backward()
+          scaler.step(optimizer)
+          scaler.update()
+    
+    print(f"Final Accuracy: {eval_model(model) * 100:.1f}%") 
+    print(f"Saving to {model_name}.pt")
+    torch.save(model.state_dict(), f"{model_name}.pt")
   
-  # Evaluate
-  model.eval()
-  with torch.no_grad():
-    total_correct, total_num = 0., 0.
-    for imgs, lbls in tqdm(testloader):
-      with autocast():
-        # Choose the average of the model of either the image or the image flipped
-        out = (model(imgs) + model(torch.fliplr(imgs))) / 2.
-        total_correct += out.argmax(1).eq(lbls).sum().cpu().item()
-        total_num += imgs.shape[0]
-    print(f'Accuracy: {total_correct / total_num * 100:.1f}%')
+def get_mstitches(model1, model2, validst, device):
+  # This is a nested map
+  stitches = get_stitches_raw(model1, model2, validst, device)
+  # These are basically indices
+  keyset = set()
+  for l1, l2s in stitches.items():
+    for l2 in l2s.keys():
+      keyset.add(l1)
+      keyset.add(l2)
+  
+  # Now we have a mapping of index to layer
+  idx2layer = sorted(list(keyset))
+  layer2idx = {idx2layer[i] : i for i in range(len(idx2layer))}
+
+  # Here we put None everywhere that there wasn't a stitch pairing and elsewhere
+  # we put the stitch. This gives us the same format as the resnet, which makes
+  # it easier later to do table visualization since we can do maps (i.e. a table
+  # map is just a map of maps and the inner map is just -> 0 if None else acc of the guy)
+  fw = lambda l1, l2: StitchedForward(model1, model2, stitches[l1][l2], l1, l2)
+  of = lambda l1, l2: fw(l1, l2) if l1 in stitches and l2 in stitches[l1] else None
+  table = [[of(l1, l2) for l1 in range(len(idx2layer))] for l2 in range(len(idx2layer))]
+  return table, idx2layer, layer2idx
+
+def train_stitches(model_names=["ResNet18", "C35"]):
+  assert len(model_names) == 2
+  assert model_names[0] == "ResNet18" and models[1] == "C35"
+
+  use_cuda = torch.cuda.is_available()
+  device = torch.device("cuda" if use_cuda else "cpu")
+  if use_cuda:
+    print("Using Cuda (GPU)")
+  else:
+    print("Using CPU")
+
+  # Get iterables that can go through the data with batches
+  dataloaders = create_dataloaders(device)
+  trainloader = dataloaders['train']
+  testloader = dataloaders['test']
+
+  # Initialize new models and load from previously saved models (this does not expect to run at the
+  # exact same time as training)
+  cnn = resnet18k_cifar(num_classes=len(CLASSES))
+  mlp = Net(layers=c35_net, input_shape=CIFAR_INPUT_SHAPE)
+  cnn.load_state_dict(torch.load(f"{model_names[0]}.pt"))
+  mlp.load_state_dict(torch.load(f"{model_names[1]}.pt"))
+
+  # Sanity check that these are loaded properly (should have high accuracy)
+  cnn_acc = eval_model(cnn, testloader)
+  mlp_acc = eval_model(mlp, testloader)
+  print(f"ResNet18 Accuracy: {cnn_acc * 100:.1f}%")
+  print(f"C35 Accuracy: {mlp_acc * 100:.1f}%")
+  assert cnn_acc > 0.8
+  assert mlp_acc > 0.4
+
+  # Put into the proper device
+  cnn = cnn.to(device, memory_format=torch.channels_last)
+  mlp = mlp.to(device, memory_format=torch.channels_last)
+
+  # rstitches is a StitchedResnet[5][5]
+  rstitches = stitches_resnet(
+    cnn, cnn, 
+    valid_stitches=resnet_stitches_compare_fmt,
+    in_mode="outfrom_into", out_mode="compare", 
+    min_layer=0, max_layer=5,
+    device=device)
+  
+  mstitches = get_stitches(mlp, mlp, c35_stitches_into_fmt, device)
+  pass
+      
 
 
 # This will generate and save a matrix heatmap to a png file
@@ -258,6 +347,6 @@ if __name__ == "__main__":
   if args.mode == 'download':
     download_datasets()
   elif args.mode == 'run':
-    run()
+    train_networks()
   else:
     raise ValueError

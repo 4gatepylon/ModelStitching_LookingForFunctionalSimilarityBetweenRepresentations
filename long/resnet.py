@@ -195,6 +195,17 @@ class StitchedResnet(nn.Module):
         out = self.in_net(out, into_layer=self.in_layer, outfrom_layer=5)
         return out
 
+RESNET18_SELF_STITCHES_COMPARE_FMT = {
+    # The format here is outfrom, into
+    # so the output from layer 0 can go into layer 1 as input (comparing zero with zero)
+    0: [1, 2, 3, 4, 5],
+    1: [1, 2, 3, 4, 5],
+    2: [1, 2, 3, 4, 5],
+    3: [1, 2, 3, 4, 5],
+    4: [1, 2, 3, 4, 5],
+    5: [],
+}
+
 # NOTE that we use compare format here
 # This means that we must put in the layers we want to compare, which automatically
 # corresponds to l1 -> stitche -> l2+1.
@@ -206,8 +217,43 @@ def stitched_resnet(net1, net2, l1, l2, mode="compare"):
     assert 0 < l2 if 0 < l1 else True
     return StitchedResnet(net1, net2, l1, l2+1)
 
+# This will return an nxn array of stitched nets for the valid layers
+# which are one to one with the indices (and layers 1-4 inclusive are for blocks)
+# There will be None where a stitch was not possible
+# NOTE that we kn
+def stitches_resnet(net1, net2, valid_stitches=RESNET18_SELF_STITCHES_COMPARE_FMT, in_mode="outfrom_into", out_mode="compare", min_layer=0, max_layer=5, device="cpu"):
+    # Modes are
+    # outfrom_into      (layer that outputs, layer that inputs)              = (sender, reciever)
+    # compare | outfrom (layer that ouputs, layer that would have outputted) = (sender, expected sender)
+    # into              (layer that would have inputted, layer that inputs)  = (expected reciever, reciever)
+
+    if in_mode != "outfrom_into":
+        raise NotImplementedError("You must pass in a dictionary of stitches {l1 : [l2, ...]} where l1 is the layer that outputs into the stitch, and l2 is the layer that takes the input from the stitch")
+    if out_mode != "compare":
+        raise NotImplementedError("Only compare mode is supported.")
+    if min_layer != 0:
+        raise NotImplementedError("We expect the minimum layer to be zero")
+    
+    N = max_layer - min_layer
+    stitched_nets = [[None for _ in range(N)] for _ in range(N)]
+    for outfrom, layers in valid_stitches.items():
+        for into in layers:
+            compare1 = outfrom
+            compare2 = into - 1
+            # You must compare layers that exist
+            assert min_layer <= compare1 and compare1 <= max_layer
+            assert min_layer <= compare2 and compare2 <= max_layer
+
+            # Row is which is sender, 
+            stitched_nets[compare1][compare2] = stitched_resnet(net1, net2, compare1, compare2, mode="compare").to(device)
+    return stitched_nets
+
+            
+
 def resnet18k_cifar(k = 64, num_classes=10) -> PreActResNet: # k = 64 is the standard ResNet18
     return PreActResNet(PreActBlock, [2, 2, 2, 2], num_classes=num_classes, init_channels=k)
+
+
 
 ### NOTE resnet stitch derivation/documentation:
 # We will be trying to stitch the block output shapes

@@ -38,3 +38,11 @@ def ensure_none(*args):
     for arg in args:
         if not arg is None:
             raise ValueError("Argument was not None")
+
+def stitching_penalty(acc1, acc2, st_acc):
+    # We look at the improvement
+    imp1 = st_acc - acc1
+    imp2 = st_acc - acc2
+
+    # Return the minimum improvment
+    return min(imp1, imp2)
