@@ -214,7 +214,16 @@ class StitchedForward(nn.Module):
         self.s = stitch
     def forward(self, x):
         return stitch_forward(x, self.m1, self.m2, self.s, self.i1, self.i2)
-
+    def get_stitch(self):
+        return self.s
+    def get_model1(self):
+        return self.m1
+    def get_model2(self):
+        return self.model2
+    def get_layer1(self):
+        return self.i1
+    def get_layer2(self):
+        return self.i2
 
 # Given two layer indices find the stitch from the input of layer1 to the input
 # if layer2 (i.e. get the shape that layer 1 is outputting and get what was output INTO

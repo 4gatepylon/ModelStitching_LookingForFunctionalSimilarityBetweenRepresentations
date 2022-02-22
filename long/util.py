@@ -1,5 +1,7 @@
 import math
 
+from warnings import warn
+
 DATA_FOLDER = "../data"
 
 # Calculate the width and height of a convolutional layer
@@ -46,3 +48,7 @@ def stitching_penalty(acc1, acc2, st_acc):
 
     # Return the minimum improvment
     return min(imp1, imp2)
+
+def WARN(condition, msg):
+    if not condition:
+        warn(msg)

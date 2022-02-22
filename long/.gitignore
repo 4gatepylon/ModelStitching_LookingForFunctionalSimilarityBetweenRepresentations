@@ -3,3 +3,8 @@
 *.beton
 
 data/
+cifar_out/
+
+# These are constants in cifar
+tensorboard_train/
+tensorboard_stitch/

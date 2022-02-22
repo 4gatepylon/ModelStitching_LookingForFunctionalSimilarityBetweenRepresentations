@@ -194,6 +194,17 @@ class StitchedResnet(nn.Module):
         # Assume that there are a total of 6 layers (zero indexxed)
         out = self.in_net(out, into_layer=self.in_layer, outfrom_layer=5)
         return out
+    
+    def get_stitch(self):
+        return self.stitch
+    def get_model1(self):
+        return self.out_net
+    def get_model2(self):
+        return self.in_net
+    def get_layer1(self):
+        return self.out_layer
+    def get_layer2(self):
+        return self.in_layer
 
 RESNET18_SELF_STITCHES_COMPARE_FMT = {
     # The format here is outfrom, into
@@ -247,8 +258,6 @@ def stitches_resnet(net1, net2, valid_stitches=RESNET18_SELF_STITCHES_COMPARE_FM
             # Row is which is sender, 
             stitched_nets[compare1][compare2] = stitched_resnet(net1, net2, compare1, compare2, mode="compare").to(device)
     return stitched_nets
-
-            
 
 def resnet18k_cifar(k = 64, num_classes=10) -> PreActResNet: # k = 64 is the standard ResNet18
     return PreActResNet(PreActBlock, [2, 2, 2, 2], num_classes=num_classes, init_channels=k)
