@@ -132,11 +132,15 @@ dmypy.json
 .DS_Store
 **/.DS_Store
 
-# this is where we store our datasets like mnist for now
+# this is where we store our datasets like mnist and cifar
 data/
 **/data/**
 mnist_cnn_*.pt
 mnist_cnn_**.pt
+
+# This is where we'll store some output
+cifar_out/
+*tensorboard*/
 
 **/experiment-tensorboard-*/**
 **/experiment-tensorboard-**/**

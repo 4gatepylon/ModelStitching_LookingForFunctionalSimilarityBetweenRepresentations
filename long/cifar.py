@@ -72,7 +72,6 @@ from resnet import (
   RESNET18_SELF_STITCHES_COMPARE_FMT as resnet_stitches_compare_fmt,
   stitches_resnet
 )
-from training import train1epoch
 from util import DATA_FOLDER
 def download_datasets():
   # NOTE this is from the FFCV tutorial
@@ -130,42 +129,64 @@ def eval_model(model, testloader):
         total_num += imgs.shape[0]
   return total_correct / total_num
 
-STITCH_TRAIN_EPOCHS = 100
-TRAIN_EPOCHS = 200
+STITCH_TRAIN_EPOCHS = 40 # TODO 40
+TRAIN_EPOCHS = 240 # TODO 200
 PRINT_EVERY = 20
+SAVE_EVERY = 80
 
 CLASSES = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 CIFAR_INPUT_SHAPE = (3, 32, 32)
-CIFAR_FOLDER = "cifar_out"
+CIFAR_FOLDER = "../cifar_out"
 
-def scale_train_model(model, optimizer, criterion, scaler, trainloader, testloader, epochs=TRAIN_EPOCHS, print_every=PRINT_EVERY, tensorboardx_writer=None, tensorboardx_scalar=None):
+def scale_train_model(model, optimizer, criterion, scaler,
+  trainloader, testloader,
+  epochs=TRAIN_EPOCHS, print_every=PRINT_EVERY,
+  save_every=SAVE_EVERY, save_name=None,
+  tensorboardx_writer=None, tensorboardx_scalar=None):
   model.train()
   for epoch in range(0, epochs):
-    if epoch % print_every == 0:
+    # print(">>>>>>>>>>>> epoch start")
+    if epoch % save_every == 0 and not save_name is None:
+      print(f"Saving snapshot at epoch {epoch}")
+      fname = save_name + f"_epoch_{epoch}.pt"
+      torch.save(model.state_dict(), fname)
+    # print(">>>>>>>>>>>>>> saved")
+    if epoch % print_every == 0 and not testloader is None:
       acc = eval_model(model, testloader)
       # NOTE we'll want to add loss, etcetera...
       if tensorboardx_scalar and tensorboardx_writer:
         tensorboardx_writer.add_scalar(tensorboardx_scalar, acc)
       print(f"Epoch {epoch}, Accuracy: {acc * 100:.1f}%")
       model.train()
+    # print(">>>>>>>>>>>>>> evalled")
     # NOTE there is a train1epoch function but it does not use gradient scaling
     # which is probably not necessary, but the tutorial used it and in theory it
     # should help with numerical errors...
     for imgs, lbls in tqdm(trainloader):
       optimizer.zero_grad(set_to_none=True)
+      # optimizer.zero_grad(set_to_none=True)
+      # print(">>>>>>>>>>> before")
       with autocast():
         out = model(imgs)
         loss = criterion(out, lbls)
+      # print(">>>>>>>>>>> after")
+      # According to https://pytorch.org/docs/stable/notes/amp_examples.html it is not safe to keep
+      # the backpropagation in autocast
+      scaler.scale(loss).backward()
+      # loss.backward()
+      scaler.step(optimizer)
+      # optimizer.step()
+      scaler.update()
+      # model.zero_grad()
 
-        scaler.scale(loss).backward()
-        scaler.step(optimizer)
-        scaler.update()
+TENSORBOARDX_TRAIN_FOLDER = os.path.join(CIFAR_FOLDER, "tensorboard_train")
+TENSORBOARDX_STITCH_TRAIN_FOLDER = os.path.join(CIFAR_FOLDER, "tensorboard_stitch_train")
+def train_networks(model_names=["ResNet18"]):
+  assert len(model_names) == 1
+  assert model_names[0] == "ResNet18"# and model_names[1] == "C35"
 
-TENSORBOARDX_TRAIN_FOLDER = "tensorboard_train"
-TENSORBOARDX_STITCH_TRAIN_FOLDER = "tensorboard_stitch_train"
-def train_networks(model_names=["ResNet18", "C35"]):
-  assert len(model_names) == 2
-  assert model_names[0] == "ResNet18" and model_names[1] == "C35"
+  if not os.path.isdir(CIFAR_FOLDER):
+    os.mkdir(CIFAR_FOLDER)
 
   use_cuda = torch.cuda.is_available()
   device = torch.device("cuda" if use_cuda else "cpu")
@@ -181,28 +202,33 @@ def train_networks(model_names=["ResNet18", "C35"]):
 
   # We store it with format channels last according the FFCV tutorial
   cnn = resnet18k_cifar(num_classes=len(CLASSES))
-  mlp = Net(layers=c35_net, input_shape=CIFAR_INPUT_SHAPE)
+  # mlp = Net(layers=c35_net, input_shape=CIFAR_INPUT_SHAPE)
   cnn = cnn.to(device, memory_format=torch.channels_last)
-  mlp = mlp.to(device, memory_format=torch.channels_last)
+  # mlp = mlp.to(device, memory_format=torch.channels_last)
 
   # Loss function and optimizer
   criterion = F.cross_entropy
-  optimizer = opt.Adam(cnn.parameters(), lr=0.01, momentum=0.9)
+  optimizer = opt.Adam(cnn.parameters(), lr=0.01)
   scaler = GradScaler()
 
   # NOTE how we use fancy autocasting and grad scaling to enable differnt precisions
   # (that is from the FFCV tutorial)
   # NOTE you will want to pipe each of these into some text file
-  for model, model_name in [(cnn, model_names[0]), (mlp, model_names[0])]:
+  for model, model_name in [(cnn, model_names[0])]:
     print(f"Training {model_name} For {TRAIN_EPOCHS} epochs")
     
     writer = SummaryWriter(TENSORBOARDX_TRAIN_FOLDER)
     tname = model_name
-    scale_train_model(model, optimizer, criterion, scaler, trainloader, testloader, epochs=TRAIN_EPOCHS, print_every=PRINT_EVERY, tensorboardx_writer=writer, tensorboardx_scalar=tname)
+
+    f_savename = os.path.join(CIFAR_FOLDER, f"{model_name}")
+    scale_train_model(model, optimizer, criterion, scaler,
+      trainloader, testloader, epochs=TRAIN_EPOCHS, print_every=PRINT_EVERY,
+      save_every=SAVE_EVERY, save_name=f_savename,
+      tensorboardx_writer=writer, tensorboardx_scalar=tname)
     
     print(f"Final Accuracy: {eval_model(model, testloader) * 100:.1f}%") 
 
-    fname = os.path.join(CIFAR_FOLDER, f"{model_name}.pt")
+    fname = f_savename + ".pt"
     print(f"Saving to {fname}")
     torch.save(model.state_dict(), fname)
   
@@ -231,7 +257,8 @@ def stitches_mlp(model1, model2, validst, device):
 
 # NOTE this function is basically 1 epoch of training
 # where all it does it confirm that gradients update properly
-def sanity_test_stitched_model(stitched_model, optimizer, device, train_loader, same_model=True):
+def sanity_test_stitched_model(stitched_model, optimizer, criterion, scaler, device, trainloader, same_model=True):
+  print("Sanity Testing Weight Updates of Stitched Model")
   sane = True
   fail = "Sanity Test Fail"
 
@@ -241,10 +268,10 @@ def sanity_test_stitched_model(stitched_model, optimizer, device, train_loader, 
   model1 = stitched_model.get_model1()
   model2 = stitched_model.get_model2()
 
-  num_stitched_model_params = len(stitched_model.parameters())
-  num_stitch_params = len(stitch.parameters())
-  num_model1_params = len(model1.parameters())
-  num_model1_params = len(model2.parameters())
+  num_stitched_model_params = len(list(stitched_model.parameters()))
+  num_stitch_params = len(list(stitch.parameters()))
+  num_model1_params = len(list(model1.parameters()))
+  num_model1_params = len(list(model2.parameters()))
 
   if num_stitched_model_params <= 0:
     warn(f"{fail}: Stitched model has {num_stitched_model_params} parameters (should be more than zero)")
@@ -283,10 +310,17 @@ def sanity_test_stitched_model(stitched_model, optimizer, device, train_loader, 
   
   model1_params, model2_params, stitch_params = pclone(model1), pclone(model2), pclone(stitch)
 
-  # We do not care about gradient scaling since we just want to see that the right things change
-  # and/or do NOT change. We do not care so much that we optimize the weights properly
-  train1epoch(stitched_model, device, train_loader, optimizer, criterion=F.cross_entropy)
-
+  # Does not save but does print
+  scale_train_model(
+    # model, optimizer, criterion, scaler,
+    # trainloader, testloader,
+    # epochs=TRAIN_EPOCHS, print_every=PRINT_EVERY, save_every=SAVE_EVERY, save_name=None,
+    # tensorboardx_writer=None, tensorboardx_scalar=None):
+    stitched_model, optimizer, criterion, scaler,
+    trainloader, None, 
+    epochs=1, print_every=2, save_every=2, save_name=None,
+    tensorboardx_writer=None, tensorboardx_scalar=None)
+  
   model1_params_same, model2_params_same, stitch_params_changed = pclone(model1), pclone(model2), pclone(stitch)
   if not listeq(model1_params, model1_params_same):
     warn(f"{fail}: Model 1 was updated by stitch training")
@@ -297,6 +331,10 @@ def sanity_test_stitched_model(stitched_model, optimizer, device, train_loader, 
   if listeq(stitch_params, stitch_params_changed):
     warn(f"{fail}: Model 3 was updated by stitch training")
     sane = False
+  if sane:
+    print("It's sane!")
+  else:
+    print("It's not sane!")
   
   return sane
 
@@ -307,6 +345,7 @@ def sanity_test_stitched_model(stitched_model, optimizer, device, train_loader, 
 # for the differnet layers IFF they are supposed to and different
 # models will have differnet pointers IFF they are supposed to)
 def sanity_test_stitches_ptrs(stitched_models):
+  print("Sanity Testing ptrs of stitched model stitches")
   layers = range(len(stitched_models))
 
   sane = True
@@ -321,31 +360,42 @@ def sanity_test_stitches_ptrs(stitched_models):
               model_a_st = model_a.get_stitch()
               model_b_st = model_b.get_stitch()
               same_stitch = l1a == l1b and l2a == l2b
-              # We want check to be true if NOT same stitch
-              # and check to be false otherwise, so we XOR with
-              # same stitch to flip it only if same_stitch is True
-              equals = lambda check: same_stitch ^ check
               for p_a_idx, p_a in enumerate(model_a_st.parameters()):
                   for p_b_idx, p_b in enumerate(model_b_st.parameters()):
-                    if not equals(p_a.data.data_ptr(), p_b.data.data_ptr()):
-                      err = "not equal" if same_stitch else "equal"
-                      warn(f"Sanity Ptr Test Fail: Stitches from layers({l1a}->{l2a})param({p_a_idx}) and layers({l1b}-{l2b})param({p_b_idx}): ptrs are {err} but should not be")
+                    ptr_a = p_a.data_ptr()
+                    ptr_b = p_b.data_ptr()
+
+                    same_param = same_stitch and p_a_idx == p_b_idx
+
+                    # We want them NOT to be the same IFF different stitch
+                    # so we XOR with same stitch to flip it only if same_stitch is True
+                    ptr_ok = same_param ^ (ptr_a != ptr_b)
+                    if not ptr_ok:
+                      err = "not" if same_stitch else ""
+                      errinv = "" if same_stitch else "not"
+                      warn(f"Sanity Ptr Test Fail: Stitches from layers({l1a}->{l2a})param({p_a_idx}) and layers({l1b}-{l2b})param({p_b_idx}):\n\tptrs are {err} equal but should {errinv} be\n\tptrs were {ptr_a} and {ptr_b}")
                       sane = False
   return sane
 
 # NOTE we may not always which to clip the sims
 def train_stitch(stitched_model, device, trainloader, testloader, same_model=True, model1_orig_acc=None, model2_orig_acc=None, min_sim=0.0, max_sim=1.0):
+  # stitched_model.to_device(device)
+  
   # NOTE that perhaps this is a bit agressive an LR but hey... idt it matters...
   criterion = F.cross_entropy
-  optimizer = opt.Adam(stitched_model.get_stitch().parameters(), lr=0.01, momentum=0.9)
+  optimizer = opt.Adam(stitched_model.get_stitch().parameters(), lr=0.01)
   scaler = GradScaler()
 
   # NOTE that due to the code structure this will run on every stitch which is OK for testing
-  assert sanity_test_stitched_model(stitched_model, optimizer, device, trainloader, same_model=same_model)
+  assert sanity_test_stitched_model(stitched_model, optimizer, criterion, scaler, device, trainloader, same_model=same_model)
 
   writer = SummaryWriter(TENSORBOARDX_STITCH_TRAIN_FOLDER)
   tname = f"{stitched_model.get_layer1()}->{stitched_model.get_layer2()}"
-  scale_train_model(stitched_model, optimizer, criterion, scaler, trainloader, testloader, epochs=STITCH_TRAIN_EPOCHS, print_every=PRINT_EVERY, tensorboardx_writer=writer, tensorboardx_scalar=tname)
+
+  scale_train_model(stitched_model, optimizer, criterion, scaler,
+    trainloader, testloader, epochs=STITCH_TRAIN_EPOCHS, print_every=PRINT_EVERY,
+    save_every=SAVE_EVERY, save_name=None,
+    tensorboardx_writer=writer, tensorboardx_scalar=tname)
 
   acc = eval_model(stitched_model, testloader)
   print(f"Final Stitch Accuracy: {acc * 100:.1f}%")
@@ -363,14 +413,14 @@ def train_stitch(stitched_model, device, trainloader, testloader, same_model=Tru
   sim = min(max(sim, min_sim), max_sim)
 
   text = "" if can_penalty else "not"
-  print(f"Final sim ({text} using penalty) is {sim * 100:.1f}")
+  print(f"Final sim % ({text} using penalty) is {sim * 100:.1f}")
 
   return sim
 
-MLP_IDX2LAYER_FNAME = "C35_idx2layer.json"
-def train_stitches(model_names=["ResNet18", "C35"]):
-  assert len(model_names) == 2
-  assert model_names[0] == "ResNet18" and model_names[1] == "C35"
+# MLP_IDX2LAYER_FNAME = "C35_idx2layer.json"
+def train_stitches(model_names=["ResNet18"]):
+  assert len(model_names) == 1
+  assert model_names[0] == "ResNet18"# and model_names[1] == "C35"
 
   use_cuda = torch.cuda.is_available()
   device = torch.device("cuda" if use_cuda else "cpu")
@@ -387,26 +437,26 @@ def train_stitches(model_names=["ResNet18", "C35"]):
   # Initialize new models and load from previously saved models (this does not expect to run at the
   # exact same time as training)
   cnn = resnet18k_cifar(num_classes=len(CLASSES))
-  mlp = Net(layers=c35_net, input_shape=CIFAR_INPUT_SHAPE)
+  # mlp = Net(layers=c35_net, input_shape=CIFAR_INPUT_SHAPE)
   fname0 = os.path.join(CIFAR_FOLDER,f"{model_names[0]}.pt")
-  fname1 = os.path.join(CIFAR_FOLDER, f"{model_names[1]}.pt")
+  # fname1 = os.path.join(CIFAR_FOLDER, f"{model_names[1]}.pt")
   cnn.load_state_dict(torch.load(fname0))
-  mlp.load_state_dict(torch.load(fname1))
+  cnn = cnn.to(device, memory_format=torch.channels_last)
+  # mlp.load_state_dict(torch.load(fname1))
 
   # Sanity check that these are loaded properly (should have high accuracy)
   cnn_acc = eval_model(cnn, testloader)
-  mlp_acc = eval_model(mlp, testloader)
+  # mlp_acc = eval_model(mlp, testloader)
   print(f"ResNet18 Accuracy: {cnn_acc * 100:.1f}%")
-  print(f"C35 Accuracy: {mlp_acc * 100:.1f}%")
-  assert cnn_acc > 0.8
-  assert mlp_acc > 0.4
+  # print(f"C35 Accuracy: {mlp_acc * 100:.1f}%")
+  assert cnn_acc > 0.75
+  # assert mlp_acc > 0.4
 
-  # Put into the proper device
-  cnn = cnn.to(device, memory_format=torch.channels_last)
-  mlp = mlp.to(device, memory_format=torch.channels_last)
+  # mlp = mlp.to(device, memory_format=torch.channels_last)
   # Load random ones for comparison. 
   cnn_rand = resnet18k_cifar(num_classes=len(CLASSES)).to(device, memory_format=torch.channels_last)
-  mlp_rand = Net(layers=c35_net, input_shape=CIFAR_INPUT_SHAPE).to(device, memory_format=torch.channels_last)
+  cnn_rand = cnn_rand.to(device, memory_format=torch.channels_last)
+  # mlp_rand = Net(layers=c35_net, input_shape=CIFAR_INPUT_SHAPE).to(device, memory_format=torch.channels_last)
 
   # rstitches is a StitchedResnet[5][5]
   rstitches_from = lambda starter: stitches_resnet(
@@ -417,79 +467,90 @@ def train_stitches(model_names=["ResNet18", "C35"]):
     device=device)
 
   # NOTE we pick to use the random network as prefix, but either should work
+  print("Generating stitches!")
   rstitches = rstitches_from(cnn)
   rstitches_rand = rstitches_from(cnn_rand)
 
   # Because the MLP layers are not nominally 1:1 with the indices, we also store the layer (which in
   # c35.py is explained: i.e. which layer corresponds to what portion of the computation graph)
-  mstitches, midx2layer, _ = stitches_mlp(mlp, mlp, c35_stitches_into_fmt, device)
-  mstitches_rand, _, _ = stitches_mlp(mlp_rand, mlp, c35_stitches_into_fmt, device)
+  # mstitches, midx2layer, _ = stitches_mlp(mlp, mlp, c35_stitches_into_fmt, device)
+  # mstitches_rand, _, _ = stitches_mlp(mlp_rand, mlp, c35_stitches_into_fmt, device)
 
   # Make sure these are square tables/matrices
-  assert len(mstitches) > 0
+  # assert len(mstitches) > 0
   assert len(rstitches) > 0
-  assert len(mstitches) == max(map(lambda st: len(st), mstitches))
-  assert len(mstitches) == min(map(lambda st: len(st), mstitches))
+  # assert len(mstitches) == max(map(lambda st: len(st), mstitches))
+  # assert len(mstitches) == min(map(lambda st: len(st), mstitches))
   assert len(rstitches) == max(map(lambda st: len(st), rstitches))
   assert len(rstitches) == max(map(lambda st: len(st), rstitches))
 
   # Make sure that they have the proper pointers (i.e. stitches are different)
   assert sanity_test_stitches_ptrs(rstitches)
   assert sanity_test_stitches_ptrs(rstitches_rand)
-  assert sanity_test_stitches_ptrs(mstitches)
-  assert sanity_test_stitches_ptrs(mstitches_rand)
+  # assert sanity_test_stitches_ptrs(mstitches)
+  # assert sanity_test_stitches_ptrs(mstitches_rand)
 
-  mN = len(mstitches)
+  # mN = len(mstitches)
   rN = len(rstitches)
 
   # These are the matrices of similiarities. We calculate them by
   # basically 
-  mstitch_sims = [[0.0 for _ in range(mN)] for _ in range(mN)]
+  # mstitch_sims = [[0.0 for _ in range(mN)] for _ in range(mN)]
   rstitch_sims = [[0.0 for _ in range(rN)] for _ in range(rN)]
-  mstitch_rand_sims = [[0.0 for _ in range(mN)] for _ in range(mN)]
+  # mstitch_rand_sims = [[0.0 for _ in range(mN)] for _ in range(mN)]
   rstitch_rand_sims = [[0.0 for _ in range(rN)] for _ in range(rN)]
 
   # NOTE in the future we will prefer to have mstitch_sims in mode compare for interpretability
-  for l1 in range(mN):
-    for l2 in range(mN):
-      if not mstitches[l1][l2] is None:
-        # NOTE that the train function has a side effect: the stitch weights are updated
-        mstitch_sims[l1][l2] = train_stitch(mstitches[l1][l2], device, trainloader, testloader, same_model=True)
-        mstitch_rand_sims[l1][l2] = train_stitch(mstitches_rand[l1][l2], trainloader, testloader, same_model=False)
-        # NOTE we do not store the radom "control" since we just want it to debias our
-        # accuracies
-        fname = os.path.join(CIFAR_FOLDER, f"mlp_stitch_{l1}_{l2}_mode_compare.pt")
-        fname_mod = os.path.join(CIFAR_FOLDER, f"mlp_stitched_model_{l1}_{l2}_mode_compare.pt")
-        torch.save(rstitches[l1][l2], fname_mod)
-        torch.save(rstitches[l1][l2].stitch, fname)
+  # for l1 in range(mN):
+  #   for l2 in range(mN):
+  #     if not mstitches[l1][l2] is None:
+  #       # NOTE that the train function has a side effect: the stitch weights are updated
+  #       mstitch_sims[l1][l2] = train_stitch(mstitches[l1][l2], device, trainloader, testloader, same_model=True)
+  #       mstitch_rand_sims[l1][l2] = train_stitch(mstitches_rand[l1][l2], trainloader, testloader, same_model=False)
+  #       # NOTE we do not store the radom "control" since we just want it to debias our
+  #       # accuracies
+  #       fname = os.path.join(CIFAR_FOLDER, f"mlp_stitch_{l1}_{l2}_mode_compare.pt")
+  #       fname_mod = os.path.join(CIFAR_FOLDER, f"mlp_stitched_model_{l1}_{l2}_mode_compare.pt")
+  #       torch.save(rstitches[l1][l2], fname_mod)
+  #       torch.save(rstitches[l1][l2].stitch, fname)
   
+  # print("rstitches is not none")
+  # print("\n".join(map(lambda row: str(list(map(lambda col: not col is None, row))), rstitches)))
+  # print("rstitches_rand is not none")
+  # print("\n".join(map(lambda row: str(list(map(lambda col: not col is None, row))), rstitches_rand)))
   for l1 in range(rN):
     for l2 in range(rN):
       if not rstitches[l1][l2] is None:
+        r = rstitches[l1][l2]
+        rr = rstitches_rand[l1][l2]
+        assert not r is None
+        assert not rr is None
+
+        print(f"Looking at stitch comparing {l1} to {l2}")
         # NOTE that the train function has a side-effect: the stitch weights are updated
-        rstitch_sims[l1][l2] = train_stitch(rstitches[l1][l2], device, trainloader, testloader, same_model=True)
-        rstitch_rand_sims[l1][l2] = train_stitch(rstitches_rand[l1][l2], trainloader, testloader, same_model=False)
+        rstitch_sims[l1][l2] = train_stitch(r, device, trainloader, testloader, same_model=True)
+        rstitch_rand_sims[l1][l2] = train_stitch(rr, device, trainloader, testloader, same_model=False)
         # NOTE we do not store the radom "control" since we just want it to debias our
         # accuracies
         fname = os.path.join(CIFAR_FOLDER, f"resnet_stitch_{l1}_{l2}_mode_compare.pt")
         fname_mod = os.path.join(CIFAR_FOLDER, f"resnet_sitched_model_{l1}_{l2}_mode_compare.pt")
-        torch.save(rstitches[l1][l2], fname_mod)
-        torch.save(rstitches[l1][l2].stitch, fname)
+        torch.save(r.state_dict(), fname_mod)
+        torch.save(r.get_stitch().state_dict(), fname)
 
   debias = lambda sim, rand_sim: [[sim[l1][l2]-rand_sim[l1][l2] for l2 in range(len(sim))] for l1 in range(len(sim))]
-  rstitch_debias_sims = debias(rstitch_sims, mstitch_rand_sims)
-  mstitch_debias_sims = debias(mstitch_sims, mstitch_rand_sims)
+  rstitch_debias_sims = debias(rstitch_sims, rstitch_rand_sims)
+  # mstitch_debias_sims = debias(mstitch_sims, mstitch_rand_sims)
   sims = {
     model_names[0] : {
       "sim": rstitch_sims,
       "rand_sim": rstitch_rand_sims,
       "debias_sim": rstitch_debias_sims,
     },
-    model_names[1]: {
-      "sim": mstitch_sims,
-      "rand_sim": mstitch_rand_sims,
-      "debias_sim": mstitch_debias_sims,
-    }
+    # model_names[1]: {
+    #   "sim": mstitch_sims,
+    #   "rand_sim": mstitch_rand_sims,
+    #   "debias_sim": mstitch_debias_sims,
+    # }
   }
   for model_name, suffix2sim in sims.items():
     for suffix, sim in suffix2sim.items():
@@ -497,13 +558,13 @@ def train_stitches(model_names=["ResNet18", "C35"]):
       path = os.path.join(CIFAR_FOLDER, fname)
       torch.save(torch.tensor(sim), path)
       
-      rounded = np.round(np.array(mstitch_sims), decimals=2)
+      rounded = np.round(np.array(sim), decimals=2)
       print(f"*** {fname} ***")
       print(rounded)
   
-  fmidx2layer = os.path.join(CIFAR_FOLDER, MLP_IDX2LAYER_FNAME)
-  with open(fmidx2layer, 'w') as fp:
-    json.dump(midx2layer, fp)
+  # fmidx2layer = os.path.join(CIFAR_FOLDER, MLP_IDX2LAYER_FNAME)
+  # with open(fmidx2layer, 'w') as fp:
+  #   json.dump(midx2layer, fp)
 
 # This will generate and save a matrix heatmap to a png file
 # You will want to tell it what rows and columns correspond to, since
@@ -588,18 +649,18 @@ def matrix_heatmap(mat=None, Xs=None, Ys=None, decimals=2, model_name="random_ma
   plt.clf()
 
 
-def create_heatmaps(model_names=["ResNet18", "C35"]):
-  assert len(model_names) == 2
-  assert model_names[0] == "ResNet18" and model_names[1] == "C35"
+def create_heatmaps(model_names=["ResNet18"]):
+  assert len(model_names) == 1
+  assert model_names[0] == "ResNet18"# and model_names[1] == "C35"
 
   suffixes = ["sim", "rand_sim", "debias_sim"]
 
   # We'll use this to label the Xs and Ys
-  midx2layer = None
-  with open(MLP_IDX2LAYER_FNAME, "r") as f:
-    midx2layer = json.load(f)
-  if midx2layer is None:
-    warn(f"Might fail: could not load mlp idx2layer file {MLP_IDX2LAYER_FNAME}")
+  # midx2layer = None
+  # with open(MLP_IDX2LAYER_FNAME, "r") as f:
+  #   midx2layer = json.load(f)
+  # if midx2layer is None:
+  #   warn(f"Might fail: could not load mlp idx2layer file {MLP_IDX2LAYER_FNAME}")
   
   for model_name in model_names:
     for suffix in suffixes:
@@ -627,10 +688,10 @@ if __name__ == "__main__":
   if args.mode == 'download':
     download_datasets()
   elif args.mode == 'train_models':
-    train_networks(model_names=["ResNet18", "C35"])
+    train_networks(model_names=["ResNet18"])
   elif args.mode == 'train_stitches':
-    train_stitches(model_names=["ResNet18", "C35"])
+    train_stitches(model_names=["ResNet18"])
   elif args.mode == 'create_heatmaps':
-    create_heatmaps(model_names=["ResNet18", "C35"])
+    create_heatmaps(model_names=["ResNet18"])
   else:
     raise ValueError

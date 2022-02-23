@@ -31,3 +31,33 @@ After your job is done, you can copy files back (logs, visualization, pre-traine
 - Copy a folder: `scp -r ahernandez@txe1-login.mit.edu:/home/gridsan/ahernandez/git/Plato/... mynewfolder`
 
 In the future we will add instructions for how to run on multiple GPUs.
+
+# Febuary 23rd Update: Example Result I Got On ResNets After 1 Epoch of Stitching
+
+## ResNet18_sim_tensor.pt
+<pre>
+[0.   0.   0.   0.   0.   0.  ]
+[0.   0.85 0.82 0.31 0.22 0.  ]
+[0.   0.29 0.87 0.52 0.49 0.  ]
+[0.   0.13 0.2  0.76 0.71 0.  ]
+[0.   0.11 0.12 0.19 0.9  0.  ]
+[0.   0.   0.   0.   0.   0.  ]
+</pre>
+## ResNet18_rand_sim_tensor.pt
+<pre>
+[0.   0.   0.   0.   0.   0.  ]
+[0.   0.22 0.24 0.2  0.2  0.  ]
+[0.   0.3  0.22 0.17 0.26 0.  ]
+[0.   0.14 0.2  0.11 0.18 0.  ]
+[0.   0.21 0.24 0.23 0.28 0.  ]
+[0.   0.   0.   0.   0.   0.  ]
+</pre>
+## ResNet18_debias_sim_tensor.pt
+<pre>
+[ 0.    0.    0.    0.    0.    0.  ]
+[ 0.    0.63  0.57  0.11  0.02  0.  ]
+[ 0.   -0.01  0.65  0.35  0.23  0.  ]
+[ 0.   -0.02 -0.    0.65  0.53  0.  ]
+[ 0.   -0.1  -0.12 -0.04  0.61  0.  ]
+[ 0.    0.    0.    0.    0.    0.  ]
+ </pre>

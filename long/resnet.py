@@ -39,14 +39,15 @@ class PreActBlock(nn.Module):
         out += shortcut
         return out
 
-class View(nn.Module):
-    FlattenView = lambda out: (out.size(0), -1)
+class ViewFlattener(nn.Module):
     # Expects a function that given an x will return the shape to view it as
-    def __init__(self, viewshape):
-        self.viewshape = viewshape
-        super(View, self).__init__()
+    def __init__(self):
+        super(ViewFlattener, self).__init__()
     def forward(self, x):
-        return x.view(*list(self.viewshape(x)))
+        batch_size, d, h, w = x.size()
+        newView = [batch_size, d * h * w]
+        # print(f"reshaping/viewing x from {x.size()} to {newView}")
+        return x.reshape(*newView)
 
 class PreActResNet(nn.Module):
     def __init__(self, block, num_blocks, num_classes=10, init_channels=64):
@@ -65,7 +66,7 @@ class PreActResNet(nn.Module):
 
         # Classifier will be last layer
         self.avg_pool = nn.AvgPool2d(4)
-        self.flattener = View(View.FlattenView)
+        self.flattener = ViewFlattener()
         self.linear = nn.Linear(8*c*block.expansion, num_classes)
 
         self.classifier = nn.Sequential(self.avg_pool, self.flattener, self.linear)
@@ -90,9 +91,12 @@ class PreActResNet(nn.Module):
         assert 0 <= outfrom_layer and outfrom_layer < len(self.layers)
 
         out = x
+        # print(f"into is {into_layer}, outfrom is {outfrom_layer}")
         for idx in range(into_layer, outfrom_layer+1):
+            # print(f"in to layer {idx} is shape {out.size()}")
             layer = self.layers[idx]
             out = layer(out)
+            # print(f"out of layer {idx} is shape {out.size()}")
         return out
 
 # This creates a resnet stitch
@@ -135,46 +139,52 @@ def create_resnet_stitch(out_layer, in_layer, k=64, width_divider=2, img_height=
     # Layer 1,2,3,4 to any layer AFTER it
     #
     # Anything else will not work
+    # print(f"out_layer is {out_layer} and in_layer is {in_layer}")
     out_is_block = 1 <= out_layer and out_layer <= 4
-    in_is_block = 1 <= in_layer and in_layer <= 4
-    if in_is_block and out_is_block:
+    in_is_block = 1 <= in_layer and in_layer <= 5
+    if in_is_block and out_is_block and in_layer >= 2:
         # We will expect to get something with height and width
         # out_hw and depth out_depth
-        out_hw = img_height / (2**(out_layer-1))
-        out_depth = k * 2**(out_layer-1)
+        out_multiplier = 2**(out_layer-1)
+        out_hw = img_height // out_multiplier
+        out_depth = k * out_multiplier
 
         # We will want to return something with in_hw height, width
-        # and in_depth depth
-        in_hw = img_height / (2**(in_layer-1))
-        in_depth = k * 2**(in_layer-1)
+        # and in_depth depth. NOTE we have to do -2 because we want it
+        # to have the same shape as the output of the PREVIOUS layer!
+        # because we are using outfrom_into format.
+        in_multiplier = 2**(in_layer-2)
+        in_hw = img_height // in_multiplier
+        in_depth = k * in_multiplier
         ratio = in_hw / out_hw
         if in_hw > out_hw:
             # If we need to upsample, we a form of upsampling that basically copies it
             # https://pytorch.org/docs/stable/generated/torch.nn.Upsample.html
+            print(f"Layer {out_layer} -> {in_layer} upsample ratio {ratio}")
             return nn.Sequential(
                 nn.Upsample(scale_factor=ratio, mode='nearest'),
                 nn.Conv2d(out_depth, in_depth, 1, stride=1, bias=True))
         else:
             # If we need to downsample, we just use a nxn convolution with an n-size stride due to the
             # shapes of the resnets (documented below).
-            assert ratio % 2 == 0
-            assert 1 <= ratio and ratio <= 8
+            ratio = int(1 / ratio)
+            print(f"Layer {out_layer} -> {in_layer} downsample/static ratio {ratio}")
+            assert ratio == 1 or ratio % 2 == 0, f"ratio was {ratio} but should have been even"
+            assert 1 <= ratio and ratio <= 8, f"ratio was {ratio} but should have been bounded by 1 and 8"
             return nn.Conv2d(out_depth, in_depth, ratio, stride=ratio, bias=True)
-        
-    elif out_layer == 0:
-        initial_hw_dim = 32
-        in_depth = k
-        if in_is_block:
-            out_depth 
-        elif in_layer == 5:
-            in_dim = img_width * img_height * k
-            out_dim = linear_classes
-            # NOTE: we enable bias because self.conv1 doesn't have it
-            return nn.Sequential(View(View.FlattenView), nn.Linear(in_dim, out_dim, bias=True))
-        else:
-            raise NotImplemented("in_layer={} is not supported for out_layer=0".format(in_layer))
+    # NOTE: this is wrong because the final layer has its own flattener
+    # elif out_is_block and in_layer == 5:
+    #     multiplier = 2**(out_layer-1)
+    #     out_hw = img_height // multiplier
+    #     out_depth = k * multiplier
+    #     # in/out dim means in/out of the stitch, while out_depth or hw means the layer
+    #     # that is outputting INTO the stitch
+    #     in_dim = out_hw * out_hw * out_depth
+    #     out_dim = linear_classes
+    #     print(f"Layer {out_layer} -> {in_layer} flattener from {in_dim} to {out_dim}")
+    #     return nn.Sequential(ViewFlattener(), nn.Linear(in_dim, out_dim, bias=True))
     else:
-        raise NotImplementedError("out_layer={} is not supported".format(out_layer))
+        raise NotImplementedError("out_layer={}->in_layer={} is not supported (only blocks)".format(out_layer, in_layer))
     raise NotImplementedError
 
 class StitchedResnet(nn.Module):
@@ -186,11 +196,16 @@ class StitchedResnet(nn.Module):
         self.in_layer = in_layer
         # We still pass in the defaults in case they are changed
         self.stitch = create_resnet_stitch(self.out_layer, self.in_layer, k=64, width_divider=2, img_height=32, img_width=32, img_chans=3, linear_classes=10)
+        
+        # for pnum, p in enumerate(self.stitch.parameters()):
+        #     self.register_parameter(name=f"stitch-p{pnum}-l{out_layer}-l{in_layer}", param=p)
+        
 
     def forward(self, x):
         out = self.out_net(x, into_layer=0, outfrom_layer=self.out_layer)
-        out = self.stitch(out)
-
+        # print(f"size before stitch ({self.get_layer1()}->{self.get_layer2()}): {out.size()}")
+        out = self.stitch(out.float()).half() # NOTE this bs cuz pytorch is stupid
+        # print(f"size after stitch ({self.get_layer1()} -> {self.get_layer2()}): {out.size()}")
         # Assume that there are a total of 6 layers (zero indexxed)
         out = self.in_net(out, into_layer=self.in_layer, outfrom_layer=5)
         return out
@@ -205,15 +220,19 @@ class StitchedResnet(nn.Module):
         return self.out_layer
     def get_layer2(self):
         return self.in_layer
+    def to_device(self, device):
+        self.net1 = self.out_net.to(device)
+        self.net2 = self.in_net.to(device)
+        self.stitch = self.stitch.to(device)
 
 RESNET18_SELF_STITCHES_COMPARE_FMT = {
-    # The format here is outfrom, into
-    # so the output from layer 0 can go into layer 1 as input (comparing zero with zero)
-    0: [1, 2, 3, 4, 5],
-    1: [1, 2, 3, 4, 5],
-    2: [1, 2, 3, 4, 5],
-    3: [1, 2, 3, 4, 5],
-    4: [1, 2, 3, 4, 5],
+    # for now don't support the first convolution and only allow outputs
+    # that come from blocks to be compared
+    0: [],
+    1: [1, 2, 3, 4],
+    2: [1, 2, 3, 4],
+    3: [1, 2, 3, 4],
+    4: [1, 2, 3, 4],
     5: [],
 }
 
@@ -245,18 +264,17 @@ def stitches_resnet(net1, net2, valid_stitches=RESNET18_SELF_STITCHES_COMPARE_FM
     if min_layer != 0:
         raise NotImplementedError("We expect the minimum layer to be zero")
     
-    N = max_layer - min_layer
-    stitched_nets = [[None for _ in range(N)] for _ in range(N)]
-    for outfrom, layers in valid_stitches.items():
-        for into in layers:
-            compare1 = outfrom
-            compare2 = into - 1
-            # You must compare layers that exist
-            assert min_layer <= compare1 and compare1 <= max_layer
-            assert min_layer <= compare2 and compare2 <= max_layer
-
-            # Row is which is sender, 
-            stitched_nets[compare1][compare2] = stitched_resnet(net1, net2, compare1, compare2, mode="compare").to(device)
+    print(f"Valid stitches (compare) are {valid_stitches}")
+    N = 5
+    stitched_nets = [[None for _ in range(N+1)] for _ in range(N+1)]
+    for compare1, layers in valid_stitches.items():
+        for compare2 in layers:
+            # We only support blocks for now
+            if (1 <= compare1 and compare1 <= 4) and (1 <= compare2 and compare2 <= 4):
+                stitched_nets[compare1][compare2] = stitched_resnet(net1, net2, compare1, compare2, mode="compare").to(device)
+            else:
+                pass
+    print("Done generating stitched nets!")
     return stitched_nets
 
 def resnet18k_cifar(k = 64, num_classes=10) -> PreActResNet: # k = 64 is the standard ResNet18
