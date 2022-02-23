@@ -140,6 +140,8 @@ mnist_cnn_**.pt
 
 # This is where we'll store some output
 cifar_out/
+# We use this old folder mainly for initial prototyping
+cifar_out_old/
 *tensorboard*/
 
 **/experiment-tensorboard-*/**

@@ -61,3 +61,43 @@ In the future we will add instructions for how to run on multiple GPUs.
 [ 0.   -0.1  -0.12 -0.04  0.61  0.  ]
 [ 0.    0.    0.    0.    0.    0.  ]
  </pre>
+
+ # Febuary 23rd Meeting Notes and Better Tables (40 epochs of stitching for each element in there)
+## Notes
+Something went wrong with the training. Here are some options:
+- Loss (Nans), like the MLP: probably just remove autocasting and gradient scaling
+- Rumen has a good set of hyperparameters, ask for them to train a better ResNet18: good accuracy is >= 95%
+- Create some machinery for better testing (etc)
+- Look at the casting issues
+- ResNet18 to ResNet50 (like Yamini's ResNet20-ResNet110 but smaller): look at Rumen's code and then find something ResNet50
+- Look into ViT AFTER we do ResNets
+
+## ResNet18_sim_tensor.pt
+<pre>
+[0.   0.   0.   0.   0.   0.  ]
+[0.   0.9  0.87 0.7  0.53 0.  ]
+[0.   0.32 0.9  0.83 0.59 0.  ]
+[0.   0.13 0.1  0.1  0.1  0.  ]
+[0.   0.1  0.1  0.1  0.1  0.  ]
+[0.   0.   0.   0.   0.   0.  ]
+</pre>
+
+## ResNet18_rand_sim_tensor.pt
+<pre>
+[0.   0.   0.   0.   0.   0.  ]
+[0.   0.76 0.7  0.4  0.3  0.  ]
+[0.   0.69 0.62 0.48 0.27 0.  ]
+[0.   0.43 0.1  0.1  0.3  0.  ]
+[0.   0.1  0.1  0.1  0.27 0.  ]
+[0.   0.   0.   0.   0.   0.  ]
+</pre>
+
+## ResNet18_debias_sim_tensor.pt
+<pre>
+[ 0.    0.    0.    0.    0.    0.  ]
+[ 0.    0.14  0.16  0.3   0.23  0.  ]
+[ 0.   -0.37  0.28  0.36  0.33  0.  ]
+[ 0.   -0.3   0.    0.   -0.2   0.  ]
+[ 0.    0.    0.    0.   -0.17  0.  ]
+[ 0.    0.    0.    0.    0.    0.  ]
+</pre>
