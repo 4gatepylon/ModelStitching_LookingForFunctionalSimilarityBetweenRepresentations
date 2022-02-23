@@ -665,14 +665,14 @@ def create_heatmaps(model_names=["ResNet18"]):
   for model_name in model_names:
     for suffix in suffixes:
       fname = "_".join([model_name, suffix, "tensor"])
+      fname = os.path.join(CIFAR_FOLDER, fname)
       fname_in = fname + ".pt"
       fname_out = fname + ".png"
       Xs = None
       Ys = None
       if model_name == "C35":
-        # Rember that this dictionary maps indices to layers
-        Xs = list(midx2layer.values())
-        Ys = list(midx2layer.values())
+        raise NotImplementedError
+      print("Generating heatmap for {}".format(fname_in))
       matrix_heatmap(
         mat=None, Xs=Xs, Ys=Ys, decimals=2,
         model_name=f"{model_name} {suffix}",
