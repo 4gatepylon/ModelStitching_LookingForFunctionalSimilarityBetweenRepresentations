@@ -1,0 +1,1 @@
+This was a prototyping folder for ResNet experiments on Cifar as well as CNN/MLP experiments on MNIST. "long" simply refers to the fact that the networks are not always the same shape in the MNIST example (and they don't have to be, though they are in our experiments, in the ResNet one either).

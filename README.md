@@ -62,7 +62,7 @@ In the future we will add instructions for how to run on multiple GPUs.
 [ 0.    0.    0.    0.    0.    0.  ]
  </pre>
 
- # Febuary 23rd Meeting Notes and Better Tables (40 epochs of stitching for each element in there)
+# Febuary 23rd Meeting Notes and Better Tables (40 epochs of stitching for each element in there)
 ## Notes
 Something went wrong with the training. Here are some options:
 - Loss (Nans), like the MLP: probably just remove autocasting and gradient scaling
@@ -101,3 +101,12 @@ Something went wrong with the training. Here are some options:
 [ 0.    0.    0.    0.   -0.17  0.  ]
 [ 0.    0.    0.    0.    0.    0.  ]
 </pre>
+
+# Goals for March 1st
+1. Have experimental setup for ALL the ResNets Rumen sent me (plus ResNet9 from FFCV: try to add to Rumen's code)
+2. Have modularized code
+3. Have results for a subset of the ResNets stitches' plus a modular mapping interpretation
+
+Just remember to avoid Autocasting since it can cause numerical issues and the speed should be sufficient just with regular FFCV. It is important that we finish this functionality as soon as possible (ideally the weekend, so that I can run my first batch of experiments over it and then debug) because I want to use this as a kicking stone to move on to ViT and less understood models. I need some infrastructure enable myself to read papers and do "theory" later.
+
+Note that these goals are in more detail in the `README.md` in the `resnet` folder which is going to be our new repository for 
