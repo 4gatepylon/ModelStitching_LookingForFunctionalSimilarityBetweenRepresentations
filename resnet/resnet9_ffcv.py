@@ -28,6 +28,9 @@ try:
 except:
     warn("FFCV not installed. Your code may not run.")
 
+
+from stitchable import Stitchable
+
 BATCH_SIZE = 512
 # Model is assumed to be on cuda:0
 def trainResNet9(model, trainloader, testloader, epochs=24,):
@@ -44,7 +47,7 @@ def trainResNet9(model, trainloader, testloader, epochs=24,):
 
     # Train in one shot since this should be pretty fast
     for ep in range(epochs):
-        print(f"Epoch {ep}")
+        print(f"Epoch {ep}/{epochs}")
         for ims, labs in tqdm(trainloader):
             opt.zero_grad(set_to_none=True)
             out = model(ims)
@@ -111,20 +114,21 @@ def create_dataloaders(device):
         Cutout(8, tuple(map(int, CIFAR_MEAN)))])
       
     image_pipeline.extend([
-      ToTensor(),
-      ToDevice(device, non_blocking=True),
-      ToTorchImage(),
-      # Note how we change it to a 32-bit integer to avoid casting and scaling which we suspect may
-      # or may not have led to NaNs in previous training runs for other ResNets
-      Convert(torch.float32),
-      tv.transforms.Normalize(CIFAR_MEAN, CIFAR_STD)])
+        ToTensor(),
+        ToDevice(device, non_blocking=True),
+        ToTorchImage(),
+        # Note how we DO NOT CHANGE IT TO A HALF TENSOR (16-bit) like they do in the tutorial
+        # since that would mess up our casting now that we are NOT using autocast/scaler, and instead
+        # we do a float tensor
+        Convert(torch.float32),
+        tv.transforms.Normalize(CIFAR_MEAN, CIFAR_STD)])
     loaders[name] = Loader(
         # NOTE that this is hardcoded due to the way we did it before in ../long/cifar.py
         f'../data/cifar_{name}.beton',batch_size=BATCH_SIZE,num_workers=8,
         order=OrderOption.RANDOM,
         drop_last=(name == 'train'),
         pipelines={'image': image_pipeline,'label': label_pipeline})
-  return loaders
+  return loaders['train'], loaders['test']
 
 class ResNet9Cifar(Module):
     def __init__(self, num_classes=10):
@@ -134,8 +138,8 @@ class ResNet9Cifar(Module):
         self.conv64 = conv_bn(3, 64, kernel_size=3, stride=1, padding=1)
         self.conv128 = conv_bn(64, 128, kernel_size=5, stride=2, padding=2)
         self.residual128 = Residual(Sequential(conv_bn(128, 128), conv_bn(128, 128)))
-        self.conv256 = conv_bn(128, 256, kernel_size=3, stride=1, padding=1),
-        self.maxpool256 = MaxPool2d(2),
+        self.conv256 = conv_bn(128, 256, kernel_size=3, stride=1, padding=1)
+        self.maxpool256 = MaxPool2d(2)
         self.residual256 = Residual(Sequential(conv_bn(256, 256), conv_bn(256, 256)))
         self.conv128_later = conv_bn(256, 128, kernel_size=3, stride=1, padding=0)
         # Adaptive maxpool takes in the output size that we 
@@ -147,6 +151,8 @@ class ResNet9Cifar(Module):
         self.linear128 = Linear(128, num_classes, bias=False)
         # I'm not sure why the FFCV tutorial scales everything down like this
         self.multiplier = Mul(0.2)
+
+        # NOTE that we could either do self.runner[l1:l2] or we could insert "vent" identity layers
         self.runner = Sequential(
             self.conv64,
             self.conv128,
@@ -162,9 +168,39 @@ class ResNet9Cifar(Module):
     def forward(self, x):
         return self.runner(x)
 
+# Test for the hooks input
+def print_input_size(self, input):
+  print('Inside ' + self.__class__.__name__ + 'pre forward')
+#   print(type(input), len(input))
+  print(input[0].size())
+
+
+# To make my thing work I need
+# 1. to be able to take in the output from an intermediate layer (not just block)
+# 2. to be able to STOP computation after that output is fetched
+# 3. to be able to insert at an intermediate layer and compute from then onwards
+#    (without having to compute previously)
+# 
+# ^ This is easy if (1) the network is a sequential or if we already have some infrastructure
+# set up in the form of a list, but ideally we want to be able to hack already existing pretrained
+# networks...
+# 
+#
+
 if __name__ == "__main__":
     # This test is meant to run on cuda
     model = ResNet9Cifar()
-    model = model.to(memory_format=torch.channels_last).cuda()
-    trainloader, testloader = create_dataloaders(device='cuda:0')
-    trainResNet9(model, trainloader, testloader, epochs=100)
+
+    # This is very convenient!
+    # print(model.runner[4:])
+    # We can create a model that wraps the resnet putting it in a sequential somehow...
+
+    # See the output of residual128 and then that of residual256
+    # model.conv256.register_forward_pre_hook(print_input_size)
+    # model.conv128_later.register_forward_pre_hook(print_input_size)
+    st = Stitchable(model) # TODO this should print some information
+
+    # Do some generic training
+    # model = model.to(memory_format=torch.channels_last).cuda()
+    # trainloader, testloader = create_dataloaders(device='cuda:0')
+    # trainResNet9(model, trainloader, testloader, epochs=24)

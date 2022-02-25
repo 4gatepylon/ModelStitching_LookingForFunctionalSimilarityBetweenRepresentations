@@ -9,11 +9,13 @@ This is where we will house all our resnet stitching code for Cifar. It will hav
 
 Just remember to avoid Autocasting since it can cause numerical issues and the speed should be sufficient just with regular FFCV. It is important that we finish this functionality as soon as possible (ideally the weekend, so that I can run my first batch of experiments over it and then debug) because I want to use this as a kicking stone to move on to ViT and less understood models. I need some infrastructure enable myself to read papers and do "theory" later.
 
-# Important Note!
-Remember that we want to work smart, not hard! We may be able to avoid a lot of work refactoring the models for stitching by using a forward hook as so: https://discuss.pytorch.org/t/how-can-l-load-my-best-model-as-a-feature-extractor-evaluator/17254/6/. The alternative is to modify the model code directory, put everything in lists, and iterate...
+# Hooks are useful for getting intermediate outputs/setting inputs, but not stitching
+Read:
+- https://discuss.pytorch.org/t/how-can-l-load-my-best-model-as-a-feature-extractor-evaluator/17254/6/
+- https://discuss.pytorch.org/t/how-to-give-input-to-an-intermediate-layer/130685
 
-Immediate next step should be to try forward hook on resnet9 to see if it's a good alternative.
+# Model abstraction using state dict
+So as to enable stitching that is backwards compatible with previous pretrained models, we are going to try and create a tool to
+load state dicts from arbitrary models and then create a new stitchable model (where the only difference is that the new model
+enables you to input or output at intermediate layers).
 
-We may also want to ask Rumen for hyperparameters (lr, scheduling, etcetera) if we are going to be re-training these resnets due to any modifications to them (changing the names of the layers, etcetrera), which is likely to happen. The way I see it there are two main ways to do this:
-1. Add dummy identity layers that we can hook onto with a standardized format OR simply standardize the nams of the block outputs
-2. Create lists of layers and go from one index to another

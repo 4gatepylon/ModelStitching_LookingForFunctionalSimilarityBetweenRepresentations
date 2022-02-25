@@ -21,6 +21,8 @@ __all__ = [
 # We may be able to extract intermediate layers using forward hooks as such:
 # https://discuss.pytorch.org/t/how-can-l-load-my-best-model-as-a-feature-extractor-evaluator/17254/6
 # This is from this forum post https://discuss.pytorch.org/t/how-can-i-extract-intermediate-layer-output-from-loaded-cnn-model/77301
+# For inputs look at https://discuss.pytorch.org/t/how-to-give-input-to-an-intermediate-layer/130685
+# It looks like we can "model slice" and/or register a hook that inputs...
 model_urls = {
     "resnet18": "https://download.pytorch.org/models/resnet18-f37072fd.pth",
     "resnet34": "https://download.pytorch.org/models/resnet34-b627a593.pth",
@@ -315,6 +317,7 @@ def resnet34(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> 
     """
     return _resnet("resnet34", BasicBlock, [3, 4, 6, 3], pretrained, progress, **kwargs)
 
+# NOTE the ones below use bottlenecks and not basic blocks
 
 def resnet50(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> ResNet:
     r"""ResNet-50 model from
