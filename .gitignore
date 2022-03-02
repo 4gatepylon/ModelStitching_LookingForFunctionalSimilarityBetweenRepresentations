@@ -143,6 +143,7 @@ cifar_out/
 # We use this old folder mainly for initial prototyping
 cifar_out_old/
 *tensorboard*/
+pretrained_resnets/
 
 **/experiment-tensorboard-*/**
 **/experiment-tensorboard-**/**

@@ -144,7 +144,66 @@ We think of these sequences of layers as "modules" which may or may not have sim
 % 
 % 
 \section{Introduction}
-...
+... Specifically, say what your goal is (concretely) on a high level as well as explain your journey
+(help them step in your shoes and see things how you see them).
+
+Statsis freewrite:
+\begin{itemize}
+   \item What facts am I responding to? (social trends; discplinary trends; etc.)
+   \item What are the consequences of those facts?
+   \item What is valuable from a researcher/societal perspective about existing facts/work?
+   \item How do those consequences lead to an open question?
+\end{itemize}
+
+The facts that I am responding to are a few. Firstly, we do not know how to properly compare representations.
+This stems also from the fact that we do not understand what a lot of different types of neural networks are
+doing (i.e. we understand some convolutional neural networks but not totally, and attention networks are a lot
+more black-boxy). The consequences are that we find it hard to create robust and human-like-feature-generating
+models especially when using non-CNNs. Also, perhaps, we can care about the fact that training is expensive and
+that we cannot really reuse weights effectively. Lastly, we need to do a lot of data preprocessing, postprocessing,
+etcetera to be able to turn our model's expected inputs/outputs into something that can be used in real life. Thus,
+if we want to do full neural computation we need to break it down and understand it in more detail. The value
+element for our research is that we enble future research to use our building blocks to create tangible things
+(basically we build intellectual infrastructure). These consequences lead to open questions on a high level:
+how can we compare representations? How can we reuse weights most effectively? How can we understand if a
+model learns a human-understandable representation? How can we best combine different models?
+
+\begin{itemize}
+   \item What have others done in response to this same set of facts or in response to this question?
+   \item What did they find?
+   \item What motivates their work?
+\end{itemize}
+
+The stitching paper has done what I'm doing but in a more limited sense. They found that neural networks that we expect
+to be easy to compare and learn similar things do in fact meet those conditions. Their own work was motivated by the same
+curiosity which motivates mine, though it was primarily focused on how we can compare representations.
+
+\begin{itemize}
+   \item What do you do in response to this question?
+   \item What challenges exist for your project?
+   \item How do you set up your approach (what must you define in order for it to make sense, how does your approach build on/respond to what others have done, and what tools, frameworks, corpii, etc... did we use)?
+\end{itemize}
+
+I do my project on stitching different architectures of neural networks. Challenges are figuring out what good stitch function classes
+are as well as a lot of coding and fine-tuning. We set up our approach by creating a big experimental infrastructure to define a bunch of
+stitches across different architectures. We then use the infrastructure to create a bunch of models and compare them.
+
+\begin{itemize}
+   \item How does your prohect answer the open question?
+   \item What are the consequences of your work?
+   \item What value/contributions does your project have or offer (to broader community, to researchers, or to future work)?
+\end{itemize}
+
+My project gives future researches infrastructure to try and better understand and compare neural networks. The idea is that
+if we can use compare different architectures effectively, then we can use our current knowledge to understand other networks.
+It's just building bridges. My project is also going to give people language to talk about their experimental setups that makes
+it completely unambiguous what they are doing (i.e. it is easy to understand often the technicalities of some approach, but it
+is the naming which holds us back: if we can create good lingo through words like "sender" and "reciever" and other things to
+describe stitches, then the field can easily progress faster). My project overall takes us closer to answering the question by
+empowering others and giving us a space of concrete experimentation.
+
+NOTE: good introductions should do what we have done up here.
+
 \subsection{Motivation}
 ...
 % This will discuss why we are doing this. The main goal is to understand neural networks, but we can think of this

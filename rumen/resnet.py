@@ -5,6 +5,8 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 
+RESNETS_FOLDER = "../pretrained_resnets"
+
 __all__ = [
     "ResNet",
     "resnet18",
@@ -192,7 +194,10 @@ class ResNet(nn.Module):
             )
         self.groups = groups
         self.base_width = width_per_group
-        self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=3, stride=1, padding=1, bias=False)  # CIFAR modification
+        # NOTE we need to finetune this when we load because the pretrained versions only have
+        # the 7x7 imagenet convolutions
+        self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=3, stride=1, padding=1, bias=False) 
+
         self.bn1 = norm_layer(self.inplanes)
         self.relu = nn.ReLU(inplace=True)
         # self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)   # CIFAR10 modification
