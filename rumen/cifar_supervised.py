@@ -146,11 +146,11 @@ def train_loop(model, train_loader, test_loader, parameters=None, epochs=None):
             scaler.step(optimizer)
             scaler.update()
 
-        print(f'epoch: {e} | time: {time.time() - start:.3f}')
+        print(f'\t\tepoch: {e} | time: {time.time() - start:.3f}')
 
     eval_acc = evaluate(model, test_loader)
 
-    print(f'final_eval_acc: {eval_acc:.3f}')
+    # print(f'final_eval_acc: {eval_acc:.3f}')
 
     # torch.save(model[0].state_dict(), 'cifar_resnet18_supervised.pth') # NOTE I removed this since I save outside
     return eval_acc, model
@@ -204,7 +204,7 @@ def resnet18_34_stitch(snd_shape, rcv_shape):
     snd_depth, snd_hw, _ = snd_shape
     if type(rcv_shape) == int:
         # you can pass INTO an fc
-        return nn.Sequential(nn.Flatten(), nn.Linear(snd_depth * snd_hw * snd_hw, rcv_shape))
+        return nn.Sequential(nn.Flatten(), nn.Linear(snd_depth * snd_hw * snd_hw, rcv_shape))#, dtype=torch.float16))
     
     # else its tensor to tensor
     rcv_depth, rcv_hw, _ = rcv_shape
@@ -214,13 +214,15 @@ def resnet18_34_stitch(snd_shape, rcv_shape):
     # Downsampling (or same size: 1x1) is just a strided convolution since size decreases always by a power of 2
     # every set of blocks (blocks are broken up into sets that, within those sets, have the same size).
     if downsample_ratio >= upsample_ratio:
-        return nn.Conv2d(snd_depth, rcv_depth, downsample_ratio, stride=downsample_ratio, bias=True)
+        # print(f"DOWNSAMPLE {snd_shape} -> {rcv_shape}: depth={snd_depth} -> {rcv_depth}, kernel_width={downsample_ratio}, stride={downsample_ratio}")
+        return nn.Conv2d(snd_depth, rcv_depth, downsample_ratio, stride=downsample_ratio, bias=True)#, dtype=torch.float16)
     else:
         return nn.Sequential(
             nn.Upsample(scale_factor=upsample_ratio, mode='nearest'),
-            nn.Conv2d(snd_depth, rcv_depth, 1, stride=1, bias=True))
+            nn.Conv2d(snd_depth, rcv_depth, 1, stride=1, bias=True))#, dtype=torch.float16))
 # NOTE that sender, reciever is format into
 def resnet18_34_stitch_shape(sender, reciever):
+    # print(f"SENDER IS {sender} RECIEVER IS {reciever}")
     snd_shape, rcv_shape = None, None
     if sender == "conv1":
         snd_shape = (64, 32, 32)
@@ -233,11 +235,18 @@ def resnet18_34_stitch_shape(sender, reciever):
         snd_shape = (64 * ratio, 32 // ratio, 32 // ratio)
     
     if reciever == "conv1":
-        rcv_shape = (3, 32, 32)
+        raise Exception("conv1 does not recieve")
     elif reciever == "fc":
         return snd_shape, 512 # block expansion = 1 for resnet 18 and 34
     else:
-        blockSet, _ = reciever
+        # NOTE we need to give the shape that the EXPECTED SENDER gives, NOT that of the reciever
+        blockSet, block = reciever
+        if block == 0:
+            blockSet -= 1
+        if blockSet == 0:
+            # It's the conv1 expectee
+            return snd_shape, (64, 32, 32)
+        # ^^^
         ratio =  2**(blockSet - 1)
         rcv_shape = (64 * ratio, 32 // ratio, 32 // ratio)
     return snd_shape, rcv_shape
@@ -261,11 +270,11 @@ def resnet18_34_layer2layer(sender18=True, reciever18=True):
         for rcv_layer in range(0, rcv_iranges[rcv_block - 1]):
             into = (rcv_block, rcv_layer)
             # print(f"[0][{j}]: conv1 -> {into}")
-            transformations[0][j] = resnet18_34_stitch_shape("conv1", into)
+            transformations[0][j] = resnet18_34_stitch(*resnet18_34_stitch_shape("conv1", into))
             idx2label[(0, j)] = ("conv1", into)
             j += 1
     # print(f"[0][{j}]: conv1 -> fc")
-    transformations[0][j] = resnet18_34_stitch_shape("conv1", "fc")
+    transformations[0][j] = resnet18_34_stitch(*resnet18_34_stitch_shape("conv1", "fc"))
     idx2label[(0, j)] = ("conv1", "fc")
     
 
@@ -330,45 +339,41 @@ def main_stitchtrain(args):
     print(f"Sims tables for resnet18 to resnet34 will be {N}x{M}")
     resnet18_resnet34_sims = [[0.0 for _ in range(M)] for _ in range(N)]
     resnet18_rand_resnet34_sims = [[0.0 for _ in range(M)] for _ in range(N)]
-    
-    # TODO we will want to train with the double loop four times and then we will probably use our
-    # previous code to generate pretty tables (though we may have to modify it to enable smarter
-    # labeling: also we will wnat to do some sort of transform to do the comparison: we may be able
-    # to literally just decrement the index)
 
     print("Loading resnets into memory from disk")
-    r18 = resnet18()
-    r18.load_state_dict(torch.load(os.path.join(RESNETS_FOLDER, "resnet18.pt"), map_location=torch.device('cpu')))
-    r18_rand = resnet18()
-    r34 = resnet34()
-    r34.load_state_dict(torch.load(os.path.join(RESNETS_FOLDER, "resnet34.pt"), map_location=torch.device('cpu')))
+    r18 = resnet18().cuda()
+    r18.load_state_dict(torch.load(os.path.join(RESNETS_FOLDER, "resnet18.pt")))#, map_location=torch.device('cpu')))
+    r18_rand = resnet18().cuda()
+    r34 = resnet34().cuda()
+    r34.load_state_dict(torch.load(os.path.join(RESNETS_FOLDER, "resnet34.pt")))#, map_location=torch.device('cpu')))
 
     print("Getting loaders")
     train_loader, test_loader = get_loaders()
 
     print("Confirming that acc is high")
     accp = 0.0
-    # accp = evaluate(r18, test_loader)
+    accp = evaluate(r18, test_loader)
     r18_acc = accp / 100.0
-    # print(f"Accuracy of resnet18 is {accp}%")
-    # assert accp > 90
+    print(f"Accuracy of resnet18 is {accp}%")
+    assert accp > 90
     
-    # accp = evaluate(r18_rand, test_loader)
+    accp = evaluate(r18_rand, test_loader)
     r18_rand_acc = accp / 100.0
-    # print(f"Accuracy of resnet18 random is {accp}%")
-    # assert accp < 20
+    print(f"Accuracy of resnet18 random is {accp}%")
+    assert accp < 20
 
-    # accp = evaluate(r34, test_loader)
+    accp = evaluate(r34, test_loader)
     r34_acc = accp / 100.0
-    # print(f"Accuracy of resnet34 is {accp}%")
-    # assert accp > 90
+    print(f"Accuracy of resnet34 is {accp}%")
+    assert accp > 90
 
     print("Generating similarity tables")
-    for sender, reciever, table, idx2label, orig_acc1, orig_acc2 in [
-        (r18, r18, resnet18_resnet18_sims, idx2label_18_18, r18_acc, r18_acc),
-        (r18, r18_rand, resnet18_rand_resnet18_sims, idx2label_18_rand_18, r18_acc, r18_rand_acc),
-        (r18, r34, resnet18_resnet34_sims, idx2label_18_34, r18_acc, r34_acc),
-        (r18_rand, r34, resnet18_rand_resnet34_sims, idx2label_18_rand_34, r18_rand_acc, r34_acc),
+    for sender, reciever, transformations, table, idx2label, orig_acc1, orig_acc2, filename in [
+        # (r18, r18, resnet18_resnet18, resnet18_resnet18_sims, idx2label_18_18, r18_acc, r18_acc, "resnet18_resnet18_sims.pt"),
+        # NOTE: uncomment plz
+        # (r18_rand, r18, resnet18_rand_resnet18, resnet18_rand_resnet18_sims, idx2label_18_rand_18, r18_acc, r18_rand_acc, "resnet18_rand_resnet18_sims.pt"),
+        (r18, r34, resnet18_resnet34, resnet18_resnet34_sims, idx2label_18_34, r18_acc, r34_acc, "resnet18_resnet34_sims.pt"),
+        # (r18_rand, r34, resnet18_rand_resnet34, resnet18_rand_resnet34_sims, idx2label_18_rand_34, r18_rand_acc, r34_acc,"resnet18_rand_resnet34_sims.pt"),
         ]:
         N = len(table)
         M = len(table[0])
@@ -377,18 +382,27 @@ def main_stitchtrain(args):
         # NOTE that this is outfrom, into format
         for i in range(N - 1):
             for j in range(1, M):
-                acc = 0.0
-                orig_acc = min(orig_acc1, orig_acc2)
+                try:
+                    acc = 0.0
+                    orig_acc = min(orig_acc1, orig_acc2)
 
-                # outfrom, into where both outfrom and into are tuples (blockset, block) or "conv1" or "fc"
-                snd_label, rcv_label = idx2label[(i, j)]
-                print(f"\tstitching {i}->{j} which is {snd_label}->{rcv_label}")
-                model = Stitched(sender, reciever, snd_label, rcv_label, table[i][j])
-                # acc = train_loader(model, train_loader, test_loader, epochs=1)
-                print(f"\tAccuracy of model is {acc}")
-                print(f"\tOriginal accuracy was {orig_acc}")
-                # we can just take note of this from the text, but it may be useful later...
-                table[i][j] = acc# / orig_acc
+                    # outfrom, into where both outfrom and into are tuples (blockset, block) or "conv1" or "fc"
+                    snd_label, rcv_label = idx2label[(i, j)]
+                    print(f"\tstitching {i}->{j} which is {snd_label}->{rcv_label}")
+                    st = transformations[i][j].cuda()
+                    model = Stitched(sender, reciever, snd_label, rcv_label, st)
+                    acc, _ = train_loop(model, train_loader, test_loader, epochs=2, parameters=list(st.parameters()))
+                    acc /= 100.0
+                    print(f"\tAccuracy of model is {acc}")
+                    print(f"\tOriginal accuracy was {orig_acc}")
+                    # we can just take note of this from the text, but it may be useful later...
+                    table[i][j] = acc# / orig_acc
+                except:
+                    table[i][j] = -1 # NOTE so we can fix (should not actually happen)
+
+                # NOTE temp so that we can viz if the code fails
+                # torch.save(torch.tensor(table), filename)
+                pass
 
     # TODO save the tensors
     print("Saving the similarity tensors right here")

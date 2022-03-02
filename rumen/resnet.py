@@ -310,8 +310,8 @@ class ResNet(nn.Module):
                 vent = 0
             if ventBlock == 4:
                 x = self.layer4[vent:](x)
-                vent = 0
                 ventBlock += 1
+                vent = 0
             if vent != 0 or ventBlock != 5:
                 raise Exception(f"Vent ended up at {vent} and ventBlock at {ventBlock} but should be 0 and 5")
         
@@ -344,7 +344,7 @@ class ResNet(nn.Module):
             x = self.layer2(x)
         
         if ventBlock == 3:
-            return self.layer3[vent+1](x)
+            return self.layer3[:vent+1](x)
         else:
             x = self.layer3(x)
         
