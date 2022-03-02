@@ -1,5 +1,5 @@
 # modified from https://github.com/pytorch/vision/blob/main/torchvision/models/resnet.py
-from typing import Type, Any, Callable, Union, List, Optional
+from typing import Type, Any, Callable, Union, List, Optional, Tuple
 
 import torch
 import torch.nn as nn
@@ -206,7 +206,7 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2, dilate=replace_stride_with_dilation[1])
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2, dilate=replace_stride_with_dilation[2])
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        # self.fc = nn.Linear(512 * block.expansion, num_classes)   # CIFAR10 modification
+        self.fc = nn.Linear(512 * block.expansion, num_classes)   # NOTE we add this back for stitching
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -229,7 +229,7 @@ class ResNet(nn.Module):
             self,
             block: Type[Union[BasicBlock, Bottleneck]],
             planes: int,
-            blocks: int,
+            blocks: int, # This is layers[i] if this is the [i]th size layers
             stride: int = 1,
             dilate: bool = False,
     ) -> nn.Sequential:
@@ -263,11 +263,9 @@ class ResNet(nn.Module):
                     norm_layer=norm_layer,
                 )
             )
-
         return nn.Sequential(*layers)
 
-    def _forward_impl(self, x: Tensor) -> Tensor:
-        # See note [TorchScript super()]
+    def full_forward(self, x: Tensor):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -280,12 +278,92 @@ class ResNet(nn.Module):
 
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
-        # x = self.fc(x)   # CIFAR10 modification
+        x = self.fc(x)
 
         return x
 
-    def forward(self, x: Tensor) -> Tensor:
-        return self._forward_impl(x)
+    def into_forward(self,
+        x: Tensor,
+        # NOTE if they pass a string it is one of
+        #  "fc"
+        #  "conv1"
+        # otherwise it's either ([1-4], [1-#blocks in "layer"])
+        vent: Union[Tuple[int, int], str]) -> Tensor:
+        if vent == "conv1":
+            return self.full_forward(x)
+        elif vent == "fc":
+            return self.fc(x)
+        else:
+            # Resnets vent every time so that we can shorten our code
+            ventBlock, vent = vent
+            if ventBlock == 1:
+                x = self.layer1[vent:](x)
+                ventBlock += 1
+                vent = 0
+            if ventBlock == 2:
+                x = self.layer2[vent:](x)
+                ventBlock += 1
+                vent = 0
+            if ventBlock == 3:
+                x = self.layer3[vent:](x)
+                ventBlock += 1
+                vent = 0
+            if ventBlock == 4:
+                x = self.layer4[vent:](x)
+                vent = 0
+                ventBlock += 1
+            if vent != 0 or ventBlock != 5:
+                raise Exception(f"Vent ended up at {vent} and ventBlock at {ventBlock} but should be 0 and 5")
+        
+        x = self.avgpool(x)
+        x = torch.flatten(x, 1)
+        x = self.fc(x)
+        return x
+
+    def outfrom_forward(self,
+        x: Tensor, 
+        vent: Union[Tuple[int, int], str]):
+        x = self.conv1(x)
+        if vent == "conv1":
+            return x
+        elif vent == "fc":
+            return self.full_forward(x)
+        
+        ventBlock, vent = vent
+        x = self.bn1(x)
+        x = self.relu(x)
+        # NOTE we always take vent+1 because lists are exclusive in python
+        if ventBlock == 1:
+            return self.layer1[:vent+1](x)
+        else:
+            x = self.layer1(x)
+        
+        if ventBlock == 2:
+            return self.layer2[:vent+1](x)
+        else:
+            x = self.layer2(x)
+        
+        if ventBlock == 3:
+            return self.layer3[vent+1](x)
+        else:
+            x = self.layer3(x)
+        
+        if ventBlock == 4:
+            return self.layer4[:vent+1](x)
+        raise Exception(f"Tried to vent from {(ventBlock, vent)} which is not valid")
+
+    # NOTE that vent is 1-indexxed
+    # NOTE that if you go into then you put it INTO the layer you are "venting" towards
+    #   (that is to say, if you want to compare two conv1s, you do NOT vent into conv1, you vent into (1, 0))
+    # NOTE that if you go outfrom (not into) then you take it OUT from the output of that layer
+    #   (that is to say, you DO in fact take out from conv1 if you want to compare conv1s)
+    def forward(self,
+        x: Tensor, 
+        vent: Union[Tuple[int, int], str]="conv1",
+        into: bool=True) -> Tensor:
+        if into:
+            return self.into_forward(x, vent)
+        return self.outfrom_forward(x, vent)
 
 
 def _resnet(

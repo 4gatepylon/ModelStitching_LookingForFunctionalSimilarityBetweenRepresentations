@@ -138,12 +138,17 @@ data/
 mnist_cnn_*.pt
 mnist_cnn_**.pt
 
+Data/*
+Data/
+
 # This is where we'll store some output
 cifar_out/
 # We use this old folder mainly for initial prototyping
 cifar_out_old/
 *tensorboard*/
 pretrained_resnets/
+tmp/
+*/tmp/
 
 **/experiment-tensorboard-*/**
 **/experiment-tensorboard-**/**

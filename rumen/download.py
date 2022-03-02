@@ -39,9 +39,6 @@ def generate(name):
 
     stateDict= torch.load(fname)
     # NOTE this is a hack to avoid problems with the state dict
-    # These remove the final linear layer according to "CIFAR10 modification"
-    del stateDict['fc.weight']
-    del stateDict['fc.bias']
     # This is to fix the problem that arises from the fact that conv1 for imagenet is
     # a 7x7. Note how in the resnet.py code, self.inplanes is 64 at the start. This
     # works because the state dict is literally just matrices, and they are added
@@ -51,11 +48,7 @@ def generate(name):
     model.load_state_dict(stateDict)
     return model
 
-FINETUNE_EPOCHS = 40
-if __name__ == "__main__":
-    if not os.path.isdir(RESNETS_FOLDER):
-        os.mkdir(RESNETS_FOLDER)
-    # Download the imagenet version of the resnets
+def download_imagenet_models():
     for name, url in model_urls.items():
         fname = f"{name}_imagenet.pt"
         fname = os.path.join(RESNETS_FOLDER, fname)
@@ -64,10 +57,28 @@ if __name__ == "__main__":
             r = requests.get(url)
             with open(fname, "wb") as f:
                 f.write(r.content)
-    # Finetune and save CIFAR-10 modification
-    for name, url in model_urls.items():
-        fname = f"{name}.pt"
-        fname = os.path.join(RESNETS_FOLDER, fname)
-        if not os.path.isfile(fname):
-            model = generate(name)
-            train()
+
+def cifar_model_from_imagenet_model(name):
+    fname = f"{name}.pt"
+    fname = os.path.join(RESNETS_FOLDER, fname)
+    if not os.path.isfile(fname):
+        model = generate(name)
+        return model, False
+    else:
+        # NOTE this is not the same statedict as the "imagenet" one
+        model = model_constructors[name](pretrained=True, progress=True)
+        model.load_state_dict(torch.load(fname))
+        return model, True
+    
+def cifar_models_from_imagenet_models():
+    return { name : cifar_model_from_imagenet_model(name) for name, url in model_urls.items() }
+        
+
+if __name__ == "__main__":
+    if not os.path.isdir(RESNETS_FOLDER):
+        os.mkdir(RESNETS_FOLDER)
+    download_imagenet_models()
+    models = cifar_models_from_imagenet_models()
+    # NOTE here you might want to finetune; we do it inside cifar_supervised.py
+    
+            
