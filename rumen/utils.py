@@ -81,8 +81,8 @@ def knn_predict(feature, feature_bank, feature_labels, classes, knn_k, knn_t):
     return pred_labels
 
 def evaluate(model, test_loader):
-    for layer in model:
-        layer.eval()
+    # NOTE used to be for layer in model
+    model.eval()
 
     for idx, (images, labels) in enumerate(test_loader):
         total_correct, total_num = 0., 0.
@@ -90,8 +90,7 @@ def evaluate(model, test_loader):
         with torch.no_grad():
             with autocast():
                 h = images
-                for layer in model:
-                    h = layer(h)
+                h = model(h)
                 preds = h.argmax(dim=1)
                 total_correct = (preds == labels).sum().cpu().item()
                 total_num += h.shape[0]

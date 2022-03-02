@@ -1,3 +1,4 @@
+print("importing")
 import os
 import time
 import argparse
@@ -8,7 +9,7 @@ import torch.nn.functional as F
 
 import torchvision
 
-from resnet import RESNETS_FOLDER
+from resnet import RESNETS_FOLDER, resnet18, resnet34
 
 from download import (
     cifar_models_from_imagenet_models
@@ -27,6 +28,7 @@ from ffcv.transforms import RandomHorizontalFlip, Cutout, \
     RandomTranslate, Convert, ToDevice, ToTensor, ToTorchImage
 from ffcv.transforms.common import Squeeze
 from ffcv.writer import DatasetWriter
+print("done importing")
 
 CIFAR_MEAN = [125.307, 122.961, 113.8575]
 CIFAR_STD = [51.5865, 50.847, 51.255]
@@ -206,8 +208,8 @@ def resnet18_34_stitch(snd_shape, rcv_shape):
     
     # else its tensor to tensor
     rcv_depth, rcv_hw, _ = rcv_shape
-    upsample_ratio = int(rcv_hw / snd_hw)
-    downsample_ratio = int(snd_hw / rcv_hw)
+    upsample_ratio = rcv_hw // snd_hw
+    downsample_ratio = snd_hw // rcv_hw
     
     # Downsampling (or same size: 1x1) is just a strided convolution since size decreases always by a power of 2
     # every set of blocks (blocks are broken up into sets that, within those sets, have the same size).
@@ -228,7 +230,7 @@ def resnet18_34_stitch_shape(sender, reciever):
         blockSet, _ = sender
         # every blockSet the image halves in size, the depth doubles, and the 
         ratio =  2**(blockSet - 1)
-        snd_shape = (64 * ratio, 32 / ratio, 32 / ratio)
+        snd_shape = (64 * ratio, 32 // ratio, 32 // ratio)
     
     if reciever == "conv1":
         rcv_shape = (3, 32, 32)
@@ -237,33 +239,165 @@ def resnet18_34_stitch_shape(sender, reciever):
     else:
         blockSet, _ = reciever
         ratio =  2**(blockSet - 1)
-        rcv_shape = (64 * ratio, 32 / ratio, 32 / ratio)
+        rcv_shape = (64 * ratio, 32 // ratio, 32 // ratio)
     return snd_shape, rcv_shape
 
-def resnet18_34_layer2layer():
-    # NOTE format is outfrom, into
-    stitches = {
-        (snd_block, snd_layer) : [(rcv_block, rcv_layer) for rcv_block in range(1, 5) for rcv_layer in range(0, 2)]
-        for snd_block in range(1, 5) for snd_layer in range(0, 2)
-    }
-    stitches["conv1"] = ["conv1"] + [(i, j) for i in range(1, 5) for j in range(0, 2)] + ["fc"]
-    stitches["fc"] = ["fc"]
-    # print(f"stitches are\n{stitches}")
+def resnet18_34_layer2layer(sender18=True, reciever18=True):
+    # look at the code in ../rumen/resnet (i.e. ./resnet)
+    snd_iranges = [2, 2, 2, 2] if sender18 else [3, 4, 6, 3]
+    rcv_iranges = [2, 2, 2, 2] if reciever18 else [3, 4, 6, 3]
+
+    # 2 for conv1 and fc
+    sndN = sum(snd_iranges) + 2
+    rcvN = sum(rcv_iranges) + 2
+    transformations = [[None for _ in range(rcvN)] for _ in range(sndN)]
+    # print(f"transformations table is hxw= {sndN}x{rcvN}")
+
+    idx2label = {}
+
+    # Connect conv1 INTO everything else
+    j = 1
+    for rcv_block in range(1, 5):
+        for rcv_layer in range(0, rcv_iranges[rcv_block - 1]):
+            into = (rcv_block, rcv_layer)
+            # print(f"[0][{j}]: conv1 -> {into}")
+            transformations[0][j] = resnet18_34_stitch_shape("conv1", into)
+            idx2label[(0, j)] = ("conv1", into)
+            j += 1
+    # print(f"[0][{j}]: conv1 -> fc")
+    transformations[0][j] = resnet18_34_stitch_shape("conv1", "fc")
+    idx2label[(0, j)] = ("conv1", "fc")
     
-    transformations = {
-        (outfrom, into): resnet18_34_stitch(*resnet18_34_stitch_shape(outfrom, into))  for into in intos for outfrom, intos in stitches.items()
-    }
 
-    # TODO convert to a tabular format
+    # Connect all the blocks INTO everything else
+    i = 1
+    for snd_block in range(1, 5):
+        for snd_layer in range(0, snd_iranges[snd_block - 1]):
+            j = 1
+            outfrom = (snd_block, snd_layer)
+            for rcv_block in range(1, 5):
+                for rcv_layer in range(0, rcv_iranges[rcv_block - 1]):
+                    into = (rcv_block, rcv_layer)
+                    # print(f"[{i}][{j}]: {outfrom} -> {into}")
+                    transformations[i][j] = resnet18_34_stitch(*resnet18_34_stitch_shape(outfrom, into))
+                    idx2label[(i, j)] = (outfrom, into)
+                    j += 1
+            # print(f"[{i}][{j}]: {outfrom} -> fc")
+            transformations[i][j] = resnet18_34_stitch(*resnet18_34_stitch_shape(outfrom, "fc"))
+            idx2label[(i, j)] = (outfrom, "fc")
+            j += 1
+            i += 1
+    # print(idx2label)
+    return transformations, None, idx2label
 
-    return transformations
+class Stitched(nn.Module):
+    def __init__(self, net1, net2, snd_label, rcv_label, stitch):
+        super(Stitched, self).__init__()
+        self.sender = net1
+        self.reciever = net2
+        self.snd_lbl = snd_label
+        self.rcv_lbl = rcv_label
+        self.stitch = stitch
+
+    def forward(self, x):
+        h = self.sender(x, vent=self.snd_lbl, into=False)
+        h = self.stitch(h)
+        h = self.reciever(h, vent=self.rcv_lbl, into=True)
+        return h
+
 
 def main_stitchtrain(args):
-    print("stitch training")
-    transformations = resnet18_34_layer2layer()
-    print(transformations.keys())
-    pass
+    print("Generating resnet18 to resnet18 (and with random) stitches")
+    resnet18_resnet18, _, idx2label_18_18 = resnet18_34_layer2layer(sender18=True, reciever18=True)
+    resnet18_rand_resnet18, _, idx2label_18_rand_18 = resnet18_34_layer2layer(sender18=True, reciever18=True)
 
+    # This is the most interesting
+    print("Generating resnet18 to resnet34 (and with random) stitches")
+    resnet18_resnet34, _, idx2label_18_34 = resnet18_34_layer2layer(sender18=True, reciever18=False)
+    resnet18_rand_resnet34, _, idx2label_18_rand_34 = resnet18_34_layer2layer(sender18=True, reciever18=False)
+
+    # print("Generating resnet34 to resnet34 (and with random) stitches") # NOTE we skip this for now
+    # resnet34_resnet34, _, idx2label = resnet18_34_layer2layer(sender18=False, reciever18=False)
+    # resnet34_rand_resnet18, _, idx2label = resnet18_34_layer2layer(sender18=False, reciever18=False)
+
+    N = len(resnet18_resnet18)
+    print(f"Sims tables for resnet18 to resnet18 will be {N}x{N}")
+    resnet18_resnet18_sims = [[0.0 for _ in range(N)] for _ in range(N)]
+    resnet18_rand_resnet18_sims = [[0.0 for _ in range(N)] for _ in range(N)]
+
+    N = len(resnet18_resnet34)
+    M = len(resnet18_resnet34[0])
+    print(f"Sims tables for resnet18 to resnet34 will be {N}x{M}")
+    resnet18_resnet34_sims = [[0.0 for _ in range(M)] for _ in range(N)]
+    resnet18_rand_resnet34_sims = [[0.0 for _ in range(M)] for _ in range(N)]
+    
+    # TODO we will want to train with the double loop four times and then we will probably use our
+    # previous code to generate pretty tables (though we may have to modify it to enable smarter
+    # labeling: also we will wnat to do some sort of transform to do the comparison: we may be able
+    # to literally just decrement the index)
+
+    print("Loading resnets into memory from disk")
+    r18 = resnet18()
+    r18.load_state_dict(torch.load(os.path.join(RESNETS_FOLDER, "resnet18.pt"), map_location=torch.device('cpu')))
+    r18_rand = resnet18()
+    r34 = resnet34()
+    r34.load_state_dict(torch.load(os.path.join(RESNETS_FOLDER, "resnet34.pt"), map_location=torch.device('cpu')))
+
+    print("Getting loaders")
+    train_loader, test_loader = get_loaders()
+
+    print("Confirming that acc is high")
+    accp = 0.0
+    # accp = evaluate(r18, test_loader)
+    r18_acc = accp / 100.0
+    # print(f"Accuracy of resnet18 is {accp}%")
+    # assert accp > 90
+    
+    # accp = evaluate(r18_rand, test_loader)
+    r18_rand_acc = accp / 100.0
+    # print(f"Accuracy of resnet18 random is {accp}%")
+    # assert accp < 20
+
+    # accp = evaluate(r34, test_loader)
+    r34_acc = accp / 100.0
+    # print(f"Accuracy of resnet34 is {accp}%")
+    # assert accp > 90
+
+    print("Generating similarity tables")
+    for sender, reciever, table, idx2label, orig_acc1, orig_acc2 in [
+        (r18, r18, resnet18_resnet18_sims, idx2label_18_18, r18_acc, r18_acc),
+        (r18, r18_rand, resnet18_rand_resnet18_sims, idx2label_18_rand_18, r18_acc, r18_rand_acc),
+        (r18, r34, resnet18_resnet34_sims, idx2label_18_34, r18_acc, r34_acc),
+        (r18_rand, r34, resnet18_rand_resnet34_sims, idx2label_18_rand_34, r18_rand_acc, r34_acc),
+        ]:
+        N = len(table)
+        M = len(table[0])
+        # NOTE that we do not take the output from the very last layer so we can ignore it and similarly
+        # no one gives into the first layer so we can ignore it
+        # NOTE that this is outfrom, into format
+        for i in range(N - 1):
+            for j in range(1, M):
+                acc = 0.0
+                orig_acc = min(orig_acc1, orig_acc2)
+
+                # outfrom, into where both outfrom and into are tuples (blockset, block) or "conv1" or "fc"
+                snd_label, rcv_label = idx2label[(i, j)]
+                print(f"\tstitching {i}->{j} which is {snd_label}->{rcv_label}")
+                model = Stitched(sender, reciever, snd_label, rcv_label, table[i][j])
+                # acc = train_loader(model, train_loader, test_loader, epochs=1)
+                print(f"\tAccuracy of model is {acc}")
+                print(f"\tOriginal accuracy was {orig_acc}")
+                # we can just take note of this from the text, but it may be useful later...
+                table[i][j] = acc# / orig_acc
+
+    # TODO save the tensors
+    print("Saving the similarity tensors right here")
+    torch.save(torch.tensor(resnet18_resnet18_sims), "resnet18_resnet18_sims.pt")
+    torch.save(torch.tensor(resnet18_rand_resnet18_sims), "resnet18_rand_resnet18_sims.pt")
+    torch.save(torch.tensor(resnet18_resnet34_sims), "resnet18_resnet34_sims.pt")
+    torch.save(torch.tensor(resnet18_rand_resnet34_sims), "resnet18_rand_resnet34_sims.pt")
+    # TODO generate pretty tables
+    pass
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -275,7 +409,7 @@ if __name__ == '__main__':
     parser.add_argument('--bsz', default=256, type=int)
     parser.add_argument('--lr', default=0.01, type=float)
     parser.add_argument('--warmup', default=10, type=int)
-    parser.add_argument('--epochs', default=100, type=int)
+    parser.add_argument('--epochs', default=1, type=int) # NOTE this is modified
     parser.add_argument('--wd', default=0.01, type=float)
 
     parser.add_argument('--encoder', default='random-resnet18', type=str, choices=['random-resnet18',
@@ -291,4 +425,145 @@ if __name__ == '__main__':
     if pretrain:
         main_pretrain(args)
     else:
-        raise NotImplementedError
+        main_stitchtrain(args)
+
+# Resnet34 dimensions for batch size 1:
+# NOTE how they are THE SAME AS THOSE OF RESNET18! (within block sets)
+# ==========================================================================================
+# Layer (type:depth-idx)                   Output Shape              Param #
+# ==========================================================================================
+# ResNet                                   --                        --
+# ├─Conv2d: 1-1                            [1, 64, 32, 32]           1,728
+# ├─BatchNorm2d: 1-2                       [1, 64, 32, 32]           128
+# ├─ReLU: 1-3                              [1, 64, 32, 32]           --
+# ├─Sequential: 1-4                        [1, 64, 32, 32]           --
+# │    └─BasicBlock: 2-1                   [1, 64, 32, 32]           --
+# │    │    └─Conv2d: 3-1                  [1, 64, 32, 32]           36,864
+# │    │    └─BatchNorm2d: 3-2             [1, 64, 32, 32]           128
+# │    │    └─ReLU: 3-3                    [1, 64, 32, 32]           --
+# │    │    └─Conv2d: 3-4                  [1, 64, 32, 32]           36,864
+# │    │    └─BatchNorm2d: 3-5             [1, 64, 32, 32]           128
+# │    │    └─ReLU: 3-6                    [1, 64, 32, 32]           --
+# │    └─BasicBlock: 2-2                   [1, 64, 32, 32]           --
+# │    │    └─Conv2d: 3-7                  [1, 64, 32, 32]           36,864
+# │    │    └─BatchNorm2d: 3-8             [1, 64, 32, 32]           128
+# │    │    └─ReLU: 3-9                    [1, 64, 32, 32]           --
+# │    │    └─Conv2d: 3-10                 [1, 64, 32, 32]           36,864
+# │    │    └─BatchNorm2d: 3-11            [1, 64, 32, 32]           128
+# │    │    └─ReLU: 3-12                   [1, 64, 32, 32]           --
+# │    └─BasicBlock: 2-3                   [1, 64, 32, 32]           --
+# │    │    └─Conv2d: 3-13                 [1, 64, 32, 32]           36,864
+# │    │    └─BatchNorm2d: 3-14            [1, 64, 32, 32]           128
+# │    │    └─ReLU: 3-15                   [1, 64, 32, 32]           --
+# │    │    └─Conv2d: 3-16                 [1, 64, 32, 32]           36,864
+# │    │    └─BatchNorm2d: 3-17            [1, 64, 32, 32]           128
+# │    │    └─ReLU: 3-18                   [1, 64, 32, 32]           --
+# ├─Sequential: 1-5                        [1, 128, 16, 16]          --
+# │    └─BasicBlock: 2-4                   [1, 128, 16, 16]          --
+# │    │    └─Conv2d: 3-19                 [1, 128, 16, 16]          73,728
+# │    │    └─BatchNorm2d: 3-20            [1, 128, 16, 16]          256
+# │    │    └─ReLU: 3-21                   [1, 128, 16, 16]          --
+# │    │    └─Conv2d: 3-22                 [1, 128, 16, 16]          147,456
+# │    │    └─BatchNorm2d: 3-23            [1, 128, 16, 16]          256
+# │    │    └─Sequential: 3-24             [1, 128, 16, 16]          8,448
+# │    │    └─ReLU: 3-25                   [1, 128, 16, 16]          --
+# │    └─BasicBlock: 2-5                   [1, 128, 16, 16]          --
+# │    │    └─Conv2d: 3-26                 [1, 128, 16, 16]          147,456
+# │    │    └─BatchNorm2d: 3-27            [1, 128, 16, 16]          256
+# │    │    └─ReLU: 3-28                   [1, 128, 16, 16]          --
+# │    │    └─Conv2d: 3-29                 [1, 128, 16, 16]          147,456
+# │    │    └─BatchNorm2d: 3-30            [1, 128, 16, 16]          256
+# │    │    └─ReLU: 3-31                   [1, 128, 16, 16]          --
+# │    └─BasicBlock: 2-6                   [1, 128, 16, 16]          --
+# │    │    └─Conv2d: 3-32                 [1, 128, 16, 16]          147,456
+# │    │    └─BatchNorm2d: 3-33            [1, 128, 16, 16]          256
+# │    │    └─ReLU: 3-34                   [1, 128, 16, 16]          --
+# │    │    └─Conv2d: 3-35                 [1, 128, 16, 16]          147,456
+# │    │    └─BatchNorm2d: 3-36            [1, 128, 16, 16]          256
+# │    │    └─ReLU: 3-37                   [1, 128, 16, 16]          --
+# │    └─BasicBlock: 2-7                   [1, 128, 16, 16]          --
+# │    │    └─Conv2d: 3-38                 [1, 128, 16, 16]          147,456
+# │    │    └─BatchNorm2d: 3-39            [1, 128, 16, 16]          256
+# │    │    └─ReLU: 3-40                   [1, 128, 16, 16]          --
+# │    │    └─Conv2d: 3-41                 [1, 128, 16, 16]          147,456
+# │    │    └─BatchNorm2d: 3-42            [1, 128, 16, 16]          256
+# │    │    └─ReLU: 3-43                   [1, 128, 16, 16]          --
+# ├─Sequential: 1-6                        [1, 256, 8, 8]            --
+# │    └─BasicBlock: 2-8                   [1, 256, 8, 8]            --
+# │    │    └─Conv2d: 3-44                 [1, 256, 8, 8]            294,912
+# │    │    └─BatchNorm2d: 3-45            [1, 256, 8, 8]            512
+# │    │    └─ReLU: 3-46                   [1, 256, 8, 8]            --
+# │    │    └─Conv2d: 3-47                 [1, 256, 8, 8]            589,824
+# │    │    └─BatchNorm2d: 3-48            [1, 256, 8, 8]            512
+# │    │    └─Sequential: 3-49             [1, 256, 8, 8]            33,280
+# │    │    └─ReLU: 3-50                   [1, 256, 8, 8]            --
+# │    └─BasicBlock: 2-9                   [1, 256, 8, 8]            --
+# │    │    └─Conv2d: 3-51                 [1, 256, 8, 8]            589,824
+# │    │    └─BatchNorm2d: 3-52            [1, 256, 8, 8]            512
+# │    │    └─ReLU: 3-53                   [1, 256, 8, 8]            --
+# │    │    └─Conv2d: 3-54                 [1, 256, 8, 8]            589,824
+# │    │    └─BatchNorm2d: 3-55            [1, 256, 8, 8]            512
+# │    │    └─ReLU: 3-56                   [1, 256, 8, 8]            --
+# │    └─BasicBlock: 2-10                  [1, 256, 8, 8]            --
+# │    │    └─Conv2d: 3-57                 [1, 256, 8, 8]            589,824
+# │    │    └─BatchNorm2d: 3-58            [1, 256, 8, 8]            512
+# │    │    └─ReLU: 3-59                   [1, 256, 8, 8]            --
+# │    │    └─Conv2d: 3-60                 [1, 256, 8, 8]            589,824
+# │    │    └─BatchNorm2d: 3-61            [1, 256, 8, 8]            512
+# │    │    └─ReLU: 3-62                   [1, 256, 8, 8]            --
+# │    └─BasicBlock: 2-11                  [1, 256, 8, 8]            --
+# │    │    └─Conv2d: 3-63                 [1, 256, 8, 8]            589,824
+# │    │    └─BatchNorm2d: 3-64            [1, 256, 8, 8]            512
+# │    │    └─ReLU: 3-65                   [1, 256, 8, 8]            --
+# │    │    └─Conv2d: 3-66                 [1, 256, 8, 8]            589,824
+# │    │    └─BatchNorm2d: 3-67            [1, 256, 8, 8]            512
+# │    │    └─ReLU: 3-68                   [1, 256, 8, 8]            --
+# │    └─BasicBlock: 2-12                  [1, 256, 8, 8]            --
+# │    │    └─Conv2d: 3-69                 [1, 256, 8, 8]            589,824
+# │    │    └─BatchNorm2d: 3-70            [1, 256, 8, 8]            512
+# │    │    └─ReLU: 3-71                   [1, 256, 8, 8]            --
+# │    │    └─Conv2d: 3-72                 [1, 256, 8, 8]            589,824
+# │    │    └─BatchNorm2d: 3-73            [1, 256, 8, 8]            512
+# │    │    └─ReLU: 3-74                   [1, 256, 8, 8]            --
+# │    └─BasicBlock: 2-13                  [1, 256, 8, 8]            --
+# │    │    └─Conv2d: 3-75                 [1, 256, 8, 8]            589,824
+# │    │    └─BatchNorm2d: 3-76            [1, 256, 8, 8]            512
+# │    │    └─ReLU: 3-77                   [1, 256, 8, 8]            --
+# │    │    └─Conv2d: 3-78                 [1, 256, 8, 8]            589,824
+# │    │    └─BatchNorm2d: 3-79            [1, 256, 8, 8]            512
+# │    │    └─ReLU: 3-80                   [1, 256, 8, 8]            --
+# ├─Sequential: 1-7                        [1, 512, 4, 4]            --
+# │    └─BasicBlock: 2-14                  [1, 512, 4, 4]            --
+# │    │    └─Conv2d: 3-81                 [1, 512, 4, 4]            1,179,648
+# │    │    └─BatchNorm2d: 3-82            [1, 512, 4, 4]            1,024
+# │    │    └─ReLU: 3-83                   [1, 512, 4, 4]            --
+# │    │    └─Conv2d: 3-84                 [1, 512, 4, 4]            2,359,296
+# │    │    └─BatchNorm2d: 3-85            [1, 512, 4, 4]            1,024
+# │    │    └─Sequential: 3-86             [1, 512, 4, 4]            132,096
+# │    │    └─ReLU: 3-87                   [1, 512, 4, 4]            --
+# │    └─BasicBlock: 2-15                  [1, 512, 4, 4]            --
+# │    │    └─Conv2d: 3-88                 [1, 512, 4, 4]            2,359,296
+# │    │    └─BatchNorm2d: 3-89            [1, 512, 4, 4]            1,024
+# │    │    └─ReLU: 3-90                   [1, 512, 4, 4]            --
+# │    │    └─Conv2d: 3-91                 [1, 512, 4, 4]            2,359,296
+# │    │    └─BatchNorm2d: 3-92            [1, 512, 4, 4]            1,024
+# │    │    └─ReLU: 3-93                   [1, 512, 4, 4]            --
+# │    └─BasicBlock: 2-16                  [1, 512, 4, 4]            --
+# │    │    └─Conv2d: 3-94                 [1, 512, 4, 4]            2,359,296
+# │    │    └─BatchNorm2d: 3-95            [1, 512, 4, 4]            1,024
+# │    │    └─ReLU: 3-96                   [1, 512, 4, 4]            --
+# │    │    └─Conv2d: 3-97                 [1, 512, 4, 4]            2,359,296
+# │    │    └─BatchNorm2d: 3-98            [1, 512, 4, 4]            1,024
+# │    │    └─ReLU: 3-99                   [1, 512, 4, 4]            --
+# ├─AdaptiveAvgPool2d: 1-8                 [1, 512, 1, 1]            --
+# ==========================================================================================
+# Total params: 21,276,992
+# Trainable params: 21,276,992
+# Non-trainable params: 0
+# Total mult-adds (G): 1.16
+# ==========================================================================================
+# Input size (MB): 0.01
+# Forward/backward pass size (MB): 16.38
+# Params size (MB): 85.11
+# Estimated Total Size (MB): 101.50
+# ==========================================================================================

@@ -109,4 +109,8 @@ Something went wrong with the training. Here are some options:
 
 Just remember to avoid Autocasting since it can cause numerical issues and the speed should be sufficient just with regular FFCV. It is important that we finish this functionality as soon as possible (ideally the weekend, so that I can run my first batch of experiments over it and then debug) because I want to use this as a kicking stone to move on to ViT and less understood models. I need some infrastructure enable myself to read papers and do "theory" later.
 
-Note that these goals are in more detail in the `README.md` in the `resnet` folder which is going to be our new repository for 
+Note that these goals are in more detail in the `README.md` in the `resnet` folder which is going to be our new repository for...
+
+# March 2nd Status
+
+Models: Resnet18 and Resnet34 have high accuracies: around 95% each.
