@@ -9,13 +9,15 @@ import torch.nn.functional as F
 
 import torchvision
 
-from resnet import RESNETS_FOLDER, resnet18, resnet34
+from resnet import RESNETS_FOLDER, resnet18, resnet34, _resnet, BasicBlock
+
+from create_array_meta import SMALLPAIRNUM2FILENAMES
 
 from download import (
     cifar_models_from_imagenet_models
 )
 
-from utils import fix_seed, evaluate, adjust_learning_rate
+from utils import fix_seed, evaluate, adjust_learning_rate, combos
 
 from typing import List
 
@@ -315,37 +317,76 @@ class Stitched(nn.Module):
         return h
 
 
+# NOTE the use of lazy evaluation: this helps us test where we have less memory
+# because it enables the garbage collector to garbage collect
 def main_stitchtrain(args):
+    # NOTE there are a total of 16 experiments for (r34, r18)
+    # since you can pick first one r18 or r34
+    # then yuo can pick the second one r18 or r34
+    # then you can pick the first rand or not
+    # then you can pick the second one rand or not
+########################################################################################################################
     print("Generating resnet18 to resnet18 (and with random) stitches")
-    resnet18_resnet18, _, idx2label_18_18 = resnet18_34_layer2layer(sender18=True, reciever18=True)
-    resnet18_rand_resnet18, _, idx2label_18_rand_18 = resnet18_34_layer2layer(sender18=True, reciever18=True)
+    resnet18_resnet18_func = lambda : resnet18_34_layer2layer(sender18=True, reciever18=True)
+    resnet18_rand_resnet18_func = lambda : resnet18_34_layer2layer(sender18=True, reciever18=True)
+    resnet18_resnet18_rand_func = lambda : resnet18_34_layer2layer(sender18=True, reciever18=True)
+    resnet18_rand_resnet18_rand_func = lambda : resnet18_34_layer2layer(sender18=True, reciever18=True)
 
-    # This is the most interesting
     print("Generating resnet18 to resnet34 (and with random) stitches")
-    resnet18_resnet34, _, idx2label_18_34 = resnet18_34_layer2layer(sender18=True, reciever18=False)
-    resnet18_rand_resnet34, _, idx2label_18_rand_34 = resnet18_34_layer2layer(sender18=True, reciever18=False)
+    resnet18_resnet34_func = lambda : resnet18_34_layer2layer(sender18=True, reciever18=False)
+    resnet18_rand_resnet34_func = lambda : resnet18_34_layer2layer(sender18=True, reciever18=False)
+    resnet18_resnet34_rand_func = lambda : resnet18_34_layer2layer(sender18=True, reciever18=False)
+    resnet18_rand_resnet34_rand_func = lambda : resnet18_34_layer2layer(sender18=True, reciever18=False)
 
-    # print("Generating resnet34 to resnet34 (and with random) stitches") # NOTE we skip this for now
-    # resnet34_resnet34, _, idx2label = resnet18_34_layer2layer(sender18=False, reciever18=False)
-    # resnet34_rand_resnet18, _, idx2label = resnet18_34_layer2layer(sender18=False, reciever18=False)
+    print("Generating resnet34 to resnet34 (and with random) stitches") 
+    resnet34_resnet34_func = lambda : resnet18_34_layer2layer(sender18=False, reciever18=False)
+    resnet34_resnet34_rand_func = lambda : resnet18_34_layer2layer(sender18=False, reciever18=False)
+    resnet34_rand_resnet34_func = lambda : resnet18_34_layer2layer(sender18=False, reciever18=False)
+    resnet34_rand_resnet34_rand_func = lambda : resnet18_34_layer2layer(sender18=False, reciever18=False)
 
-    N = len(resnet18_resnet18)
+    print("Generating resnet34 -> resnet18 with rand")
+    resnet34_resnet18_func = lambda : resnet18_34_layer2layer(sender18=False, reciever18=True)
+    resnet34_resnet18_rand_func = lambda : resnet18_34_layer2layer(sender18=False, reciever18=True)
+    resnet34_rand_resnet18_func = lambda : resnet18_34_layer2layer(sender18=False, reciever18=True)
+    resnet34_rand_resnet18_rand_func = lambda: resnet18_34_layer2layer(sender18=False, reciever18=True)
+########################################################################################################################
+    N = 10#len(resnet18_resnet18)
     print(f"Sims tables for resnet18 to resnet18 will be {N}x{N}")
     resnet18_resnet18_sims = [[0.0 for _ in range(N)] for _ in range(N)]
     resnet18_rand_resnet18_sims = [[0.0 for _ in range(N)] for _ in range(N)]
+    resnet18_resnet18_rand_sims = [[0.0 for _ in range(N)] for _ in range(N)]
+    resnet18_rand_resnet18_rand_sims = [[0.0 for _ in range(N)] for _ in range(N)]
 
-    N = len(resnet18_resnet34)
-    M = len(resnet18_resnet34[0])
+    N = 10#len(resnet18_resnet34)
+    M = 18#len(resnet18_resnet34[0])
     print(f"Sims tables for resnet18 to resnet34 will be {N}x{M}")
     resnet18_resnet34_sims = [[0.0 for _ in range(M)] for _ in range(N)]
     resnet18_rand_resnet34_sims = [[0.0 for _ in range(M)] for _ in range(N)]
+    resnet18_resnet34_rand_sims = [[0.0 for _ in range(M)] for _ in range(N)]
+    resnet18_rand_resnet34_rand_sims = [[0.0 for _ in range(M)] for _ in range(N)]
 
+    N = 18#len(resnet34_resnet34)
+    print(f"Sims tables for resnet34 to resnet34 will be {N}x{N}")
+    resnet34_resnet34_sims = [[0.0 for _ in range(N)] for _ in range(N)]
+    resnet34_resnet34_rand_sims = [[0.0 for _ in range(N)] for _ in range(N)]
+    resnet34_rand_resnet34_sims = [[0.0 for _ in range(N)] for _ in range(N)]
+    resnet34_rand_resnet34_rand_sims = [[0.0 for _ in range(N)] for _ in range(N)]
+
+    N = 18#len(resnet34_resnet18)
+    M = 10#len(resnet34_resnet18[0])
+    print(f"Sims tables for resnet34 to resnet18 will be {N}x{M}")
+    resnet34_resnet18_sims = [[0.0 for _ in range(M)] for _ in range(N)]
+    resnet34_resnet18_rand_sims = [[0.0 for _ in range(M)] for _ in range(N)]
+    resnet34_rand_resnet18_sims = [[0.0 for _ in range(M)] for _ in range(N)]
+    resnet34_rand_resnet18_rand_sims = [[0.0 for _ in range(M)] for _ in range(N)]
+########################################################################################################################
     print("Loading resnets into memory from disk")
     r18 = resnet18().cuda()
     r18.load_state_dict(torch.load(os.path.join(RESNETS_FOLDER, "resnet18.pt")))#, map_location=torch.device('cpu')))
     r18_rand = resnet18().cuda()
     r34 = resnet34().cuda()
     r34.load_state_dict(torch.load(os.path.join(RESNETS_FOLDER, "resnet34.pt")))#, map_location=torch.device('cpu')))
+    r34_rand = resnet34().cuda()
 
     print("Getting loaders")
     train_loader, test_loader = get_loaders()
@@ -367,51 +408,142 @@ def main_stitchtrain(args):
     print(f"Accuracy of resnet34 is {accp}%")
     assert accp > 90
 
+    accp = evaluate(r34_rand, test_loader)
+    r34_rand_acc = accp / 100.0
+    print(f"Accuracy of resnet34 random is {accp}%")
+    assert accp < 20
+########################################################################################################################
     print("Generating similarity tables")
-    for sender, reciever, transformations, table, idx2label, orig_acc1, orig_acc2, filename in [
-        # (r18, r18, resnet18_resnet18, resnet18_resnet18_sims, idx2label_18_18, r18_acc, r18_acc, "resnet18_resnet18_sims.pt"),
-        # NOTE: uncomment plz
-        # (r18_rand, r18, resnet18_rand_resnet18, resnet18_rand_resnet18_sims, idx2label_18_rand_18, r18_acc, r18_rand_acc, "resnet18_rand_resnet18_sims.pt"),
-        (r18, r34, resnet18_resnet34, resnet18_resnet34_sims, idx2label_18_34, r18_acc, r34_acc, "resnet18_resnet34_sims.pt"),
-        # (r18_rand, r34, resnet18_rand_resnet34, resnet18_rand_resnet34_sims, idx2label_18_rand_34, r18_rand_acc, r34_acc,"resnet18_rand_resnet34_sims.pt"),
+
+    folder = f"sims{args.fnum}"
+    if not os.path.exists(folder):
+            os.mkdir(folder)
+
+    for sender, reciever, transformations_func, table, orig_acc1, orig_acc2, name in [
+        # Resnet18 -> Resnet18
+        (r18, r18, resnet18_resnet18_func, resnet18_resnet18_sims, r18_acc, r18_acc, "resnet18_resnet18"),
+        (r18_rand, r18, resnet18_rand_resnet18_func, resnet18_rand_resnet18_sims,  r18_acc, r18_rand_acc, "resnet18_rand_resnet18"),
+        (r18, r18_rand, resnet18_resnet18_rand_func, resnet18_resnet18_rand_sims, r18_acc, r18_rand_acc, "resnet18_resnet18_rand"),
+        (r18_rand, r18_rand, resnet18_rand_resnet18_rand_func, resnet18_rand_resnet18_rand_sims, r18_rand_acc, r18_rand_acc, "resnet18_rand_resnet18_rand"),
+
+        # Resnet18 -> Resnet34
+        (r18, r34, resnet18_resnet34_func, resnet18_resnet34_sims, r18_acc, r34_acc, "resnet18_resnet34"),
+        (r18_rand, r34, resnet18_rand_resnet34_func, resnet18_rand_resnet34_sims, r18_rand_acc, r34_acc,"resnet18_rand_resnet34"),
+        (r18_rand, r34_rand, resnet18_rand_resnet34_rand_func, resnet18_rand_resnet34_rand_sims, r18_rand_acc, r34_rand_acc, "resnet18_rand_resnet34_rand"),
+        (r18, r34_rand, resnet18_resnet34_rand_func, resnet18_resnet34_rand_sims, r18_acc, r34_rand_acc,"resnet18_resnet34_rand"),
+        
+        # Resnet34 -> Resnet18
+        (r34, r18, resnet34_resnet18_func, resnet34_resnet18_sims, r34_acc, r18_acc, "resnet34_resnet18"),
+        (r34_rand, r18, resnet34_rand_resnet18_func, resnet34_rand_resnet18_sims, r34_rand_acc, r18_acc, "resnet34_rand_resnet18"),
+        (r34, r18_rand, resnet34_resnet18_rand_func, resnet34_resnet18_rand_sims, r34_acc, r18_rand_acc, "resnet34_resnet18_rand"),
+        (r34_rand, r18_rand, resnet34_rand_resnet18_rand_func, resnet34_rand_resnet18_rand_sims, r34_rand_acc, r18_rand_acc, "resnet34_rand_resnet18_rand"),
+        
+        # Resnet34 -> Resnet34
+        (r34, r34, resnet34_resnet34_func, resnet34_resnet34_sims, r34_acc, r34_acc, "resnet34_resnet34"),
+        (r34_rand, r34, resnet34_rand_resnet34_func, resnet34_rand_resnet34_sims, r34_rand_acc, r34_acc, "resnet34_rand_resnet34"),
+        (r34, r34_rand, resnet34_resnet34_rand_func, resnet34_resnet34_rand_sims, r34_acc, r34_rand_acc, "resnet34_resnet34_rand"),
+        (r34_rand, r34_rand, resnet34_rand_resnet34_rand_func, resnet34_rand_resnet34_rand_sims, r34_rand_acc, r34_rand_acc, "resnet34_rand_resnet34_rand"),
         ]:
+        
         N = len(table)
         M = len(table[0])
-        # NOTE that we do not take the output from the very last layer so we can ignore it and similarly
-        # no one gives into the first layer so we can ignore it
-        # NOTE that this is outfrom, into format
+        transformations, _, idx2label = transformations_func()
+
+        # NOTE we ignore first and last layer (for reciever and send)
+        # NOTE outfrom, into format
         for i in range(N - 1):
             for j in range(1, M):
                 try:
                     acc = 0.0
                     orig_acc = min(orig_acc1, orig_acc2)
 
-                    # outfrom, into where both outfrom and into are tuples (blockset, block) or "conv1" or "fc"
                     snd_label, rcv_label = idx2label[(i, j)]
                     print(f"\tstitching {i}->{j} which is {snd_label}->{rcv_label}")
                     st = transformations[i][j].cuda()
                     model = Stitched(sender, reciever, snd_label, rcv_label, st)
-                    acc, _ = train_loop(model, train_loader, test_loader, epochs=2, parameters=list(st.parameters()))
+                    acc, _ = train_loop(model, train_loader, test_loader, epochs=4, parameters=list(st.parameters()))
                     acc /= 100.0
                     print(f"\tAccuracy of model is {acc}")
                     print(f"\tOriginal accuracy was {orig_acc}")
-                    # we can just take note of this from the text, but it may be useful later...
-                    table[i][j] = acc# / orig_acc
+                    table[i][j] = acc
+                    
+                    filename_stitch = name + f"{i}_{j}_stitch.pt"
+                    filename_stitch = os.path.join(folder, filename_stitch)
+                    print(f"\tSaving stitch {i}->{j} to filename {filename_stitch}")
+                    torch.save(transformations[i][j].cpu().state_dict(), filename_stitch)
                 except:
-                    table[i][j] = -1 # NOTE so we can fix (should not actually happen)
-
-                # NOTE temp so that we can viz if the code fails
-                # torch.save(torch.tensor(table), filename)
-                pass
-
-    # TODO save the tensors
-    print("Saving the similarity tensors right here")
-    torch.save(torch.tensor(resnet18_resnet18_sims), "resnet18_resnet18_sims.pt")
-    torch.save(torch.tensor(resnet18_rand_resnet18_sims), "resnet18_rand_resnet18_sims.pt")
-    torch.save(torch.tensor(resnet18_resnet34_sims), "resnet18_resnet34_sims.pt")
-    torch.save(torch.tensor(resnet18_rand_resnet34_sims), "resnet18_rand_resnet34_sims.pt")
-    # TODO generate pretty tables
+                    table[i][j] = -1
+        
+        
+        filename_sims = name + "_sims.pt"
+        filename_sims = os.path.join(folder, filename_sims)
+        print(f"Saving sims to {filename_sims}")
+        torch.save(torch.tensor(table), filename_sims)
+########################################################################################################################
     pass
+
+# Train a bunch of small resnets: all combinations from 1, 1, 1, 1 to 2, 2, 2, 2
+# (there are 16 combinations)
+def main_train_small(args):
+    train_loader, test_loader = get_loaders()
+
+    combinations = combos(4, [1, 2])
+    for combination in combinations:
+        x, y, z, w = combination
+        fname = os.path.join(RESNETS_FOLDER, f"resnet_{x}{y}{z}{w}.pt")
+        if os.path.exists(fname):
+            print(f"Skipping {fname}")
+            continue
+        else:
+            # NOT pretrained and NO progress bar (these aren't supported anyways)
+            model = _resnet(f"resnet_{x}{y}{z}{w}", BasicBlock, combination, False, False)
+            model = model.cuda()
+
+            print(f"will train net {x}{y}{z}{w}")
+
+            # TODO play around with epochs
+            epochs = 40
+            train_loop(model, train_loader, test_loader, parameters=None, epochs=epochs)
+            acc_percent = evaluate(model, test_loader)
+            print(f"acc_percent was {acc_percent}")
+
+            # NOTE this is ../pretrained_resnet
+            torch.save(model.state_dict(), fname)
+    pass
+
+def main_stitchtrain_small(args):
+    file1, file2 = SMALLPAIRNUM2FILENAMES[int(args.smallpairnum)]
+    numbers1 = list(map(int, file1.split(".")[0][-4:]))
+    numbers2 = list(map(int, file2.split(".")[0][-4:]))
+    name1 = "resnet" + "".join(map(str, numbers1))
+    name2 = "resnet" + "".join(map(str, numbers2))
+    output_folder = f"sims_{name1}_{name2}"
+
+    print(f"Will stitch {file1} and {file2} in {RESNETS_FOLDER}")
+    print(f"numbers1: {numbers1}")
+    print(f"numbers2: {numbers2}")
+    print(f"name1: {name1}")
+    print(f"name2: {name2}")
+
+    file1 = os.path.join(RESNETS_FOLDER, file1)
+    file2 = os.path.join(RESNETS_FOLDER, file2)
+
+    print("Loading models")
+    model1 = _resnet(name1, BasicBlock, numbers1, False, False)
+    model2 = _resnet(name2, BasicBlock, numbers2, False, False)
+    # model1.cuda()
+    # model2.cuda()
+    # model1.state_dict(torch.load(file1))
+    # model2.state_dict(torch.load(file2))
+
+    # TODO initialize the similarity tensor
+    similarity_tensor = []
+
+    # TODO initialize the stitches
+    
+    print(f"Stitching, will save in {output_folder}")
+    # TODO stitch all pairs of layers!
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -432,14 +564,17 @@ if __name__ == '__main__':
                                                                                    'esimclr-cifar100-resnet18'])
     parser.add_argument('--fraction', default=1.0, type=float)
     parser.add_argument('--dataset', default='cifar10', type=str, choices=['cifar10', 'cifar100'])
-
+    parser.add_argument('--fnum', default='0', type=str) # Used by Resnet18 - Resnet34 experiments to do multiple copies with an id
+    parser.add_argument('--smallpairnum', default='1', type=str) # Used by Resnet 1111 -> 2222 to select which pair num to use
     args = parser.parse_args()
 
-    pretrain = False
-    if pretrain:
-        main_pretrain(args)
-    else:
-        main_stitchtrain(args)
+    main_stitchtrain_small(args)
+    # main_train_small(args)
+    # pretrain = False
+    # if pretrain:
+    #     main_pretrain(args)
+    # else:
+    #     main_stitchtrain(args)
 
 # Resnet34 dimensions for batch size 1:
 # NOTE how they are THE SAME AS THOSE OF RESNET18! (within block sets)

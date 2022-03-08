@@ -1,8 +1,9 @@
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
+import os
 
-def matrix_heatmap(input_file_name=None):
+def matrix_heatmap(input_file_name=None, output_file_name=None):
     mat = torch.load(input_file_name)
     assert type(mat) == torch.Tensor or type(mat) == np.ndarray
     if type(mat) == torch.Tensor:
@@ -30,15 +31,23 @@ def matrix_heatmap(input_file_name=None):
     title = input_file_name.split("/")[-1].split('.')[0]
     ax.set_title(f"Self Similarity of {title}")
     fig.tight_layout()
-
-    output_file_name = (input_file_name.split("/")[-1]).split(".")[0] + ".png"
     plt.savefig(output_file_name)
     plt.clf()
 
+# TODO averging as well plz if you see differing results
 if __name__ == "__main__":
-    for input_file_name in [
-        "resnet18_resnet18_sims.pt",
-        "resnet18_rand_resnet18_sims.pt",
-        "resnet18_resnet34_sims.pt",
-        "resnet18_rand_resnet34_sims.pt"]:
-        matrix_heatmap(input_file_name=input_file_name)
+    for i in range(0, 5+1):
+        print(f"Sims {i}")
+        folder = f"sims{i}" # created by experiment
+
+        inner_folder = "heatmaps"
+        files = os.listdir(folder)
+        files = list(filter(lambda f: "sims.pt" in f, files))
+        if not os.path.exists(os.path.join(folder, inner_folder)):
+            os.mkdir(os.path.join(folder, inner_folder))
+        for input_filename in files:
+            output_filename = os.path.join(folder, inner_folder, input_filename.replace("sims.pt", "heatmap.png"))
+            input_filename = os.path.join(folder, input_filename)
+
+            print(f"\tGenerating {input_filename}->{output_filename}")
+            matrix_heatmap(input_file_name=input_filename, output_file_name=output_filename)

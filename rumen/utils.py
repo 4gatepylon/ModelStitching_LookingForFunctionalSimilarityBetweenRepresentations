@@ -113,3 +113,12 @@ def adjust_learning_rate(epochs, warmup_epochs, base_lr, optimizer, loader, step
 
     return lr
 
+def combos(length, possibles):
+    if (length == 1):
+        return [[x] for x in possibles]
+    combinations = []
+    for possible in possibles:
+        remainders = combos(length - 1, possibles)
+        for remainder in remainders:
+            combinations.append(remainder + [possible])
+    return combinations

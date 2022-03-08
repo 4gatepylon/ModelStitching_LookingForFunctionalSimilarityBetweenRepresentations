@@ -114,3 +114,18 @@ Note that these goals are in more detail in the `README.md` in the `resnet` fold
 # March 2nd Status
 
 Models: Resnet18 and Resnet34 have high accuracies: around 95% each.
+
+Rumen says that it is not a terrible idea to try out stitching with the cached outputs as our "labels" instead of doing full backprop. Try with mean squared error. (This is lower priority than debugging and small networks).
+
+Try with very small resnets (i.e. 1,1,1,1).
+
+Implement interpretation algorithms.
+
+Look into scale (how you normalize and also potentially non-linearity, but that comes later.) This is only later if we use more differnet networks.
+
+Also average and find some variance/stdev between the depth dimension of the experimental grids. Run experiments in parallel and overnight for speed.
+
+# March 9th Status
+- Trained resnet `1111`, `1112`, ... up to resnet `2222` (which is resnet 18).
+- For every pair, tried stitching across block-sets (there are `16` networks total, meaning that there are `120` pairs, the layers are on average `8` meaning that we have `960` stitches, so it might take a little while... especially since we also do `4` combinations per out of either rand or normal, so this is a trully monstrous experiment of `3840` stitches total, each for three epochs yielding `11520` total epochs, at around `30` sec per epoch maximum which is around `96` hours of training time if we run this constantly... It'll be better to instead have 16 or so )
+- I did not save the stitches because they are fast to train and I found out that saving every stitch just from Resnet18 to Resnet34 takes up 15 gigabytes per experiment. We also don't store log files for the same reason...

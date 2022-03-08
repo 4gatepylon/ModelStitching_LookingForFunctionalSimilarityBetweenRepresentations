@@ -1,2 +1,8 @@
 resnet*.pt
 resnet*.png
+sims*/
+
+*.log
+*.log.txt
+
+*.log-*
