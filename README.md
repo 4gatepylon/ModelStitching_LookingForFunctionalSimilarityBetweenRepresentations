@@ -129,3 +129,36 @@ Also average and find some variance/stdev between the depth dimension of the exp
 - Trained resnet `1111`, `1112`, ... up to resnet `2222` (which is resnet 18).
 - For every pair, tried stitching across block-sets (there are `16` networks total, meaning that there are `120` pairs, the layers are on average `8` meaning that we have `960` stitches, so it might take a little while... especially since we also do `4` combinations per out of either rand or normal, so this is a trully monstrous experiment of `3840` stitches total, each for three epochs yielding `11520` total epochs, at around `30` sec per epoch maximum which is around `96` hours of training time if we run this constantly... It'll be better to instead have 16 or so )
 - I did not save the stitches because they are fast to train and I found out that saving every stitch just from Resnet18 to Resnet34 takes up 15 gigabytes per experiment. We also don't store log files for the same reason...
+- Note I'm racking up a lot of technical debt (my code is seriously ugly and super repetitive: it would be nice to simplify and clean up this nonsense once I have some results I'm happy with as a starter or once I need to)
+- Might want to look at "latest layer than can stitch" instead of maximum
+- Don't forget pruning
+- Don't forget Cifar100
+
+From meeting
+- Look at fixed points papers
+- Try lowering the width/depth of the layers
+- Try without residuals
+- If you plug in the dataset and compare the activates with the activations you'd get through the stitch see what happens (push it through the network)... use some similarity metric to see if they are the same (idk mean squared?): alternative is the stitch found a different way of providing a representation the other network can use even though it's not the same
+- Read about salieny maps (layerwise? gradient saliency?): this stems from the idea of creating an image that somehow conveys what the network is extracting and using stitches to somehow get that'
+- Pruning interesting?
+
+Things to do
+- __Most important experiment: Autoencoder from stitch__
+  - Train resnet on dataset
+  - Take some prefix of the resnet
+  - Cache the outputs
+  - Cache the outputs of the layer coming after
+  - Train stitch to do what that resnet does? Basically do mean squared error or L1 loss.
+  - Interpretation: can stitch re-create dataset from the activations?
+Experiment to do:
+- If it's easy to reproduce what does that mean?
+- If it's hard?
+
+- Compare vanilla stitch with autoencoder stitch?
+
+If we have more time do these too:
+- Same thing no residuals (it's ok if the accuracy is around 80+)
+- Look into VGG but probably hard since not so modular
+- Try removing the layers (not just the blocks): less important
+
+Goal: understand why what is happening is happening.

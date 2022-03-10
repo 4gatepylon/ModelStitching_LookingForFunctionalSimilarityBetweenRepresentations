@@ -3,6 +3,8 @@ import torch
 import matplotlib.pyplot as plt
 import os
 
+from utils import combos
+
 def matrix_heatmap(input_file_name=None, output_file_name=None):
     mat = torch.load(input_file_name)
     assert type(mat) == torch.Tensor or type(mat) == np.ndarray
@@ -36,7 +38,12 @@ def matrix_heatmap(input_file_name=None, output_file_name=None):
 
 # TODO averging as well plz if you see differing results
 if __name__ == "__main__":
-    for i in range(0, 5+1):
+    c_1 = combos(4, [1, 2])
+    c_2 = list(map(lambda combo: "".join(map(str, combo)), c_1))
+    c_3  = list(map(lambda combo: f"resnet_{combo}", c_2))
+    combinations = [(c1, c2) for c1 in c_3 for c2 in c_3]
+    foldersi = list(map(lambda tp: f"_{tp[0]}_{tp[1]}", combinations))
+    for i in foldersi:
         print(f"Sims {i}")
         folder = f"sims{i}" # created by experiment
 

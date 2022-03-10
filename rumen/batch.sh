@@ -1,5 +1,6 @@
 #!/bin/bash
 
+#SBATCH --gres=gpu:volta:1
 #SBATCH -o myScript.sh.log-%j-%a
 #SBATCH -a 1-256
 

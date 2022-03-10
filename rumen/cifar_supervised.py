@@ -3,6 +3,9 @@ import os
 import time
 import argparse
 
+from pprint import PrettyPrinter
+pp = PrettyPrinter(indent=4)
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -511,13 +514,64 @@ def main_train_small(args):
             torch.save(model.state_dict(), fname)
     pass
 
+def resnet_small_small_layer2layer(snd_iranges, rcv_iranges):
+    N1 = sum(snd_iranges) + 2
+    N2 = sum(rcv_iranges) + 2
+    transformations = [[None for _ in range(N2)] for _ in range(N1)]
+    idx2label = {}
+
+    # NOTE this is copied and modified from resnet_18_34_layer2layer
+    # (yea I'm pretty lazy LOL)
+
+    # NOTE in theory the "resnet18_34_stitch" and "resnet_18_34_stitch_shape"
+    # functions SHOULD work here regardless of the fact that they are in fact not meant for it
+    # (they should work for any basic block [x, y, z, w])
+
+    # Connect conv1 INTO everything else
+    j = 1
+    for rcv_block in range(1, 5):
+        for rcv_layer in range(0, rcv_iranges[rcv_block - 1]):
+            into = (rcv_block, rcv_layer)
+            # print(f"[0][{j}]: conv1 -> {into}")
+            transformations[0][j] = resnet18_34_stitch(*resnet18_34_stitch_shape("conv1", into))
+            idx2label[(0, j)] = ("conv1", into)
+            j += 1
+    # print(f"[0][{j}]: conv1 -> fc")
+    transformations[0][j] = resnet18_34_stitch(*resnet18_34_stitch_shape("conv1", "fc"))
+    idx2label[(0, j)] = ("conv1", "fc")
+    
+
+    # Connect all the blocks INTO everything else
+    i = 1
+    for snd_block in range(1, 5):
+        for snd_layer in range(0, snd_iranges[snd_block - 1]):
+            j = 1
+            outfrom = (snd_block, snd_layer)
+            for rcv_block in range(1, 5):
+                for rcv_layer in range(0, rcv_iranges[rcv_block - 1]):
+                    into = (rcv_block, rcv_layer)
+                    # print(f"[{i}][{j}]: {outfrom} -> {into}")
+                    transformations[i][j] = resnet18_34_stitch(*resnet18_34_stitch_shape(outfrom, into))
+                    idx2label[(i, j)] = (outfrom, into)
+                    j += 1
+            # print(f"[{i}][{j}]: {outfrom} -> fc")
+            transformations[i][j] = resnet18_34_stitch(*resnet18_34_stitch_shape(outfrom, "fc"))
+            idx2label[(i, j)] = (outfrom, "fc")
+            j += 1
+            i += 1
+    return transformations, None, idx2label
+
+# NOTE: we use this shit to be parallel
+# https://supercloud.mit.edu/submitting-jobs#slurm-gpus
 def main_stitchtrain_small(args):
     file1, file2 = SMALLPAIRNUM2FILENAMES[int(args.smallpairnum)]
     numbers1 = list(map(int, file1.split(".")[0][-4:]))
     numbers2 = list(map(int, file2.split(".")[0][-4:]))
-    name1 = "resnet" + "".join(map(str, numbers1))
-    name2 = "resnet" + "".join(map(str, numbers2))
+    name1 = "resnet_" + "".join(map(str, numbers1))
+    name2 = "resnet_" + "".join(map(str, numbers2))
     output_folder = f"sims_{name1}_{name2}"
+    if not os.path.exists(output_folder):
+        os.mkdir(output_folder)
 
     print(f"Will stitch {file1} and {file2} in {RESNETS_FOLDER}")
     print(f"numbers1: {numbers1}")
@@ -531,18 +585,93 @@ def main_stitchtrain_small(args):
     print("Loading models")
     model1 = _resnet(name1, BasicBlock, numbers1, False, False)
     model2 = _resnet(name2, BasicBlock, numbers2, False, False)
-    # model1.cuda()
-    # model2.cuda()
-    # model1.state_dict(torch.load(file1))
-    # model2.state_dict(torch.load(file2))
+    model1_rand = _resnet(name1 + "_rand", BasicBlock, numbers1, False, False)
+    model2_rand = _resnet(name2 + "_rand", BasicBlock, numbers2, False, False)
+    model1.cuda()
+    model2.cuda()
+    model1_rand.cuda()
+    model2_rand.cuda()
+    model1.load_state_dict(torch.load(file1))
+    model2.load_state_dict(torch.load(file2))
 
-    # TODO initialize the similarity tensor
-    similarity_tensor = []
+    print("Getting loaders")
+    train_loader, test_loader = get_loaders()
 
-    # TODO initialize the stitches
+    print("Evaluating accuracies of pretrained models")
+    accp = 0.0
+    accp = evaluate(model1, test_loader)
+    model1_acc = accp / 100.0
+    print(f"Accuracy of {name1} is {accp}%")
+    assert accp > 90
+    
+    accp = evaluate(model1_rand, test_loader)
+    model1_rand_acc = accp / 100.0
+    print(f"Accuracy of {name1} random is {accp}%")
+    assert accp < 20
+
+    accp = evaluate(model2, test_loader)
+    model2_acc = accp / 100.0
+    print(f"Accuracy of {name2} is {accp}%")
+    assert accp > 90
+
+    accp = evaluate(model2_rand, test_loader)
+    model2_rand_acc = accp / 100.0
+    print(f"Accuracy of {name2} random is {accp}%")
+    assert accp < 20
+
+    # Number of blocks/layers to stitch in model 1 and model 2
+    N1 = sum(numbers1) + 2
+    N2 = sum(numbers2) + 2
+
+    model1_model2_sims = [[0.0 for _ in range(N2)] for _ in range(N1)]
+    model1_rand_model2_sims = [[0.0 for _ in range(N2)] for _ in range(N1)]
+    model1_model2_rand_sims = [[0.0 for _ in range(N2)] for _ in range(N1)]
+    model1_rand_model2_rand_sims = [[0.0 for _ in range(N2)] for _ in range(N1)]
+
+    print("Initializing the stitches (note all idx2label are the same)")
+    model1_model2_stitches, _, idx2label = resnet_small_small_layer2layer(numbers1, numbers2)
+    model1_rand_model2_stitches, _, _ = resnet_small_small_layer2layer(numbers1, numbers2)
+    model1_model2_rand_stitches, _, _ = resnet_small_small_layer2layer(numbers1, numbers2)
+    model1_rand_model2_rand_stitches, _, _ = resnet_small_small_layer2layer(numbers1, numbers2)
+
+    pp.pprint(idx2label)
     
     print(f"Stitching, will save in {output_folder}")
-    # TODO stitch all pairs of layers!
+    for sender, reciever, stitches, sims, orig_acc1, orig_acc2, name in [
+        # Resnet18 -> Resnet18
+        (model1, model2, model1_model2_stitches, model1_model2_sims, model1_acc, model2_acc, f"{name1}_{name2}"),
+        (model1_rand, model2, model1_rand_model2_stitches, model1_rand_model2_sims, model1_rand_acc, model2_acc, f"{name1}_rand_{name2}"),
+        (model1, model2_rand, model1_model2_rand_stitches, model1_model2_rand_sims, model1_acc, model2_rand_acc, f"{name1}_{name2}_rand"),
+        (model1_rand, model2_rand, model1_rand_model2_rand_stitches, model1_rand_model2_rand_sims, model1_rand_acc, model2_rand_acc, f"{name1}_rand_{name2}_rand"),
+    ]:
+        print(f"Stitching {name}")
+        # NOTE we ignore first and last layer (for reciever and send)
+        # NOTE outfrom, into format
+        for i in range(N1 - 1):
+            for j in range(1, N2):
+                try:
+                    acc = 0.0
+
+                    snd_label, rcv_label = idx2label[(i, j)]
+                    print(f"\tstitching {i}->{j} which is {snd_label}->{rcv_label}")
+
+                    stitch = stitches[i][j].cuda()
+                    model = Stitched(sender, reciever, snd_label, rcv_label, stitch)
+
+                    # Epochs can be changed (large may lead to exploding gradients?)
+                    acc, _ = train_loop(model, train_loader, test_loader, epochs=3, parameters=list(stitch.parameters()))
+                    acc /= 100.0
+                    print(f"\tAccuracy of model is {acc}")
+                    print(f"\tOriginal accuracies were {orig_acc1} and {orig_acc2}")
+                    sims[i][j] = acc
+                except Exception as e:
+                    print(f"Failed on layers {i}, {j} ({e})")
+                    sims[i][j] = -1
+        
+        filename_sims = name + "_sims.pt"
+        filename_sims = os.path.join(output_folder, filename_sims)
+        print(f"Saving sims to {filename_sims}")
+        torch.save(torch.tensor(sims), filename_sims)
 
 
 if __name__ == '__main__':
