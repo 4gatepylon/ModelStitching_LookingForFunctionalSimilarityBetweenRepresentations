@@ -386,12 +386,12 @@ def main_stitchtrain(args):
     resnet34_rand_resnet18_rand_sims = [[0.0 for _ in range(M)] for _ in range(N)]
 ########################################################################################################################
     print("Loading resnets into memory from disk")
-    r18 = resnet18().cuda()
+    r18 = resnet18(num_classes=10).cuda()
     r18.load_state_dict(torch.load(os.path.join(RESNETS_FOLDER, "resnet18.pt")))#, map_location=torch.device('cpu')))
-    r18_rand = resnet18().cuda()
-    r34 = resnet34().cuda()
+    r18_rand = resnet18(num_classes=10).cuda()
+    r34 = resnet34(num_classes=10).cuda()
     r34.load_state_dict(torch.load(os.path.join(RESNETS_FOLDER, "resnet34.pt")))#, map_location=torch.device('cpu')))
-    r34_rand = resnet34().cuda()
+    r34_rand = resnet34(num_classes=10).cuda()
 
     print("Getting loaders")
     train_loader, test_loader = get_loaders()
@@ -501,7 +501,7 @@ def main_train_small(args):
             continue
         else:
             # NOT pretrained and NO progress bar (these aren't supported anyways)
-            model = _resnet(f"resnet_{x}{y}{z}{w}", BasicBlock, combination, False, False)
+            model = _resnet(f"resnet_{x}{y}{z}{w}", BasicBlock, combination, False, False, num_classes=10)
             model = model.cuda()
 
             print(f"will train net {x}{y}{z}{w}")
@@ -563,27 +563,51 @@ def resnet_small_small_layer2layer(snd_iranges, rcv_iranges):
             i += 1
     return transformations, None, idx2label
 
+def label_before(label, model_blocks):
+    if label == "conv1":
+        raise Exception("Cannot get label before conv1")
+    if label == "fc":
+        return (4, model_blocks[4-1] - 1)
+    layer, block = label
+    if block > 0:
+        return (layer, block - 1)
+    elif layer > 1:
+        return (layer - 1, model_blocks[layer - 1 - 1] - 1)
+    else:
+        return "conv1"
+
 # mean squared differnece over all training examples
 # of the vanilla stitch and the stitched model
-def mean2_model_diff(stitch, sender, reciever, vent_at, train_loader, stitch2=None):
+def mean2_model_diff(stitch, sender, reciever, snd_label, rcv_label, model_blocks, train_loader, stitch2=None):
     # out-vent from the
+    # NOTE we use train_loader but it really doesn't matter
     num_images = len(train_loader)
     total = 0.0
+    label_before_rcv_label = label_before(rcv_label, model_blocks)
     for x, _ in train_loader:
-        x = x.half()
-        sent = sender(x, vent=vent_at, into=False)
-        gotten = stitch(sent)
-        expected = reciever(x, vent=vent_at, into=False) if stitch2 is None else stitch2(sent)
-        # Average mean squared error over the batch and pixels
-        diff = (gotten - expected).pow(2).mean()
-        total += diff.cpu().item()
+        with autocast():
+            # print(f"x shape {x.size()}")
+            sent = sender(x, vent=snd_label, into=False)
+            # print(f"sent shape {sent.size()}")
+            # print(f"label before {label_before_rcv_label}")
+            expected = reciever(x, vent=label_before_rcv_label, into=False, apply_post=True) if stitch2 is None else stitch2(sent)
+            # print(f"expected shape {expected.size()}")
+
+            gotten = stitch(sent)
+            # print(f"gotten shape {gotten.size()}")
+            # Average mean squared error over the batch and pixels
+            diff = (gotten - expected).pow(2).mean()
+            total += diff.cpu().item()
+        pass
     # Average over the number of images
     total /= num_images
     return total
 
-def train_sim_loss(stitch, sender, reciever, snd_label, rcv_label, train_loader, test_loader, epochs=3):
+def train_sim_loss(stitch, sender, reciever, snd_label, rcv_label, model_blocks, train_loader, test_loader, epochs=3):
     # None signifies do all parameters (we might finetune single layers an that will speed up training)
     parameters = list(stitch.parameters())
+
+    label_before_rcv_label = label_before(rcv_label, model_blocks)
 
     # NOTE this is copied from the train_loop method
     optimizer = torch.optim.SGD(
@@ -614,10 +638,10 @@ def train_sim_loss(stitch, sender, reciever, snd_label, rcv_label, train_loader,
             # once we have more time to clean up the code)
             ###############################
             with autocast():
-                h = inputs
-                stitch_input = sender(h)
+                # Run both the sender and reciever up to the send label
+                stitch_input = sender(inputs, vent=snd_label, into=False)
                 stitch_output = stitch(stitch_input)
-                stitch_target = reciever(h)
+                stitch_target = reciever(inputs, vent=label_before_rcv_label, apply_post = True, into=False)
                 loss = F.mse_loss(stitch_output, stitch_target)
             ###############################
 
@@ -628,7 +652,7 @@ def train_sim_loss(stitch, sender, reciever, snd_label, rcv_label, train_loader,
         print(f'\t\tepoch: {e} | time: {time.time() - start:.3f}')
 
     # Make a model to get the loss on the actual task
-    model = Stitched(sender, reciever, snd_label, recv_lbl, stitch)
+    model = Stitched(sender, reciever, snd_label, rcv_label, stitch)
     eval_acc = evaluate(model, test_loader)
     return eval_acc, model
 
@@ -654,10 +678,10 @@ def main_stitchtrain_small(args):
     file2 = os.path.join(RESNETS_FOLDER, file2)
 
     print("Loading models")
-    model1 = _resnet(name1, BasicBlock, numbers1, False, False)
-    model2 = _resnet(name2, BasicBlock, numbers2, False, False)
-    model1_rand = _resnet(name1 + "_rand", BasicBlock, numbers1, False, False)
-    model2_rand = _resnet(name2 + "_rand", BasicBlock, numbers2, False, False)
+    model1 = _resnet(name1, BasicBlock, numbers1, False, False, num_classes=10)
+    model2 = _resnet(name2, BasicBlock, numbers2, False, False, num_classes=10)
+    model1_rand = _resnet(name1 + "_rand", BasicBlock, numbers1, False, False, num_classes=10)
+    model2_rand = _resnet(name2 + "_rand", BasicBlock, numbers2, False, False, num_classes=10)
     model1.cuda()
     model2.cuda()
     model1_rand.cuda()
@@ -675,6 +699,8 @@ def main_stitchtrain_small(args):
     print(f"Accuracy of {name1} is {accp}%")
     assert accp > 90
     
+    # NOTE: this often comes out to zero and I don't understand why
+    # shouldn't it in theory be around 10% ?
     accp = evaluate(model1_rand, test_loader)
     model1_rand_acc = accp / 100.0
     print(f"Accuracy of {name1} random is {accp}%")
@@ -685,6 +711,8 @@ def main_stitchtrain_small(args):
     print(f"Accuracy of {name2} is {accp}%")
     assert accp > 90
 
+    # NOTE: this often comes out to zero and I don't understand why
+    # shouldn't it in theory be around 10% ?
     accp = evaluate(model2_rand, test_loader)
     model2_rand_acc = accp / 100.0
     print(f"Accuracy of {name2} random is {accp}%")
@@ -787,26 +815,31 @@ def main_stitchtrain_small(args):
                     
 
                     # Epochs can be changed (large may lead to exploding gradients?)
-                    vanilla_acc, _ = train_loop(vanilla_model, train_loader, test_loader, epochs=3, parameters=list(vanilla_stitch.parameters()))
+                    vanilla_acc, _ = train_loop(vanilla_model, train_loader, test_loader, epochs=4, parameters=list(vanilla_stitch.parameters()))
                     vanilla_acc /= 100.0
                     print(f"\tAccuracy of vanilla stitch model is {vanilla_acc}")
                     sims[i][j] = acc
 
                     # Vanilla stitch output difference the stitches learned at layers [i][j]
-                    vanilla_rep_mean2_diff = mean2_model_diff(vanilla_stitch, sender, reciever, snd_label, train_loader, stitch2=None)
+                    # NOTE that model blocks is numbers2 because we feed INTO model2
+                    vanilla_rep_mean2_diff = mean2_model_diff(vanilla_stitch, sender, reciever, snd_label, rcv_label, numbers2, train_loader, stitch2=None)
                     vanilla_rep_mean2[i][j] = vanilla_rep_mean2_diff
+                    print(f"\tVanilla stitch mean2 difference is {vanilla_rep_mean2_diff}")
 
                     autoencoder_stitch = stitches_autoencoder[i][j].cuda()
                     # TODO train it on the similarity loss of the expected representation
-                    autoencoder_acc = train_sim_loss(autoencoder_stitch, sender, reciever, snd_label, rcv_label, train_loader, test_loader, epochs=3)
+                    autoencoder_acc, _ = train_sim_loss(autoencoder_stitch, sender, reciever, snd_label, rcv_label, numbers2, train_loader, test_loader, epochs=30)
                     print(f"\tAccuracy of autoencoder stitch model is {autoencoder_acc}")
                     autoencoder_sims[i][j] = acc
 
-                    autoencoder_rep_mean2_diff = mean2_model_diff(autoencoder_stitch, sender, reciever, snd_label, train_loader)
+                    autoencoder_rep_mean2_diff = mean2_model_diff(autoencoder_stitch, sender, reciever, snd_label, rcv_label, numbers2, train_loader)
                     autoencoder_rep_mean2[i][j] = autoencoder_rep_mean2_diff
+                    print(f"\tAutoencoder stitch mean2 difference is {autoencoder_rep_mean2_diff}")
 
-                    vanilla_autoencoder_mean2_diff = mean2_model_diff(vanilla_stitch, sender, reciever, snd_label, train_loader, stitch2=autoencoder_stitch)
+                    vanilla_autoencoder_mean2_diff = mean2_model_diff(vanilla_stitch, sender, reciever, snd_label, rcv_label, numbers2, train_loader, stitch2=autoencoder_stitch)
                     vanilla_autoencoder_mean2[i][j] = vanilla_autoencoder_mean2_diff
+                    print(f"\tVanilla stitch autoencoder mean2 difference is {vanilla_autoencoder_mean2_diff}")
+                    print("***")
                     pass
                     
                 except Exception as e:
@@ -863,15 +896,23 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', default='cifar10', type=str, choices=['cifar10', 'cifar100'])
     parser.add_argument('--fnum', default='0', type=str) # Used by Resnet18 - Resnet34 experiments to do multiple copies with an id
     parser.add_argument('--smallpairnum', default='1', type=str) # Used by Resnet 1111 -> 2222 to select which pair num to use
+    parser.add_argument('--train_mode', default='stitchtrain_small', type=str, choices=[
+        'stitchtrain_small',
+        'stitchtrain_r18_r34',
+        'train_small',
+        'train_r18_r34'])
     args = parser.parse_args()
 
-    main_stitchtrain_small(args)
-    # main_train_small(args)
-    # pretrain = False
-    # if pretrain:
-    #     main_pretrain(args)
-    # else:
-    #     main_stitchtrain(args)
+    if args.train_mode == "stitchtrain_small":
+        main_stitchtrain_small(args)
+    elif args.train_mode == "stitchtrain_r18_r34":
+        main_stitchtrain_r18_r34(args)
+    elif args.train_mode == "train_small":
+        main_train_small(args)
+    elif args.train_mode == "train_r18_r34":
+        main_pretrain(args)
+    else:
+        raise NotImplementedError
 
 # Resnet34 dimensions for batch size 1:
 # NOTE how they are THE SAME AS THOSE OF RESNET18! (within block sets)

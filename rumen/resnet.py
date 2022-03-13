@@ -322,14 +322,30 @@ class ResNet(nn.Module):
 
     def outfrom_forward(self,
         x: Tensor, 
-        vent: Union[Tuple[int, int], str]):
-        x = self.conv1(x)
-        if vent == "conv1":
-            return x
-        elif vent == "fc":
+        vent_label: Union[Tuple[int, int], str],
+        # NOTE apply_post is a hack for the "autoencoder" training methods and
+        # mean squared error metrics so that we can apply things like max pool
+        apply_post: bool = False):
+
+        # Special case to deal with the fact that sometimes we need to apply maxpool
+        if vent_label == "conv1":
+            # Are you sure we don't want to use the RELU? NOTE
+            return self.conv1(x)
+        elif vent_label == "fc":
             return self.full_forward(x)
         
-        ventBlock, vent = vent
+        ventBlock, vent = vent_label
+        if ventBlock == 4 and vent + 1 == len(self.layer4) and apply_post:
+            # print(f"***Applying post on x with shape {x.shape}")
+            # This just means apply non-parameteric transformations like maxpool
+            x = self.outfrom_forward(x, vent_label, apply_post=False)
+            # print(f"x.shape after not applying post: {x.shape}")
+            x = torch.flatten(self.avgpool(x), 1)
+            # print(f"x.shape after applying post: {x.shape}")
+            return x
+        
+        # Normal case
+        x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
         # NOTE we always take vent+1 because lists are exclusive in python
@@ -350,7 +366,7 @@ class ResNet(nn.Module):
         
         if ventBlock == 4:
             return self.layer4[:vent+1](x)
-        raise Exception(f"Tried to vent from {(ventBlock, vent)} which is not valid")
+        raise Exception(f"Tried to vent from {vent_label} which is not valid")
 
     # NOTE that vent is 1-indexxed
     # NOTE that if you go into then you put it INTO the layer you are "venting" towards
@@ -360,10 +376,13 @@ class ResNet(nn.Module):
     def forward(self,
         x: Tensor, 
         vent: Union[Tuple[int, int], str]="conv1",
-        into: bool=True) -> Tensor:
+        into: bool=True,
+        apply_post: bool = False) -> Tensor:
         if into:
+            if apply_post:
+                raise Exception("apply post only supported for outfrom forward")
             return self.into_forward(x, vent)
-        return self.outfrom_forward(x, vent)
+        return self.outfrom_forward(x, vent, apply_post=apply_post)
 
 
 def _resnet(
