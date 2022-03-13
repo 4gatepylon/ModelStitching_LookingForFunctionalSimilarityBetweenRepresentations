@@ -130,6 +130,7 @@ def train_loop(model, train_loader, test_loader, parameters=None, epochs=None):
     for e in range(1, epochs + 1):
         model.train()
         # epoch
+        # NOTE that enumerate's start changes the starting index
         for it, (inputs, y) in enumerate(train_loader, start=(e - 1) * len(train_loader)):
 
             # adjust
@@ -318,6 +319,7 @@ class Stitched(nn.Module):
         h = self.stitch(h)
         h = self.reciever(h, vent=self.rcv_lbl, into=True)
         return h
+    
 
 
 # NOTE the use of lazy evaluation: this helps us test where we have less memory
@@ -561,6 +563,75 @@ def resnet_small_small_layer2layer(snd_iranges, rcv_iranges):
             i += 1
     return transformations, None, idx2label
 
+# mean squared differnece over all training examples
+# of the vanilla stitch and the stitched model
+def mean2_model_diff(stitch, sender, reciever, vent_at, train_loader, stitch2=None):
+    # out-vent from the
+    num_images = len(train_loader)
+    total = 0.0
+    for x, _ in train_loader:
+        x = x.half()
+        sent = sender(x, vent=vent_at, into=False)
+        gotten = stitch(sent)
+        expected = reciever(x, vent=vent_at, into=False) if stitch2 is None else stitch2(sent)
+        # Average mean squared error over the batch and pixels
+        diff = (gotten - expected).pow(2).mean()
+        total += diff.cpu().item()
+    # Average over the number of images
+    total /= num_images
+    return total
+
+def train_sim_loss(stitch, sender, reciever, snd_label, rcv_label, train_loader, test_loader, epochs=3):
+    # None signifies do all parameters (we might finetune single layers an that will speed up training)
+    parameters = list(stitch.parameters())
+
+    # NOTE this is copied from the train_loop method
+    optimizer = torch.optim.SGD(
+        params=parameters,
+        momentum=0.9,
+        lr=args.lr * args.bsz / 256,
+        weight_decay=args.wd
+    )
+
+    # NOTE this is copied
+    scaler = GradScaler()
+    start = time.time()
+    for e in range(1, epochs + 1):
+        stitch.train()
+        for it, (inputs, y) in enumerate(train_loader, start=(e - 1) * len(train_loader)):
+            # NOTE this is copied
+            adjust_learning_rate(epochs=epochs,
+                                 warmup_epochs=args.warmup,
+                                 base_lr=args.lr * args.bsz / 256,
+                                 optimizer=optimizer,
+                                 loader=train_loader,
+                                 step=it)
+            # zero grad
+            optimizer.zero_grad(set_to_none=True)
+
+            # NOTE this is NOT copied and is instead the precise thing we change
+            # It is NOT optimized (ideally you should cache, and we will do that
+            # once we have more time to clean up the code)
+            ###############################
+            with autocast():
+                h = inputs
+                stitch_input = sender(h)
+                stitch_output = stitch(stitch_input)
+                stitch_target = reciever(h)
+                loss = F.mse_loss(stitch_output, stitch_target)
+            ###############################
+
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+
+        print(f'\t\tepoch: {e} | time: {time.time() - start:.3f}')
+
+    # Make a model to get the loss on the actual task
+    model = Stitched(sender, reciever, snd_label, recv_lbl, stitch)
+    eval_acc = evaluate(model, test_loader)
+    return eval_acc, model
+
 # NOTE: we use this shit to be parallel
 # https://supercloud.mit.edu/submitting-jobs#slurm-gpus
 def main_stitchtrain_small(args):
@@ -628,21 +699,76 @@ def main_stitchtrain_small(args):
     model1_model2_rand_sims = [[0.0 for _ in range(N2)] for _ in range(N1)]
     model1_rand_model2_rand_sims = [[0.0 for _ in range(N2)] for _ in range(N1)]
 
+    # NOTE these store the mean squared error of the vanilla stitch with the expected representation
+    vanilla_rep_model1_model2_mean2 = [[0.0 for _ in range(N2)] for _ in range(N1)]
+    vanilla_rep_model1_rand_model2_mean2 = [[0.0 for _ in range(N2)] for _ in range(N1)]
+    vanilla_rep_model1_model2_rand_mean2 = [[0.0 for _ in range(N2)] for _ in range(N1)]
+    vanilla_rep_model1_rand_model2_rand_mean2 = [[0.0 for _ in range(N2)] for _ in range(N1)]
+
     print("Initializing the stitches (note all idx2label are the same)")
     model1_model2_stitches, _, idx2label = resnet_small_small_layer2layer(numbers1, numbers2)
     model1_rand_model2_stitches, _, _ = resnet_small_small_layer2layer(numbers1, numbers2)
     model1_model2_rand_stitches, _, _ = resnet_small_small_layer2layer(numbers1, numbers2)
     model1_rand_model2_rand_stitches, _, _ = resnet_small_small_layer2layer(numbers1, numbers2)
 
+    # NOTE: This is an addition for the autoencoder test
+    ################################################################################
+    model1_model2_autoencoder_stitches, _, _ = resnet_small_small_layer2layer(numbers1, numbers2)
+    model1_rand_model2_autoencoder_stitches, _, _ = resnet_small_small_layer2layer(numbers1, numbers2)
+    model1_model2_rand_autoencoder_stitches, _, _ = resnet_small_small_layer2layer(numbers1, numbers2)
+    model1_rand_model2_rand_autoencoder_stitches, _, _ = resnet_small_small_layer2layer(numbers1, numbers2)
+
+    # NOTE these store the accuracies (of the stitched models) of the autoencoder stitches
+    model1_model2_autoencoder_sims = [[0.0 for _ in range(N2)] for _ in range(N1)]
+    model1_rand_model2_autoencoder_sims = [[0.0 for _ in range(N2)] for _ in range(N1)]
+    model1_model2_rand_autoencoder_sims = [[0.0 for _ in range(N2)] for _ in range(N1)]
+    model1_rand_model2_rand_autoencoder_sims = [[0.0 for _ in range(N2)] for _ in range(N1)]
+
+    # NOTE these store the mean squared error of the autoencoder stitches
+    autoencoder_rep_model1_model2_mean2 = [[0.0 for _ in range(N2)] for _ in range(N1)]
+    autoencoder_rep_model1_rand_model2_mean2 = [[0.0 for _ in range(N2)] for _ in range(N1)]
+    autoencoder_rep_model1_model2_rand_mean2 = [[0.0 for _ in range(N2)] for _ in range(N1)]
+    autoencoder_rep_model1_rand_model2_rand_mean2 = [[0.0 for _ in range(N2)] for _ in range(N1)]
+
+    # NOTE these store the mean squared error of the autoencoder stitches with the vanilla stitches
+    vanilla_autoencoder_model1_model2_mean2 = [[0.0 for _ in range(N2)] for _ in range(N1)]
+    vanilla_autoencoder_model1_rand_model2_mean2 = [[0.0 for _ in range(N2)] for _ in range(N1)]
+    vanilla_autoencoder_model1_model2_rand_mean2 = [[0.0 for _ in range(N2)] for _ in range(N1)]
+    vanilla_autoencoder_model1_rand_model2_rand_mean2 = [[0.0 for _ in range(N2)] for _ in range(N1)]
+    ################################################################################
+
     pp.pprint(idx2label)
     
     print(f"Stitching, will save in {output_folder}")
-    for sender, reciever, stitches, sims, orig_acc1, orig_acc2, name in [
+    for sender, reciever,\
+        stitches, stitches_autoencoder,\
+        sims, autoencoder_sims,\
+        vanilla_rep_mean2, autoencoder_rep_mean2, vanilla_autoencoder_mean2,\
+        orig_acc1, orig_acc2, name in [
         # Resnet18 -> Resnet18
-        (model1, model2, model1_model2_stitches, model1_model2_sims, model1_acc, model2_acc, f"{name1}_{name2}"),
-        (model1_rand, model2, model1_rand_model2_stitches, model1_rand_model2_sims, model1_rand_acc, model2_acc, f"{name1}_rand_{name2}"),
-        (model1, model2_rand, model1_model2_rand_stitches, model1_model2_rand_sims, model1_acc, model2_rand_acc, f"{name1}_{name2}_rand"),
-        (model1_rand, model2_rand, model1_rand_model2_rand_stitches, model1_rand_model2_rand_sims, model1_rand_acc, model2_rand_acc, f"{name1}_rand_{name2}_rand"),
+        (model1, model2,
+        model1_model2_stitches, model1_model2_autoencoder_stitches, 
+        model1_model2_sims, model1_model2_autoencoder_sims,
+        vanilla_rep_model1_model2_mean2, autoencoder_rep_model1_model2_mean2, vanilla_autoencoder_model1_model2_mean2,
+        model1_acc, model2_acc, f"{name1}_{name2}"),
+        # Resnet18 random -> Resnet18
+        (model1_rand, model2,
+        model1_rand_model2_stitches, model1_rand_model2_autoencoder_stitches,
+        model1_rand_model2_sims, model1_rand_model2_autoencoder_sims,
+        vanilla_rep_model1_rand_model2_mean2, autoencoder_rep_model1_rand_model2_mean2, vanilla_autoencoder_model1_rand_model2_mean2,
+        model1_rand_acc, model2_acc, f"{name1}_rand_{name2}"),
+        # Resnet18 -> Resnet18 random
+        (model1, model2_rand,
+        model1_model2_rand_stitches, model1_model2_rand_autoencoder_stitches,
+        model1_model2_rand_sims, model1_model2_rand_autoencoder_sims,
+        vanilla_rep_model1_model2_rand_mean2, autoencoder_rep_model1_model2_rand_mean2, vanilla_autoencoder_model1_model2_rand_mean2,
+        model1_acc, model2_rand_acc, f"{name1}_{name2}_rand"),
+        # Resnet18 random -> Resnet18 random
+        (model1_rand, model2_rand,
+        model1_rand_model2_rand_stitches, model1_rand_model2_rand_autoencoder_stitches,
+        model1_rand_model2_rand_sims, model1_rand_model2_rand_autoencoder_sims,
+        vanilla_rep_model1_rand_model2_rand_mean2, autoencoder_rep_model1_rand_model2_rand_mean2, vanilla_autoencoder_model1_rand_model2_rand_mean2,
+        model1_rand_acc, model2_rand_acc, f"{name1}_rand_{name2}_rand")
     ]:
         print(f"Stitching {name}")
         # NOTE we ignore first and last layer (for reciever and send)
@@ -654,24 +780,66 @@ def main_stitchtrain_small(args):
 
                     snd_label, rcv_label = idx2label[(i, j)]
                     print(f"\tstitching {i}->{j} which is {snd_label}->{rcv_label}")
+                    print(f"\tOriginal accuracies were {orig_acc1} and {orig_acc2}")
 
-                    stitch = stitches[i][j].cuda()
-                    model = Stitched(sender, reciever, snd_label, rcv_label, stitch)
+                    vanilla_stitch = stitches[i][j].cuda()
+                    vanilla_model = Stitched(sender, reciever, snd_label, rcv_label, vanilla_stitch)
+                    
 
                     # Epochs can be changed (large may lead to exploding gradients?)
-                    acc, _ = train_loop(model, train_loader, test_loader, epochs=3, parameters=list(stitch.parameters()))
-                    acc /= 100.0
-                    print(f"\tAccuracy of model is {acc}")
-                    print(f"\tOriginal accuracies were {orig_acc1} and {orig_acc2}")
+                    vanilla_acc, _ = train_loop(vanilla_model, train_loader, test_loader, epochs=3, parameters=list(vanilla_stitch.parameters()))
+                    vanilla_acc /= 100.0
+                    print(f"\tAccuracy of vanilla stitch model is {vanilla_acc}")
                     sims[i][j] = acc
+
+                    # Vanilla stitch output difference the stitches learned at layers [i][j]
+                    vanilla_rep_mean2_diff = mean2_model_diff(vanilla_stitch, sender, reciever, snd_label, train_loader, stitch2=None)
+                    vanilla_rep_mean2[i][j] = vanilla_rep_mean2_diff
+
+                    autoencoder_stitch = stitches_autoencoder[i][j].cuda()
+                    # TODO train it on the similarity loss of the expected representation
+                    autoencoder_acc = train_sim_loss(autoencoder_stitch, sender, reciever, snd_label, rcv_label, train_loader, test_loader, epochs=3)
+                    print(f"\tAccuracy of autoencoder stitch model is {autoencoder_acc}")
+                    autoencoder_sims[i][j] = acc
+
+                    autoencoder_rep_mean2_diff = mean2_model_diff(autoencoder_stitch, sender, reciever, snd_label, train_loader)
+                    autoencoder_rep_mean2[i][j] = autoencoder_rep_mean2_diff
+
+                    vanilla_autoencoder_mean2_diff = mean2_model_diff(vanilla_stitch, sender, reciever, snd_label, train_loader, stitch2=autoencoder_stitch)
+                    vanilla_autoencoder_mean2[i][j] = vanilla_autoencoder_mean2_diff
+                    pass
+                    
                 except Exception as e:
                     print(f"Failed on layers {i}, {j} ({e})")
                     sims[i][j] = -1
+                    raise e
         
+        # Accuracies of stitched models generated
         filename_sims = name + "_sims.pt"
+        filename_autoencoder_sims = name + "_autoencoder_sims.pt"
+
+        # Differences between what was learned and what was expected (roughly)
+        filename_vanilla_autoencoder_mean2 = name + "_vanilla_autoencoder_mean2.pt"
+        filename_autoencoder_rep_mean2 = name + "_autoencoder_rep_mean2.pt"
+        filename_vanilla_rep_mean2 = name + "_vanilla_rep_mean2.pt"
+
         filename_sims = os.path.join(output_folder, filename_sims)
+        filename_autoencoder_sims = os.path.join(output_folder, filename_autoencoder_sims)
+        filename_vanilla_autoencoder_mean2 = os.path.join(output_folder, filename_vanilla_autoencoder_mean2)
+        filename_autoencoder_rep_mean2 = os.path.join(output_folder, filename_autoencoder_rep_mean2)
+        filename_vanilla_rep_mean2 = os.path.join(output_folder, filename_vanilla_rep_mean2)
+
         print(f"Saving sims to {filename_sims}")
         torch.save(torch.tensor(sims), filename_sims)
+        print(f"Saving autoencoder sims to {filename_autoencoder_sims}")
+        torch.save(torch.tensor(autoencoder_sims), filename_autoencoder_sims)
+        print(f"Saving vanilla autoencoder mean2 to {filename_vanilla_autoencoder_mean2}")
+        torch.save(torch.tensor(vanilla_autoencoder_mean2), filename_vanilla_autoencoder_mean2)
+        print(f"Saving autoencoder rep mean2 to {filename_autoencoder_rep_mean2}")
+        torch.save(torch.tensor(autoencoder_rep_mean2), filename_autoencoder_rep_mean2)
+        print(f"Saving vanilla rep mean2 to {filename_vanilla_rep_mean2}")
+        torch.save(torch.tensor(vanilla_rep_mean2), filename_vanilla_rep_mean2)
+    pass
 
 
 if __name__ == '__main__':
