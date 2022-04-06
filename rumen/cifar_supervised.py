@@ -3,6 +3,9 @@ import os
 import time
 import argparse
 
+# cv2 used to save numpy images
+import cv2
+
 from pprint import PrettyPrinter
 pp = PrettyPrinter(indent=4)
 
@@ -172,7 +175,9 @@ def train_loop(model, train_loader, test_loader, parameters=None, epochs=None):
 # - random resnet18 block2block w/ resnet34
 
 # NOTE right now this just finetunes the pretrained models so we can run our experiments tomorrow
-def main_pretrain(args):
+def main_pretrain(args, res=True):
+    if not res:
+        raise NotImplementedError
     fix_seed(args.seed)
 
     train_loader, test_loader = get_loaders()
@@ -241,7 +246,7 @@ def resnet18_34_stitch_shape(sender, reciever):
         snd_shape = (64 * ratio, 32 // ratio, 32 // ratio)
     
     if reciever == "conv1":
-        raise Exception("conv1 does not recieve")
+        return snd_shape, (3, 32, 32)
     elif reciever == "fc":
         return snd_shape, 512 # block expansion = 1 for resnet 18 and 34
     else:
@@ -282,6 +287,8 @@ def resnet18_34_layer2layer(sender18=True, reciever18=True):
     # print(f"[0][{j}]: conv1 -> fc")
     transformations[0][j] = resnet18_34_stitch(*resnet18_34_stitch_shape("conv1", "fc"))
     idx2label[(0, j)] = ("conv1", "fc")
+    transformations[0][0] = resnet18_34_stitch(*resnet18_34_stitch_shape("conv1", "conv1"))
+    idx2label[(0, 0)] = ("conv1", "conv1")
     
 
     # Connect all the blocks INTO everything else
@@ -300,6 +307,8 @@ def resnet18_34_layer2layer(sender18=True, reciever18=True):
             # print(f"[{i}][{j}]: {outfrom} -> fc")
             transformations[i][j] = resnet18_34_stitch(*resnet18_34_stitch_shape(outfrom, "fc"))
             idx2label[(i, j)] = (outfrom, "fc")
+            transformations[i][0] = resnet18_34_stitch(*resnet18_34_stitch_shape(outfrom, "conv1"))
+            idx2label[(i, 0)] = (outfrom, "conv1")
             j += 1
             i += 1
     # print(idx2label)
@@ -489,7 +498,9 @@ def main_stitchtrain(args):
 
 # Train a bunch of small resnets: all combinations from 1, 1, 1, 1 to 2, 2, 2, 2
 # (there are 16 combinations)
-def main_train_small(args):
+def main_train_small(args, res=True):
+    if not res:
+        raise NotImplementedError
     train_loader, test_loader = get_loaders()
 
     combinations = combos(4, [1, 2])
@@ -541,7 +552,8 @@ def resnet_small_small_layer2layer(snd_iranges, rcv_iranges):
     # print(f"[0][{j}]: conv1 -> fc")
     transformations[0][j] = resnet18_34_stitch(*resnet18_34_stitch_shape("conv1", "fc"))
     idx2label[(0, j)] = ("conv1", "fc")
-    
+    transformations[0][0] = resnet18_34_stitch(*resnet18_34_stitch_shape("conv1", "conv1"))
+    idx2label[(0, 0)] = ("conv1", "conv1")
 
     # Connect all the blocks INTO everything else
     i = 1
@@ -559,13 +571,16 @@ def resnet_small_small_layer2layer(snd_iranges, rcv_iranges):
             # print(f"[{i}][{j}]: {outfrom} -> fc")
             transformations[i][j] = resnet18_34_stitch(*resnet18_34_stitch_shape(outfrom, "fc"))
             idx2label[(i, j)] = (outfrom, "fc")
+            transformations[i][0] = resnet18_34_stitch(*resnet18_34_stitch_shape(outfrom, "conv1"))
+            idx2label[(i, 0)] = (outfrom, "conv1")
             j += 1
             i += 1
     return transformations, None, idx2label
 
 def label_before(label, model_blocks):
     if label == "conv1":
-        raise Exception("Cannot get label before conv1")
+        # raise Exception("Cannot get label before conv1")
+        return "input"
     if label == "fc":
         return (4, model_blocks[4-1] - 1)
     layer, block = label
@@ -655,6 +670,35 @@ def train_sim_loss(stitch, sender, reciever, snd_label, rcv_label, model_blocks,
     model = Stitched(sender, reciever, snd_label, rcv_label, stitch)
     eval_acc = evaluate(model, test_loader)
     return eval_acc, model
+
+def get_n_inputs(n, loader):
+    k = 0
+    for x, _ in loader:
+        if k > n:
+            break
+        batch_size, _, _, _ = x.size()
+        for i in range(min(batch_size, n - k)):
+            y = x[i, :, :, :].flatten()
+            print(y.shape())
+            yield y
+        k += batch_size
+
+def save_random_image_pairs(st, sender, snd_label, num_pairs, foldername_images, train_loader):
+    original_tensors = list(get_n_inputs(num_pairs, train_loader))
+    for i in range(num_pairs):
+        # Pick the filenames
+        original_filename = os.path.join(foldername_images, f"original_{i}.png")
+        generated_filename = os.path.join(foldername_images, f"generated_{i}.png")
+
+        original_tensor = original_tensors[i]
+        generated_tensor_pre = sender(original_tensor, vent=snd_label, into=False)
+        generated_tensor = st(generated_tensor_pre)
+        
+        # Save the images
+        original_np = original_tensor.cpu().numpy()
+        generated_np = generated_tensor.cpu().numpy()
+        cv2.imwrite(original_np, original_filename)
+        cv2.imwrite(generated_np, generated_filename)
 
 # NOTE: we use this shit to be parallel
 # https://supercloud.mit.edu/submitting-jobs#slurm-gpus
@@ -802,7 +846,7 @@ def main_stitchtrain_small(args):
         # NOTE we ignore first and last layer (for reciever and send)
         # NOTE outfrom, into format
         for i in range(N1 - 1):
-            for j in range(1, N2):
+            for j in range(N2):
                 try:
                     acc = 0.0
 
@@ -840,12 +884,24 @@ def main_stitchtrain_small(args):
                     vanilla_autoencoder_mean2[i][j] = vanilla_autoencoder_mean2_diff
                     print(f"\tVanilla stitch autoencoder mean2 difference is {vanilla_autoencoder_mean2_diff}")
                     print("***")
-                    pass
                     
+                    if j == 0:
+                        print(f"Saving 5 random images to {foldername_images}")
+                        if not os.path.exists(foldername_images):
+                            os.mkdir(foldername_images)
+                        save_random_image_pairs(stitches[i][j].cuda(), sender, snd_label, 5, foldername_images, train_loader)
+                    pass
+
                 except Exception as e:
                     print(f"Failed on layers {i}, {j} ({e})")
-                    sims[i][j] = -1
+                    sims[i][j] = 0.0
                     raise e
+                # these are tests
+                break
+                pass
+            # these are tests
+            break
+            pass
         
         # Accuracies of stitched models generated
         filename_sims = name + "_sims.pt"
@@ -861,6 +917,7 @@ def main_stitchtrain_small(args):
         filename_vanilla_autoencoder_mean2 = os.path.join(output_folder, filename_vanilla_autoencoder_mean2)
         filename_autoencoder_rep_mean2 = os.path.join(output_folder, filename_autoencoder_rep_mean2)
         filename_vanilla_rep_mean2 = os.path.join(output_folder, filename_vanilla_rep_mean2)
+        foldername_images = os.path.join(output_folder, "images")
 
         print(f"Saving sims to {filename_sims}")
         torch.save(torch.tensor(sims), filename_sims)
@@ -872,6 +929,7 @@ def main_stitchtrain_small(args):
         torch.save(torch.tensor(autoencoder_rep_mean2), filename_autoencoder_rep_mean2)
         print(f"Saving vanilla rep mean2 to {filename_vanilla_rep_mean2}")
         torch.save(torch.tensor(vanilla_rep_mean2), filename_vanilla_rep_mean2)
+
     pass
 
 
@@ -896,21 +954,50 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', default='cifar10', type=str, choices=['cifar10', 'cifar100'])
     parser.add_argument('--fnum', default='0', type=str) # Used by Resnet18 - Resnet34 experiments to do multiple copies with an id
     parser.add_argument('--smallpairnum', default='1', type=str) # Used by Resnet 1111 -> 2222 to select which pair num to use
+    # here you can also select whether to use resnet or not
     parser.add_argument('--train_mode', default='stitchtrain_small', type=str, choices=[
         'stitchtrain_small',
         'stitchtrain_r18_r34',
         'train_small',
-        'train_r18_r34'])
+        'train_small_no_res',
+        'train_r18_r34',
+        'train_r18_r34_no_res',
+    ])
     args = parser.parse_args()
 
+    # TODO
+    # 1. Enable each of these to be run with either cifar100 or cifar10, and then make the batch
+    #    tests run both dataasets (should store outputs in same folder)
+    # 2. Enable resnets to not have residuals (just flip a flag in the parent class and then in
+    #    the child class)
+    # 3. Enable the training of resnets that have no residual (just append that to the function
+    #    that trains the resnets, changing the filename from "resnet" to "noresnet")
+    # 4. Enable the full experiments to load both resnets and noresnets by simplying adding those filenames
+    #    to the massive dictionary in create_array_meta.py. NOTE that this will quadruple our number of tests
+    #    from 256 to 1024. Moreover that is further doubled by the fact we try two datasets: 2048. If I were to
+    #    stitch cifar100-trained resnets to cifar10-trained resnets this would further explode, so it's probably
+    #    worth
+    #     4.1 Optimizing the similarity loss tester to use a dataloader that uses cached representations
+    #     4.2 Doing only a subset of the tests (that is random) or running them in a random order
+    #     4.3 Running the full test-set during the course of my spring break.
+    # 5. Updating the heatmap code to be able to generate all the heatmaps and then CLOSE the pyplot window to
+    #    avoid running out of memory and getting those warnings.
+
+    # Train stitches (rather generic)
     if args.train_mode == "stitchtrain_small":
         main_stitchtrain_small(args)
     elif args.train_mode == "stitchtrain_r18_r34":
-        main_stitchtrain_r18_r34(args)
+        main_stitchtrain(args)
+    # Pretrain (i.e. train the models we will freeze)
     elif args.train_mode == "train_small":
         main_train_small(args)
     elif args.train_mode == "train_r18_r34":
         main_pretrain(args)
+    # Pretrain without residuals
+    elif args.train_mode == "train_small_no_res":
+        main_train_small(args, res=False)
+    elif args.train_mode == "train_r18_r34_no_res":
+        main_pretrain(args, res=False)
     else:
         raise NotImplementedError
 

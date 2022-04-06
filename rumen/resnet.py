@@ -293,6 +293,8 @@ class ResNet(nn.Module):
             return self.full_forward(x)
         elif vent == "fc":
             return self.fc(x)
+        elif vent == "input":
+            raise Exception("can vent out from input but NOT into input")
         else:
             # Resnets vent every time so that we can shorten our code
             ventBlock, vent = vent
@@ -333,6 +335,8 @@ class ResNet(nn.Module):
             return self.conv1(x)
         elif vent_label == "fc":
             return self.full_forward(x)
+        elif vent_label == "input":
+            return x
         
         ventBlock, vent = vent_label
         if ventBlock == 4 and vent + 1 == len(self.layer4) and apply_post:
