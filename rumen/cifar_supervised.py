@@ -677,9 +677,11 @@ def get_n_inputs(n, loader):
         if k > n:
             break
         batch_size, _, _, _ = x.size()
+        # print(f"batch size {batch_size}")
         for i in range(min(batch_size, n - k)):
-            y = x[i, :, :, :].flatten()
-            print(y.shape())
+            # Output as a 4D tensor so that the network can take this as input
+            y = x[i, :, :, :].flatten(end_dim=0).unflatten(0, (1, -1))
+            # print(y.size())
             yield y
         k += batch_size
 
@@ -690,13 +692,17 @@ def save_random_image_pairs(st, sender, snd_label, num_pairs, foldername_images,
         original_filename = os.path.join(foldername_images, f"original_{i}.png")
         generated_filename = os.path.join(foldername_images, f"generated_{i}.png")
 
-        original_tensor = original_tensors[i]
-        generated_tensor_pre = sender(original_tensor, vent=snd_label, into=False)
-        generated_tensor = st(generated_tensor_pre)
+        with autocast():
+            original_tensor = original_tensors[i]
+            print(f"\tog tensor shape is {original_tensor.size()}")
+            generated_tensor_pre = sender(original_tensor, vent=snd_label, into=False)
+            generated_tensor = st(generated_tensor_pre)
         
         # Save the images
-        original_np = original_tensor.cpu().numpy()
-        generated_np = generated_tensor.cpu().numpy()
+        original_tensor_flat = original_tensor.flatten(end_dim=0)
+        generated_tensor_flat = generated_tensor.flatten(end_dim=0)
+        original_np = original_tensor_flat.cpu().numpy()
+        generated_np = generated_tensor_flat.cpu().numpy()
         cv2.imwrite(original_np, original_filename)
         cv2.imwrite(generated_np, generated_filename)
 
@@ -872,7 +878,7 @@ def main_stitchtrain_small(args):
 
                     autoencoder_stitch = stitches_autoencoder[i][j].cuda()
                     # TODO train it on the similarity loss of the expected representation
-                    autoencoder_acc, _ = train_sim_loss(autoencoder_stitch, sender, reciever, snd_label, rcv_label, numbers2, train_loader, test_loader, epochs=30)
+                    autoencoder_acc, _ = 0.0, None#train_sim_loss(autoencoder_stitch, sender, reciever, snd_label, rcv_label, numbers2, train_loader, test_loader, epochs=30)
                     print(f"\tAccuracy of autoencoder stitch model is {autoencoder_acc}")
                     autoencoder_sims[i][j] = acc
 
@@ -886,6 +892,7 @@ def main_stitchtrain_small(args):
                     print("***")
                     
                     if j == 0:
+                        foldername_images = os.path.join(output_folder, f"images_{i}_{j}")
                         print(f"Saving 5 random images to {foldername_images}")
                         if not os.path.exists(foldername_images):
                             os.mkdir(foldername_images)
@@ -917,7 +924,6 @@ def main_stitchtrain_small(args):
         filename_vanilla_autoencoder_mean2 = os.path.join(output_folder, filename_vanilla_autoencoder_mean2)
         filename_autoencoder_rep_mean2 = os.path.join(output_folder, filename_autoencoder_rep_mean2)
         filename_vanilla_rep_mean2 = os.path.join(output_folder, filename_vanilla_rep_mean2)
-        foldername_images = os.path.join(output_folder, "images")
 
         print(f"Saving sims to {filename_sims}")
         torch.save(torch.tensor(sims), filename_sims)
