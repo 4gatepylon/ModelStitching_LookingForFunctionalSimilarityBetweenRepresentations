@@ -212,83 +212,121 @@ Exploration on this front is ongoing.
 % This will discuss why we are doing this. The main goal is to understand neural networks, but we can think of this
 % attempt to understand "modules" as a great boon to transfer learning and cheap computation since it may allow us to
 % have the tools necessary to do a lot of iterative tinkering with architectures in an empirical way.
-\section{Introduction}
-\subsection{Motivation}
+\section*{Introduction}
+\subsection*{Motivation}
 The success of deep learning for visual recognition has been attributed to the ability of neural networks to learn
-good representations of their training data [Rumelhart et al., 1985]. That is, intermediate outputs of good neural networks 
-are believed to encode semantic information about their inputs, which they use for classification and/or other
-downstream machine learning tasks. However, our understanding of these representations is somewhat limited. We do not
+good representations of their training data [Rumelhart et al., 1985]. That is, intermediate outputs (which we refer
+to as "representations) of good neural networks 
+are believed to somehow encode meaningful information about their inputs, which they use for classification and/or other
+downstream machine learning tasks. However, our understanding of these representations is somewhat limited. Though
+deep learning interpretability research, particularly for computer vision, has helped us grok what deep neural 
+networks are learning, we do not
 know why good representations are learned, nor do we have a robust theory to characterize them. For example, we do not
 know how to compare representations.
 
 Being unable to compare representations is a fundamental limitation because it precludes us from understanding whether
-different models are learning essentially the same thing. This is important, because one of our great hope is that
+different models are learning essentially the same thing. This is important, because one of the great hopes of the authors
+of this paper is that
 different neural networks are able to learn, by some measure, qualitatively similar representations. Metaphorically speaking,
-we'd like it to be the case that two models' representations were the same, but in different "languages." It is as if
+we'd like it to be the case that two models' representations were the same, but in different ``languages.'' It is as if
 a ResNet18 were speaking French and a ResNet34 English, but with an effective translator we could confirm that they were
 indeed speaking the same sentence.
 
-Imagine we had such a so-called translator on hand. If our hypothesis were to be proven correct,
-it would not only tell us that neural networks learn similar representations, but also lend credence to the belief that
-neural networks are capable of learning representations that are human-interpretable and capture the most relevant
-semantics of images. This is because, if all successful learners learn the same underlying semantics, then it
-is intuitive to think that it is not mere coincidence causes them to learn those semantics.
+Basically, two different representations may encode the same underlying information differnetly, and we, the authors,
+wish to have a way to check: this so-called ``translator''. If we had such a ``translator'', and he/she were to tell
+us that, indeed, most neural networks for certain tasks (such as computer vision) learn to encode the same
+underlying information in their representations, that fact would lend credence to the suggestion that deep neural
+networks, even with superficially different representations from a human's, can learn the same information we do.
+It would
+lend credence to this possibility mainly because it would be too much of a coincidence for so many different learners
+to learn the same thing with the exception being the human mind.
 
-As such, if our hypothesis were correct, it could give us more confidence in the robustness of certain architectures.
-Moreover, it would enable us to tackle neural network interpretability from a new angle: instead of trying to 
-understand specific networks layer by layer or neuron by neuron, we could compare different neural networks'
-representations and then cluster those represnetations by similarity. 
-That would then enable us to extend previous interpretability results to broader classes of neural networks.
+Any evidence for or against the ability of deep neural networks to learn representations like a human would be at the
+very least of great philosophical interest. However, the ability to compare representations (i.e. our metaphorical
+``translator'') could empower us in more practical ways as well. For example, we could use representational comparisons
+to more rigorously test novel architectures based on older well-known ones. More generally, such a tool to do this
+would help us use our existing knowledge about deep neural networks to gain more, quickly. Thus, we want to be
+able to compare neural network representations.
 
-Recent advances in model stitching [Bansal et al., 2021] have made great strides towards our goal. They use
-a tool called Model Stitching to not only confirm that very similar neural networks learn similar representations, but
-also improve the accuracy of models and potentially even reduce their training cost (in compute). Bansal et al.
-confirm that, on standard datasets such as CIFAR-10, standard ResNets, such as ResNet18, are able to learn similar
-representations irrespective of their initial random seeds, layer widths, or (to a limited extent) training methodology.
-However, their research has two main holes.
+\subsection*{Related Work}
+% This will discuss things like CKA, CCA, Procrustes, and stitching without differnet architectures.
+Many non-learned similarity measures exist such as Centered Kernel Alignment [Kornblith et al.],
+Canonical Correlation Analysis [Morcos et al.], and the well-known classical procrustes distance.
 
-Firstly, it only confirms that networks with the same fundamental architecture have similar represnetations at
+These may or may not be useful to explore the similarity of different representations. However, these measures are
+plagued by the fact that they are rather ad-hoc and rely on the ingenuity of their designers [Bansal et al., 2021].
+Recent research [Ding et al., 2021] has shown that supposed improvements in these measures are not true improvements,
+but instead improvements in special cases. Thus, we decide not to use measures like Centered Kernel
+Alignment because results gotten from
+their use are difficult to gague. Instead, in line with Ding et al.'s arguments, we choose a measure which is more correlated
+to an accuracy, and therefore more interpretable. Specifically, we use stitching as described in Bansal et al.
+
+Recent advances in model stitching [Bansal et al., 2021] have made great strides towards our goal of effectively
+comparing representations. Bansal et al. elaborate and use model stitching to confirm that very similar 
+neural networks learn similar representations for
+standard computer vision classification tasks such as CIFAR.
+
+
+\subsection*{Our Contribution}
+Bansal et al. give us tantalizing results with positive practical repercussions beyond our current scope\footnote{
+   Bansal et al. confirm that, on standard datasets, such as CIFAR-10, standard ResNets, such as ResNet18, are able to learn similar
+   representations irrespective of their initial random seeds, layer widths, or (to a limited extent) training methodology.
+   They use this finding to show that stitching wider neural networks into more narrow ones can improve performance. Moreover,
+   they use stitching to tell how fast differnet layers converge to good solutions, which enables Bansal et al. to freeze
+   layers which converge faster during training to save compute.
+}.
+In doing so open up a space of possibility for future research. We see two main directions to pursue in response
+to their work.
+
+Firstly, Bansal et al. only confirm that networks with the same fundamental architecture have similar representations at
 the exact same layers. It is much harder to compare the representations of neural networks with different architectures
-since they have different shapes, but that is precisely what we seek to ask through this paper. Do all ResNets learn
-similar representations? What if one has 18 layers and another has 34? Are those 18 layers the same as the first 18
-of the 34-later ResNet or are they something else?
+since they have different shapes, but in some respects this is the more meaningful and interesting thing to do.
 
-Secondly, it neglects to address the question as to whether stitches learn the same (or approximate)
-representations as the original layers, or whether they learn something else which nonetheless has the
-same effect on accuracy. The perplexing results we find in our paper give some credence to the latter
-possibility, but are being further investigated.
+Secondly, Bansal et al. ignore a subtle point regarding the ability of stitching to compare representations. To understand
+this point a little bit of context is necessary. Namely,
+model stitching involves training a set of very simple ``translator'' models (called stitches) 
+to tell whether it is possible to
+``translate'' the ``langauge'' of one neural network into that of another. Stitches take in representations
+from intermediate layers of a sender neural network, and put their outputs into a reciever neural network. Each
+stitch translates from a specific layer of the sender to a specific layer of the reciever. It is inferred that
+if the reciever can reach high task accuracy by utilizing the stitch's translations (of the sender's representations)
+then the two representations are similar. However, the latter does not logically follow
+from the former. There is no necessary condition that two representations be similar to both yield 
+high task accuracy.
+
+Our paper seeks to tackle these two questions. Firstly, we expand stitching in a simple way to be able to compare
+different layers of different Resnets.  Secondly, we analyse whether different neural networks are learning similar
+representations. Lastly, we analyse whether stitching is a good metric in these cases. We have preliminary
+results that are quite perplexing, and further research is in progress.
 
 % This will discuss how stitching works on a high level. It will not introduce any mathematical formalisms or notation.
 % Those will probably be used later.
-\subsection{Stitching}
+\section*{Stitching}
 We broaden the definition of stitching very little from that as defined in [Bansal et al., 2021]. In that paper,
 stitching involved taking the intermediate output of some layer, which we call the sender, transforming it, and then
 inputting that into some intermediate input in another network. We call the layer we input into the reciever. We
 will also refer to the two networks, respectively, as sender and reciever when convenient and contextually clear.
-The representation that would normally be recieved by the reciever we call the expected representation (sent by
-the expected sender: the previous layer in the reciever network).
+The representation that would normally be recieved by the reciever we call the expected representation
+\footnote{The expected representation is sent by
+the expected sender: the previous layer in the reciever network).}.
 
 The layers up to the sender (inclusive) we call a prefix and the layers from the reciever to the end (inclusive) we call
-a suffix. The transformation used is called the stitch, and it is learned with gradient descent (or some other optimizer)
+a suffix. The transformation used is called the stitch, and it is learned\footnote{Any optimizer will do, but we use gradient descent for simplicity.}
 on a frozen prefix/suffix pair. The network formed by concatenating the sender prefix, the stitch, and the reciever
 suffix, is called the stitched network. Just like Bansal et al. we use the accuracy of the stitched network as our
-primary training task. (We differnetiate this later with different tasks such as the copying task: training a stitch
+primary training task.\footnote{We will differnetiate this later, as our research progresses,
+with different tasks such as the copying task: training a stitch
 to transform the prefix's cached outputs into the suffix's expected inputs using a similarity metric like mean squared
 error. When we use input/output representations, as opposed to images classes, as our dataset and labels we refer to 
-that dataset as the representation dataset).
+that dataset as the representation dataset.}
 
 The stitch belongs to a simple function class such as 1x1 convolutions (depthwise) or
-a linear layer. Bansal et al. these function classes since, if the sender and reciever networks are in the same
+a linear layer. Bansal et al. pick these function classes since, if the sender and reciever networks are in the same
 function class, the stitched network will also be in that same function class. However, since for us the sender and
 reciever networks are not in the same function class, we allow stitches that modify the function class in minor ways.
-We expand the class of stitches to include strided convolutions (with stride equal to kernel width, so as to downsample
-by some constant factor) as well as 1x1 convolutions of nearest-upsampled layers (basically, the sender representation
-is copied a constant number of times such that each pixel in it corresponds to a square grid of identical pixels).
-
-These two additions allow us to compare all different layers of a wide class of ResNets including ResNet18, ResNet34, and all
-ResNets using basic blocks with four layers (sets of blocks) with between 1 and 2 blocks within each layer. This latter class
-of small Resnet, we call ResNet(x,x,x,x), where each x can be either 1 or 2 and represents how many basic blocks are in that layer
-(note that ResNet18 is ResNet(2,2,2,2)).
+We expand the class of stitches to include strided convolutions \footnote{with stride equal to kernel width, so as to downsample
+by some constant factor} as well as 1x1 convolutions of nearest-upsampled layers \footnote{basically, the sender representation
+is copied a constant number of times such that each pixel in it corresponds to a square grid of identical pixels}.
 
 \begin{center}
    \begin{figure}[h!]
@@ -306,24 +344,65 @@ of small Resnet, we call ResNet(x,x,x,x), where each x can be either 1 or 2 and 
       that yields similar results.}
    \end{figure}
 \end{center}
-\subsection{Figures}
 
-% This will discuss things like CKA, CCA, Procrustes, and stitching without differnet architectures.
-\subsection{Related Approaches}
-Many non-learned similarity measures exist such as CKA, CCA, and the procrustes distance. These may or may not
-be useful to explore the similarity of different representations. However, these measures are
-plagued by the fact that they are rather ad-hoc and rely on the ingenuity of their designers [Bansal et al., 2021].
-Recent research [Ding et al., 2021] has shown that supposed improvements in these measures are not true improvements,
-but instead improvements in special cases. Thus, we decide not to use measure like CKA because results gotten from
-their use are difficult to gague. Instead, in line with Ding et al.'s arguments, we choose a measure which is more correlated
-to an accuracy, and therefore more interpretable: stitching. One of our goals, of course, is also to understand
-stitching, in itself, better, so using a measure like CKA is not maximally helpful.
+\section*{Experimental Setup}
+\subsection*{Models and Dataset}
+We use the CIFAR-10 dataset\footnote{In the future, once our preliminary results are more interpretable, we intend to
+continue on to imagenet.} with small ResNets. With our augmented class of stitches we compare all different
+layers of ResNet18, ResNet34, and all
+ResNets with between 10 and 18 layers. These small ResNets we characterize with four-tuples,
+$R(x_1, x_2, x_3, x_4)$, where we choose $x_i \in \{1, 2\}$. For any of these ResNets there are, between an initial convolutional
+layer and a final linear classification layer, four sets of Residual blocks numbered 1 through 4 and denoted by
+$x_i$. Each set has either 1 or 2 blocks denoted by the value of $x_i$. Within each block there are two layers,
+though we focus on stitching out of and into blocks, instead of the layers within them. 
 
-\subsection{Preliminary Results}
-We explore the case of small ResNets on CIFAR-10, varied purely through the random seed used for weight initialization.
-Our experiments include all 256 possible stitched pairs of ResNet(x,x,x,x) for x being 1 or 2 as well as ResNet18 with itself and with ResNet34
-(and vice versa). For every pair we also have four controls: a random sender stitched with the reciever, a random reciever stitched
-into from the sender, and a random sender stitched into a random reciever. All our experimental results are formatted as layer to
+Because within each block there are two layers, and there is one
+additional initial convolutional layer as well as one additional classification layer, the total number
+of layers is given by
+\[2 + \sum_{i=1}^{i=4} 2 \cdot x_i \]
+
+This means that for $R(1, 1, 1, 1)$ there are 10 layers, while for $R(2, 2, 2, 2)$ there are 18 layers. We call
+$R(2, 2, 2, 2)$ by the shorthand, ``ResNet18'', though this should not be generalized because there are pairs
+of networks with the same total number of layers but different numbers of blocks per tuple. For example:
+$R(1, 1, 2, 2)$ and $R(2, 2, 1, 1)$ both have 14 layers. These ResNets are qualitatively different
+because the blocks corresponding to each different set have different shapes. Specifically, the blocks in
+the set corresponding to $x_1$ have depth 64, width 32, and height 32; the blocks corresponding to $x_2$ have
+depth 128, width 16, and height 16; and in general the depth doubles each iteration,
+while the height and width each halve.
+
+It should be noted that ResNet34 is not a particularly special case. It is in fact $R(3, 4, 6, 3)$. In general,
+a large class of high-accuracy ResNets, both small and large, can be produced by by picking different values for
+$x_1, x_2, x_3, x_4$. We constrain $x_i$ to be either 1 or 2 since CIFAR-10 is a relatively easy task.
+
+\subsection*{Experiment}
+We train ResNet34 as well as each possible $R(x_1, x_2, x_3, x_4)$ as described above. There are $2^4 = 16$ such possible
+small ResNets since each set of blocks can have either 1 or 2 blocks and there are 4 blocks. We stitch every unique ordered
+pair of networks from this set. There are $16 \cdot 16$ such unique ordered pairs, yielding 256 total pairs to stitch.
+For every pair we stitch every layer from the first network into every layer for the second. Note that we also stitch
+every layer from ResNet18 to ResNet34 and vice versa as a special case of a ``medium-sized'' ResNet.
+
+We use randomly initialized ResNets as controls. Unlike Bansal et al. we only vary our neural networks by their
+initialization weights. For every pair of networks that are stitched, we also create a random sender and a random
+reciever both with the same architecture as the sender and reciever respectively. Just as the sender is stitched
+into the reciever, the random sender is stitched into both the reciever and the random reciever, and the sender
+is also stitched into the random reciever. This allows us to acertain that the stitches
+are not overly powerful [Bansal et al.].
+
+We train each stitch for 4 iterations. This hyperparameter was selected after much experimentation. For both
+regular training of the network and training of the stitches we use stochastic gradient descent with momentum 0.9,
+batch size 256, weight decay 0.01, learning rate 0.01, and a post-warmup cosine learning rate scheduler. More details will
+be in the appendix. These hyperparameters were also arrived at from experimentation.\footnote{We also are beginning to
+train on the copying task. This is a significantly harder task with mean squared error and we are training for 30 iterations
+using the same hyperparameters.}
+
+For each stitch, we plot the accuracy on a grid based on the sending layer and the reciever layer. The layer is
+denoted by an integer which counts how many layers came before it.\footnote{We are also going to be plotting in the same
+style the difference of the expected representation from the stitch representation as well as other such values regarding
+the copying-task-trained stitches.}
+
+\section*{Results}
+\subsection*{Preliminary Results}
+All our experimental results are formatted as layer to
 layer similarity matrices. (The row is the sender, the column is the reciever, and the compared layers are the expected sender
 and the sender; the entry is the accuracy of the stitched network).
 
@@ -332,18 +411,23 @@ patterns. When two random networks are stitched, all possible stitches have low 
 a sender is stiched with a random reciever, only stitches from the later layers of the sender into the later layers of the (random)
 reciever have high stitching accuracy. When a random sender is stitched into a reciever, only stitches into the early layers of the
 reciever have high stitching accuracy. When the sender is stitched into the reciever, all layers in the lower left hand triangle
-have high stitching accuracy. This intruiging last result was most apparent for small ResNets or different shapes.
+of the layer-to-layer similarity matrix have high stitching accuracy. 
+This intruiging last result was most apparent for small ResNets or different shapes.
 Figures are below for all our results.
 
-For ResNets of the same shape we saw more of a diagonal pattern (akin to Bansal et al.) though, the lower left hand triangle for small
+For larger ResNets of the same shape we saw more of a diagonal pattern (akin to Bansal et al.) though, the lower left hand triangle for small
 resnets had higher
 accuracy than the top right hand triangle. 
 We are still investigating these results to understand the cause. We are considering
 whether it is possible that the stitch is not learning to emulate the expected representation but instead create another representation
-that yields the same results (i.e. high accuracy). To do this, we are training different stitches of the same layers on representation datasets
-(that is, pretrained networks' cached intermediate outputs at different layers) instead of backpropagated CIFAR-10. The
-vanilla and feature-dataset-trained stitches we will compare with mean squared error since they have the same shape.
-We are also working on interpretability algorithms. Since our results are unexpected, we are in the process of reworking them to
+that yields the same results (i.e. high accuracy). To do this, we are comparing the representations learned from stitching
+with those which are expected using mean squared error. We are considering using metrics like Centered Kernel Alignment
+(CKA) as well. These metrics make more sense here because we are trying to test for numerical proximity of the two
+representations. We want to see whether one is numerically approximating another or simply ``behaving'' in a similar
+way. We are also looking to an alternative task: the copying task. In the copying task the stitch is trained to copy
+the expected representation through a mean squared error loss, instead of being trained to lower the task loss.
+Our first attempts at this type of stitch are inconclusive, but suggest that it is non-trivial to yield good results
+with such a loss function. Since our results are unexpected, we are in the process of reworking them to
 be more effective for what we have observed.
 
 \begin{center}
@@ -368,6 +452,79 @@ be more effective for what we have observed.
       The entry tells you the accuracy of the stitched model created by stitching between those two layers.}
    \end{figure}
 \end{center}
+
+\subsection*{Interpretation}
+\subsubsection*{What We Had Expected}
+The reason that these results are perplexing is that we were expecting to see some sort of diagonal in the similarity matrix
+when stitching
+different networks. Bansal et al.'s findings suggested that there would be a one-to-one layer correspondence between
+two networks of the same architecture. While we did, roughly, see this for ResNet18 and ResNet34, we did not for the
+small ResNets. Obviously, it is impossible to have a diagonal when the sender and reciever have different lengths,
+but we had considered a few possibilities.
+
+Namely, we considered that there may be a one-to-one correspondence between subsections of each neural network to
+form some kind of ``strided diagonal''. In the layer one-to-one correspondence case, we interpret the correspondence
+to tell us that the layers are learning the same representation. In the subsection one-to-one correspondence case
+(the ``strided diagonal'') we interpret that to mean that there are black-box sections of each neural network which
+have the same final learned representation.
+
+To make our language more precise we can define consecutive sequences of neural networks as ``modules''. Naturally,
+modules have modules within them and, if they are not the entirety of the network, they are within a module. We thought
+that there would be some non-trivial modular mapping between two networks. That is to say, there would be some way of
+describing the sender as a sequence of modules and the reciever as a sequence of modules, such that a mapping existed
+between the two sequences. Obviously, the trivial mapping exists between the entire sender to the entire reciever
+(since they both input identical images and both output nearly identical classifications), but we had hoped for more.
+
+Implicit in our expectations, naturally, was the assumption that there would be a \textbf{mapping} between some quantity
+in the sender and some other quantity in the reciever. It is highly unintuitive that layers in the sender are equally
+similar, and very much so, to lots of layers in the reciever. We expected each layer to have at most one to three layers
+in the other network it was similar to. As we've seen, however, later layers tend to be similar to nearly all earlier layers
+by our stitching metric.
+
+\subsection*{What This Might Mean}
+We see three main explanations for the results: either small ResNets on CIFAR-10 are able to maintain most if not all of the image
+information throughout their processing of the image, the stitches are learning to create representations which yield high
+accuracy despite being different from their expected counterparts, or there is a bug in our experimental code. We refer to these
+options (excepting the possibility of a bug) the ``no information loss'' option and the ``hacking'' option.
+
+If we were to confirm the ``no information loss'' option it would greatly change our understanding of ResNets
+since we usually expect these networks to lose information as the image is further processed. It would be a
+very interesting finding. The ``hacking'' option on the other hand would probably weaken our belief in the method
+of stitching because we believe that stitching is a good similarity metric since it forces the stitch to emulate
+the expected sender using the actual sender's information. If the stitch is ``hacking'' the reciever, then it
+isn't actually forced to do this.
+
+We are working hard to detect any potential existing bugs, but are otherwise fascinated by these two options. As
+previously mentioned, we are using mean squared error to tell if the expected representation is in fact being emulated
+or not by the stitch and also comparing the results with an copying-task-trained stitch. However, we also have one other
+approach in mind which we believe will be very interesting. Namely, we are going to have our stitches output RGB images
+and send them into the very first layer of the reciever. The pattern we have obsereved, in which later layers can stitch
+into previous layers, implies that all layers should be able to stitch into the first layer. Thus, we hope that these
+stitches will reach high accuracy on the downstream task, and then we can use them to decode CIFAR-10 intermediate
+representations into human-interpretable images. We can visually compare them with their original images to see if
+they are in fact similar or not.
+
+\subsection*{Controls}
+As previously mentioned we used random networks to control for stitching power. Nothing particularly interesting
+came out of our controls. This was as we had hoped. A couple examples are below. The main result from the controls
+was that as the randomly initialized (untrained) fraction of the stitched network grew, the accuracy went down.
+
+\begin{center}
+   \begin{figure}[h!]
+      \centering
+      \caption{Triangle Pattern in Small ResNets}
+      \includegraphics[width=4.5cm]{resnet18_rand_resnet18_sims.png}
+      \includegraphics[width=4.5cm]{resnet18_rand_resnet34_sims.png}
+      \caption*{These are similarity matrices. The row tells you the sending layer and the column tells you the recieving layer.
+      The entry tells you the accuracy of the stitched model created by stitching between those two layers.}
+   \end{figure}
+\end{center}
+
+\section*{Conclusion}
+It appears that stitching does not behave for different architectures exactly as we had hoped. We are investigating, but
+the options which seem most likely right now are that either ResNets keep more information as they process images than
+had been previously believed, or stitches are able to ``hack'' their recievers rendering them questionable as a similarity
+metric.
 
 % \section{Experimental Setup}
 % % Notational notes for myself:
