@@ -91,8 +91,12 @@ def evaluate(model, test_loader):
             with autocast():
                 h = images
                 h = model(h)
+                # print(h.shape)
                 preds = h.argmax(dim=1)
+                # print(preds[0])
+                # print(labels[0])
                 total_correct = (preds == labels).sum().cpu().item()
+                # print(total_correct)
                 total_num += h.shape[0]
 
     return total_correct / total_num * 100.
