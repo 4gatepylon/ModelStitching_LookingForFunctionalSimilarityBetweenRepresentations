@@ -10,6 +10,8 @@ from ffcv.fields import IntField, RGBImageField
 import torchvision
 import torchvision.transforms.functional as TF
 import torch
+import torchvision
+from torch.cuda.amp import autocast
 
 import cv2
 import os
@@ -143,6 +145,93 @@ def show_n_tensors_normalized(num, args):
     # TODO iterate through the first few images of the first batch or if necessary overflow batches
     # (look at cifar_supervised) since there is a function there that does it
     pass
+
+# TODO should be used above ^
+
+
+def label_before(label, model_blocks):
+    if label == "conv1":
+        # raise Exception("Cannot get label before conv1")
+        return "input"
+    if label == "fc":
+        return (4, model_blocks[4-1] - 1)
+    layer, block = label
+    if block > 0:
+        return (layer, block - 1)
+    elif layer > 1:
+        return (layer - 1, model_blocks[layer - 1 - 1] - 1)
+    else:
+        return "conv1"
+
+# mean squared differnece over all training examples
+# of the vanilla stitch and the stitched model
+
+
+def mean2_model_diff(stitch, sender, reciever, snd_label, rcv_label, model_blocks, train_loader, stitch2=None):
+    # out-vent from the
+    # NOTE we use train_loader but it really doesn't matter
+    num_images = len(train_loader)
+    total = 0.0
+    label_before_rcv_label = label_before(rcv_label, model_blocks)
+    for x, _ in train_loader:
+        with autocast():
+            # print(f"x shape {x.size()}")
+            sent = sender(x, vent=snd_label, into=False)
+            # print(f"sent shape {sent.size()}")
+            # print(f"label before {label_before_rcv_label}")
+            expected = reciever(x, vent=label_before_rcv_label, into=False,
+                                apply_post=True) if stitch2 is None else stitch2(sent)
+            # print(f"expected shape {expected.size()}")
+
+            gotten = stitch(sent)
+            # print(f"gotten shape {gotten.size()}")
+            # Average mean squared error over the batch and pixels
+            diff = (gotten - expected).pow(2).mean()
+            total += diff.cpu().item()
+        pass
+    # Average over the number of images
+    total /= num_images
+    return total
+
+
+def get_n_inputs(n, loader):
+    k = 0
+    for x, _ in loader:
+        if k > n:
+            break
+        batch_size, _, _, _ = x.size()
+        # print(f"batch size {batch_size}")
+        for i in range(min(batch_size, n - k)):
+            # Output as a 4D tensor so that the network can take this as input
+            y = x[i, :, :, :].flatten(end_dim=0).unflatten(0, (1, -1))
+            # print(y.size())
+            yield y
+        k += batch_size
+
+# def save_random_image_pairs(st, sender, snd_label, num_pairs, foldername_images, train_loader):
+#     original_tensors = list(get_n_inputs(num_pairs, train_loader))
+#     for i in range(num_pairs):
+#         # Pick the filenames
+#         original_filename = os.path.join(
+#             foldername_images, f"original_{i}.png")
+#         generated_filename = os.path.join(
+#             foldername_images, f"generated_{i}.png")
+
+#         with autocast():
+#             original_tensor = original_tensors[i]
+#             print(f"\tog tensor shape is {original_tensor.size()}")
+#             generated_tensor_pre = sender(
+#                 original_tensor, vent=snd_label, into=False)
+#             generated_tensor = st(generated_tensor_pre)
+
+#         # Save the images
+#         original_tensor_flat = original_tensor.flatten(end_dim=0)
+#         generated_tensor_flat = generated_tensor.flatten(end_dim=0)
+#         original_np = original_tensor_flat.cpu().numpy()
+#         generated_np = generated_tensor_flat.cpu().numpy()
+#         cv2.imwrite(original_np, original_filename)
+#         cv2.imwrite(generated_np, generated_filename)
+#         # TDOO
 
 
 if __name__ == '__main__':
