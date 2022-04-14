@@ -60,10 +60,12 @@ class LayerLabel(object):
         if type(info) == str:
             self.str_label = info
         elif type(info) == tuple and len(info) == 2:
-            assert len(
-                info) == 2, "You can only have length (blockset: int, block: int) label tuples"
-            assert type(info[0]) == int, "blockset was not int in label tuple"
-            assert type(info[1]) == int, "block was not int in label tuple"
+            assert len(info) == 2, \
+                "You can only have length (blockset: int, block: int) label tuples"
+            assert type(info[0]) == int, \
+                f"blockset was not int in label tuple, was {info[0]} of type {type(info[0])}"
+            assert type(info[1]) == int, \
+                f"block was not int in label tuple, was {info[1]} of type {type(info[1])}"
             self.blockset = info[0]
             self.block = info[1]
         else:
@@ -103,6 +105,10 @@ class LayerLabel(object):
                 if block < LayerLabel.BLOCK_MIN or block > maxBlock:
                     raise Exception(
                         f"Block must be in [{LayerLabel.BLOCK_MIN}, {maxBlock}], was {block}")
+                # blockset/block must be integers
+                if blockset != int(blockset) or block != int(block):
+                    raise Exception(
+                        f"LayerLabel representation ({self.blockset}, {self.block}) is of floats (must be ints)")
 
             return func(self, *args, **kwargs)
         return wrapper
@@ -136,8 +142,32 @@ class LayerLabel(object):
         return self.str_label == LayerLabel.INPUT
 
     @checkValid
+    def isConv1(self: LayerLabel) -> bool:
+        return self.str_label == LayerLabel.CONV1
+
+    @checkValid
+    def isBlock(self: LayerLabel) -> bool:
+        return self.str_label is None
+
+    @checkValid
+    def isFc(self: LayerLabel) -> bool:
+        return self.str_label == LayerLabel.FC
+
+    @checkValid
     def isOutput(self: LayerLabel) -> bool:
         return self.str_label == LayerLabel.OUTPUT
+    ################################################################################
+
+    @checkValid
+    def blockset(self: LayerLabel) -> int:
+        assert self.isBlock(), "Cannot get blockset of a string label"
+        return self.blockset
+
+    @checkValid
+    def block(self: LayerLabel) -> int:
+        assert self.isBlock(), "Cannot get block of a string label"
+        return self.block
+
     ################################################################################
 
     @checkValid
@@ -307,13 +337,20 @@ class TestLayerLabel(unittest.TestCase):
         invalidStr: str = "invalidString"
         invalidTuple2: Tuple[int, int] = (-1, -1)
         invalidTuple3: Tuple[int, int] = (1, 1)
+        invalidTuple4: Tuple[int, int] = (1.1, 1.2)
         input1 = LayerLabel(invalidStr, TestLayerLabel.R1111)
         input2 = LayerLabel(invalidTuple2, TestLayerLabel.R1111)
         input3 = LayerLabel(invalidTuple3, TestLayerLabel.R1111)
+        input4 = LayerLabel((1, 1), TestLayerLabel.R2222)
+        input4.block = 2.2
+        input4.blockset = 1.1
         # NOTE: when you do assertRaises you need to provide a Callable
-        self.assertRaises(Exception, input1.prevLabel)
-        self.assertRaises(Exception, input2.prevLabel)
-        self.assertRaises(Exception, input3.prevLabel)
+        self.assertRaises(Exception, input1.checkValid())
+        self.assertRaises(Exception, input2.checkValid())
+        self.assertRaises(Exception, input3.checkValid())
+        self.assertRaises(Exception, input4.checkValid())
+        self.assertRaises(Exception,
+                          lambda: LayerLabel((1.1, 2.2), TestLayerLabel.R2222))
 
     def test_equals(self: TestLayerLabel) -> NoReturn:
         """ Check that equality works """
