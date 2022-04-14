@@ -211,6 +211,9 @@ class ResNet(nn.Module):
         self.layer4 = self._make_layer(
             block, 512, layers[3], stride=2, dilate=replace_stride_with_dilation[2])
 
+        # TODO add state to keep track of
+        # - whether to flatten going out
+        # - whether to go in or go out (vent into vs out from)
         self.blocksets = nn.Sequential(
             self.layer1, self.layer2, self.layer3, self.layer4)
         assert len(self.blocksets) == 4, \
@@ -316,33 +319,30 @@ class ResNet(nn.Module):
             return y
         elif vent.isFc():
             return self.fc(x)
+        elif vent.isOutput():
+            return x
         else:
             raise ValueError(f"Not input, conv1, fc, or block: {vent}")
 
-    def outfrom_forward(self,
-                        x: Tensor,
-                        vent_label: Union[Tuple[int, int], str],
-                        # NOTE apply_post is a hack for the "autoencoder" training methods and
-                        # mean squared error metrics so that we can apply things like max pool
-                        apply_post: bool = False):
-
+    def outfrom_forward(self, x: Tensor, vent: LayerLabel, flatten: bool = False):
         # Special case to deal with the fact that sometimes we need to apply maxpool
-        if vent_label == "conv1":
+        if vent.isConv1():
             # Are you sure we don't want to use the RELU? NOTE
             return self.conv1(x)
-        elif vent_label == "fc":
+        elif vent.isFc():
             return self.full_forward(x)
-        elif vent_label == "input":
+        elif vent.isOutput():
+            raise ValueError(f"Can't have output for `outfrom_forward`")
+        elif vent.isInput():
             return x
 
-        ventBlock, vent = vent_label
-        if ventBlock == 4 and vent + 1 == len(self.layer4) and apply_post:
-            # print(f"***Applying post on x with shape {x.shape}")
-            # This just means apply non-parameteric transformations like maxpool
-            x = self.outfrom_forward(x, vent_label, apply_post=False)
-            # print(f"x.shape after not applying post: {x.shape}")
+        blockset, block = vent.blockset(), vent.block()
+
+        # When you want to flatten it in th end (and avgpool) you first do
+        # the rest of the network, then you apply those transformations.
+        if blockset == 4 and block + 1 == len(self.layer4) and flatten:
+            x = self.outfrom_forward(x, vent, flatten=False)
             x = torch.flatten(self.avgpool(x), 1)
-            # print(f"x.shape after applying post: {x.shape}")
             return x
 
         # Normal case
@@ -350,43 +350,15 @@ class ResNet(nn.Module):
         x = self.bn1(x)
         x = self.relu(x)
         # NOTE we always take vent+1 because lists are exclusive in python
-        if ventBlock == 1:
-            return self.layer1[:vent+1](x)
-        else:
-            x = self.layer1(x)
+        x = self.blocksets[:blockset](x)
+        y = self.blocksets[blockset][:block+1](x)
+        return y
 
-        if ventBlock == 2:
-            return self.layer2[:vent+1](x)
-        else:
-            x = self.layer2(x)
-
-        if ventBlock == 3:
-            return self.layer3[:vent+1](x)
-        else:
-            x = self.layer3(x)
-
-        if ventBlock == 4:
-            return self.layer4[:vent+1](x)
-        raise Exception(f"Tried to vent from {vent_label} which is not valid")
-
-    # NOTE that vent is 1-indexxed
-    # NOTE that if you go into then you put it INTO the layer you are "venting" towards
-    #   (that is to say, if you want to compare two conv1s, you do NOT vent into conv1, you vent into (1, 0))
-    # NOTE that if you go outfrom (not into) then you take it OUT from the output of that layer
-    #   (that is to say, you DO in fact take out from conv1 if you want to compare conv1s)
-    def forward(self,
-                x: Tensor,
-                vent: Union[Tuple[int, int], str] = "conv1",
-                into: bool = True,
-                apply_post: bool = False) -> Tensor:
-        if into:
-            if apply_post:
-                raise Exception(
-                    "apply post only supported for outfrom forward")
-            return self.into_forward(x, vent)
-        return self.outfrom_forward(x, vent, apply_post=apply_post)
+    def forward(self, x: Tensor) -> Tensor:
+        raise NotImplementedError
 
 
+# TODO refactor this and the shit below as much as possible
 def _resnet(
         arch: str,
         block: Type[Union[BasicBlock, Bottleneck]],
