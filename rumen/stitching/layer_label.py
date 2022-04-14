@@ -19,7 +19,6 @@ from typing import (
     TypeVar,
 )
 
-from sympy import assemble_partfrac_list
 # https://docs.python.org/3/library/typing.html#typing.ParamSpec
 T = TypeVar('T')
 P = ParamSpec('P')
@@ -35,7 +34,7 @@ class LayerLabel(object):
     number of blocks within them and potentially other
     layers before and after, labeled using special labels.
 
-    By convention the other blocks are either `conv1`, `fc`, 
+    By convention the other blocks are either `conv1`, `fc`,
     `input` or `output` (the latter two of which are special
     reserved words with the property that you can NEVER
     stitch out of output and you can never stitch INTO input).
@@ -353,7 +352,7 @@ class TestLayerLabel(unittest.TestCase):
         self.assertFalse(s1 == s3)
 
     def test_prevLabel(self: TestLayerLabel) -> NoReturn:
-        """  Test that lbl.prevLabel() and shorthand `lbl - 1` works with cached model blocksets"""
+        """  Check that lbl.prevLabel() and shorthand `lbl - 1` works with cached model blocksets"""
         input1: LayerLabel = LayerLabel((1, 1), TestLayerLabel.R2222)
         expected1: LayerLabel = LayerLabel((1, 0), TestLayerLabel.R2222)
         expected2: LayerLabel = LayerLabel(
@@ -380,7 +379,7 @@ class TestLayerLabel(unittest.TestCase):
         self.assertEqual(input2 - 4, expected6)
 
     def test_label2idx_and_idx2layer(self: TestLayerLabel) -> NoReturn:
-        """ Test that lbl.label2idx() works properly """
+        """ Check that lbl.label2idx() works properly """
         # [0: conv1, 1: (1, 0), 2: (1, 1), ...]
         label1: LayerLabel = LayerLabel((1, 1), TestLayerLabel.R2222)
         idx1: int = 2
@@ -446,10 +445,87 @@ class TestLayerLabel(unittest.TestCase):
             idx11, TestLayerLabel.R1234), label11)
 
     def test_labels(self: TestLayerLabel) -> NoReturn:
-        raise NotImplementedError  # TODO
+        """ Check that if you get the labels for a layer of a network it is correct """
+        labels1: List[LayerLabel] = LayerLabel.labels(TestLayerLabel.R1111)
+        labels2: List[LayerLabel] = LayerLabel.labels(TestLayerLabel.R2222)
+        labels3: List[LayerLabel] = LayerLabel.labels(TestLayerLabel.R1234)
+
+        expected1: List[LayerLabel] = [
+            LayerLabel(LayerLabel.CONV1, TestLayerLabel.R1111),
+            LayerLabel((1, 0), TestLayerLabel.R1111),
+            LayerLabel((2, 0), TestLayerLabel.R1111),
+            LayerLabel((3, 0), TestLayerLabel.R1111),
+            LayerLabel((4, 0), TestLayerLabel.R1111),
+            LayerLabel(LayerLabel.FC, TestLayerLabel.R1111),
+        ]
+        expected2: List[LayerLabel] = [
+            LayerLabel(LayerLabel.CONV1, TestLayerLabel.R2222),
+            LayerLabel((1, 0), TestLayerLabel.R2222),
+            LayerLabel((1, 1), TestLayerLabel.R2222),
+            LayerLabel((2, 0), TestLayerLabel.R2222),
+            LayerLabel((2, 1), TestLayerLabel.R2222),
+            LayerLabel((3, 0), TestLayerLabel.R2222),
+            LayerLabel((3, 1), TestLayerLabel.R2222),
+            LayerLabel((4, 0), TestLayerLabel.R2222),
+            LayerLabel((4, 1), TestLayerLabel.R2222),
+            LayerLabel(LayerLabel.FC, TestLayerLabel.R2222),
+        ]
+        expected3: List[LayerLabel] = [
+            LayerLabel(LayerLabel.CONV1, TestLayerLabel.R1234),
+            LayerLabel((1, 0), TestLayerLabel.R1234),
+            LayerLabel((2, 0), TestLayerLabel.R1234),
+            LayerLabel((2, 1), TestLayerLabel.R1234),
+            LayerLabel((3, 0), TestLayerLabel.R1234),
+            LayerLabel((3, 1), TestLayerLabel.R1234),
+            LayerLabel((3, 2), TestLayerLabel.R1234),
+            LayerLabel((4, 0), TestLayerLabel.R1234),
+            LayerLabel((4, 1), TestLayerLabel.R1234),
+            LayerLabel((4, 2), TestLayerLabel.R1234),
+            LayerLabel((4, 3), TestLayerLabel.R1234),
+            LayerLabel(LayerLabel.FC, TestLayerLabel.R1234),
+        ]
+
+        self.assertEqual(labels1, expected1)
+        self.assertEqual(labels2, expected2)
+        self.assertEqual(labels3, expected3)
+
+    def test_net_size(self: TestLayerLabel) -> NoReturn:
+        input1: List[int] = TestLayerLabel.R1111
+        input2: List[int] = TestLayerLabel.R2222
+        input3: List[int] = TestLayerLabel.R1234
+        expected1: int = 6
+        expected2: int = 10
+        expected3: int = 12
+
+        self.assertEqual(LayerLabel.numLayers(input1), expected1)
+        self.assertEqual(LayerLabel.numLayers(input2), expected2)
+        self.assertEqual(LayerLabel.numLayers(input3), expected3)
 
     def test_generateTable(self: TestLayerLabel) -> NoReturn:
-        raise NotImplementedError  # TODO
+        """ Check that you can generate a table given a constructor closure"""
+        constructor: Callable[[LayerLabel, LayerLabel], Tuple[int, int]] = \
+            lambda l1, l2: (l1.label2idx(), l2.label2idx())
+
+        netpairs: List[Tuple[List[int], List[int]]] = [
+            (TestLayerLabel.R1111, TestLayerLabel.R1111),
+            (TestLayerLabel.R1111, TestLayerLabel.R2222),
+            (TestLayerLabel.R1111, TestLayerLabel.R1234),
+            (TestLayerLabel.R2222, TestLayerLabel.R2222),
+            (TestLayerLabel.R2222, TestLayerLabel.R1234),
+            (TestLayerLabel.R1234, TestLayerLabel.R1234),
+        ]
+
+        # Proper behavior is to drop one of the layers for the sender (namely the last layer, since it
+        # won't be sending), but the reciever will recieve into every layer.
+        tables: List[List[Tuple[int, int]]] = [
+            LayerLabel.generateTable(constructor, r1, r2) for (r1, r2) in netpairs]
+        expecteds: List[List[Tuple[int, int]]] = [
+            [[(i, j) for j in range(LayerLabel.numLayers(r2))]
+             for i in range(LayerLabel.numLayers(r1) - 1)]
+            for (r1, r2) in netpairs
+        ]
+        # TODO need to add convs
+        self.assertEqual(tables, expecteds)
 
 
 if __name__ == '__main__':
