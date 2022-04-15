@@ -68,19 +68,19 @@ class RepShape(object):
         return type(self.shape) == tuple
 
     @checkValid
-    def width(self: RepShape) -> int:
-        # Width is meant to be overloaded to work with both types of reps
-        return self.shape[1] if self.isTensor() else self.shape
-
-    @checkValid
-    def height(self: RepShape) -> int:
+    def depth(self: RepShape) -> int:
         assert self.isTensor()
         return self.shape[0]
 
     @checkValid
-    def depth(self: RepShape) -> int:
+    def width(self: RepShape) -> int:
+        # Width is meant to be overloaded to work with both types of reps
+        return self.shape[2] if self.isTensor() else self.shape
+
+    @checkValid
+    def height(self: RepShape) -> int:
         assert self.isTensor()
-        return self.shape[2]
+        return self.shape[1]
 
     @checkValid
     def isVector(self: RepShape):
@@ -169,15 +169,15 @@ class TestRepShape(unittest.TestCase):
 
     def test_width(self: TestRepShape) -> NoReturn:
         # NOTE: vscode gets confused and thinks this is unreachable code, but it's not
-        self.assertEqual(RepShape((3, 4, 5)).width(), 4)
-        self.assertNotEqual(RepShape((3, 4, 5)).width(), 5)
+        self.assertEqual(RepShape((3, 4, 5)).width(), 5)
+        self.assertNotEqual(RepShape((3, 4, 5)).width(), 4)
         self.assertEqual(RepShape(3).width(), 3)
 
     def test_height_and_depth(self: TestRepShape) -> NoReturn:
         # NOTE: vscode gets confused and thinks this is unreachable code, but it's not
-        self.assertEqual(RepShape((3, 4, 5)).height(), 3)
-        self.assertEqual(RepShape((3, 4, 5)).depth(), 5)
-        self.assertNotEqual(RepShape((3, 4, 5)).height(), 4)
+        self.assertEqual(RepShape((3, 4, 5)).height(), 4)
+        self.assertEqual(RepShape((3, 4, 5)).depth(), 3)
+        self.assertNotEqual(RepShape((3, 4, 5)).height(), 5)
         self.assertNotEqual(RepShape((3, 4, 5)).depth(), 4)
         self.assertRaises(Exception, RepShape(3).height)
         self.assertRaises(Exception, RepShape(3).depth)

@@ -29,3 +29,7 @@ We are going to need functions to
 - Generate the sequence of networks relevant for an experiment (i.e. some sort of experiment class)
 - Manage files for an experiment (some sort of experiment file manager class)
 - Selection of dataloaders from either default Pytorch ones for CNNs or FFCV's ones.
+
+# TODOs
+- Implement the above
+- checkValid should be renamed to something like assertRep and use asserts insofar as is possible so that we can optimize it away with the `-O` flag. Alternatively, we could just insert asserts everywhere. The easiest thing woudld be to create a function called `checkInternals` that returns a boolean (dummy) and that internally has a ton of asserts. You would use it by asserting it. That way we can `-O` it away. For this we should implement a `CheckInternals` superclass. Apprently multiple inheritance is supported (check https://pythonprogramminglanguage.com/multiple-inheritance/) so that may be the pattern we want to use.
