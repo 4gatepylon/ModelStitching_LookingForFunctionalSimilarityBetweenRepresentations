@@ -1,3 +1,11 @@
+# Things talked on April 13th, 2022
+BatchNorm should be in eval mode (fies the variance and mean)
+FFCV could introduce an error: try without FFCV
+Make sure to lay it out in a minimalistic way
+Be Modular (what I want)
+Reuse code (what I want) instead of rewriting
+In theory setting requires_grad to False should work: if it doesn't... why?
+
 # Things Talked on April 6th, 2022
 - we either have some very interesting behavior or a bug, so... plz try hard to find bug!
 - when is similarity small? (that is mean squared error or cca): i.e. look at the lower left hand triangle; WHY IS IT THAT BIG RESNETS HAVE A DIAGONAL WHILE THE SMALL ONES HAVE A TRIANGLE?
