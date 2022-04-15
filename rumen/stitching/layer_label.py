@@ -159,12 +159,12 @@ class LayerLabel(object):
     ################################################################################
 
     @checkValid
-    def blockset(self: LayerLabel) -> int:
+    def getBlockset(self: LayerLabel) -> int:
         assert self.isBlock(), "Cannot get blockset of a string label"
         return self.blockset
 
     @checkValid
-    def block(self: LayerLabel) -> int:
+    def getBlock(self: LayerLabel) -> int:
         assert self.isBlock(), "Cannot get block of a string label"
         return self.block
 

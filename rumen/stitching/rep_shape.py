@@ -1,5 +1,6 @@
 # Enables type annotations using enclosing classes
 from __future__ import annotations
+from multiprocessing.reduction import recv_handle
 
 import unittest
 
@@ -12,9 +13,12 @@ from typing import (
     NoReturn,
     Callable,
     Union,
+    List,
     Tuple,
     TypeVar,
 )
+
+from layer_label import LayerLabel
 
 # https://docs.python.org/3/library/typing.html#typing.ParamSpec
 T = TypeVar('T')
@@ -25,9 +29,11 @@ class RepShape(object):
     """
     RepShape is a simple wrapper for (int, int, int) | int, where it describes
     the shape of a representation. A representation for us is either a tensor
-    with (height, width, dimensions) or simply a vector with a single dimension.
+    with (depth, height, width) or simply a vector with a single dimension.
     We ignore the batch dimension.
     """
+
+    NUM_CLASSES = 10
 
     def __init__(self: RepShape, shape: Union[Tuple[int, int, int], int]) -> NoReturn:
         self.shape = shape
@@ -96,6 +102,36 @@ class RepShape(object):
     def __str__(self: RepShape) -> str:
         return repr(self)
 
+    @staticmethod
+    def label2outputRepShape(label: LayerLabel) -> RepShape:
+        if label.isInput():
+            return RepShape((3, 32, 32))
+        if label.isConv1():
+            return RepShape((64, 32, 32))
+        elif label.isBlock():
+            blockset: int = label.getBlockset()
+            base_depth: int = 64
+            base_width_height: int = 32
+            # NOTE that in ResNets the depth always doubles every layer and always halves every layer
+            multiplier: int = 2**(blockset - LayerLabel.BLOCKSET_MIN)
+            depth: int = base_depth * multiplier
+            height: int = base_width_height // multiplier
+            return RepShape((depth, height, height))
+        elif label.isFc():
+            # NOTE: that right now we only support classification for CIIFAR
+            return RepShape(RepShape.NUM_CLASSES)
+        elif label.isOutput():
+            raise Exception(f"Output layer shape is not supported")
+        else:
+            raise Exception(f"Unknown label type: {label}")
+
+    @staticmethod
+    def stitchShapes(send: LayerLabel, recv: LayerLabel) -> Tuple[RepShape, RepShape]:
+        # NOTE that the shape the reciever should get is that which the layer before it outputs
+        send_shape: RepShape = RepShape.label2outputRepShape(send)
+        recv_shape: RepShape = RepShape.label2outputRepShape(recv - 1)
+        return (send_shape, recv_shape)
+
 
 class TestRepShape(unittest.TestCase):
     """ Simple unit tester to sanity check RepShape """
@@ -138,6 +174,89 @@ class TestRepShape(unittest.TestCase):
         self.assertNotEqual(RepShape((3, 4, 5)).depth(), 4)
         self.assertRaises(Exception, RepShape(3).height)
         self.assertRaises(Exception, RepShape(3).depth)
+
+    def test_num_classes(self: TestRepShape) -> NoReturn:
+        # NOTE this test will allow us to not forget to update things if we change
+        # the functionality (i.e. it's a reminder, though I realize we should have a centralized
+        # place to store these parameters, and I will soon...)
+        self.assertEqual(RepShape.NUM_CLASSES, 10)
+
+    # TODO test label to rep shape
+    def test_label2RepShape(self: TestRepShape) -> NoReturn:
+        # NOTE: vscode gets confused and thinks this is unreachable code, but it's not
+        resnet: List[int] = [1, 2, 3, 4]
+        label0: LayerLabel = LayerLabel(LayerLabel.INPUT, resnet)
+        label1: LayerLabel = LayerLabel(LayerLabel.CONV1, resnet)
+        label2: LayerLabel = LayerLabel((1, 0), resnet)
+        label3: LayerLabel = LayerLabel((2, 1), resnet)
+        label4: LayerLabel = LayerLabel((3, 2), resnet)
+        label5: LayerLabel = LayerLabel((4, 3), resnet)
+        label6: LayerLabel = LayerLabel(LayerLabel.FC, resnet)
+
+        self.assertEqual(RepShape.label2outputRepShape(
+            label0), RepShape((3, 32, 32)))
+        self.assertEqual(RepShape.label2outputRepShape(
+            label1), RepShape((64, 32, 32)))
+        self.assertEqual(RepShape.label2outputRepShape(
+            label2), RepShape((64, 32, 32)))
+        self.assertEqual(RepShape.label2outputRepShape(
+            label3), RepShape((128, 16, 16)))
+        self.assertEqual(RepShape.label2outputRepShape(
+            label4), RepShape((256, 8, 8)))
+        self.assertEqual(RepShape.label2outputRepShape(
+            label5), RepShape((512, 4, 4)))
+        self.assertEqual(RepShape.label2outputRepShape(label6), RepShape(10))
+
+    def test_stitchShapes(self: TestRepShape) -> NoReturn:
+        # NOTE: vscode gets confused and thinks this is unreachable code, but it's not
+        r1: List[int] = [1, 2, 1, 1]
+        r2: List[int] = [1, 2, 2, 1]
+        r1_shapes: List[RepShape] = [
+            # Conv ->
+            RepShape((64, 32, 32)),
+            # (1, 0) ->
+            RepShape((64, 32, 32)),
+            # (2, 0) ->
+            RepShape((128, 16, 16)),
+            # (2, 1) ->
+            RepShape((128, 16, 16)),
+            # (3, 0) ->
+            RepShape((256, 8, 8)),
+            # (4, 0) ->
+            RepShape((512, 4, 4)),
+        ]
+        r2_shapes: List[RepShape] = [
+            # -> Conv
+            RepShape((3, 32, 32)),
+            # -> (1, 0)
+            RepShape((64, 32, 32)),
+            # -> (2, 0)
+            RepShape((64, 32, 32)),
+            # -> (2, 1)
+            RepShape((128, 16, 16)),
+            # -> (3, 0)
+            RepShape((128, 16, 16)),
+            # -> (3, 1)
+            RepShape((256, 8, 8)),
+            # -> (4, 0)
+            RepShape((256, 8, 8)),
+            # -> FC
+            RepShape((512, 4, 4)),
+        ]
+
+        expected_shapes: List[List[RepShape]] = [
+            [(r1_shapes[r1_idx], r2_shapes[r2_idx])
+             for r2_idx in range(len(r2_shapes))]
+            for r1_idx in range(len(r1_shapes))
+        ]
+
+        stitch_labels, _ = LayerLabel.generateTable(
+            lambda l1, l2: (l1, l2), r1, r2)
+        for i in range(len(stitch_labels)):
+            for j in range(len(stitch_labels)):
+                (label1, label2) = stitch_labels[i][j]
+                self.assertEqual(RepShape.stitchShapes(
+                    label1, label2), expected_shapes[i][j])
 
 
 if __name__ == '__main__':

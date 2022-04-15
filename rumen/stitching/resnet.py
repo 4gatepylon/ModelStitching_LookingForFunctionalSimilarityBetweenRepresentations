@@ -309,7 +309,7 @@ class ResNet(nn.Module):
             return self.full_forward(x)
         elif vent.isBlock():
             # Resnets vent every time so that we can shorten our code
-            blockset, block = vent.blockset(), vent.block()
+            blockset, block = vent.getBlockset(), vent.getBlock()
             xp = self.blocksets[blockset][block:](x)
             if blockset + 1 < LayerLabel.BLOCKSET_MAX:
                 xp = self.blocksets[blockset+1:](xp)
@@ -336,7 +336,7 @@ class ResNet(nn.Module):
         elif vent.isInput():
             return x
 
-        blockset, block = vent.blockset(), vent.block()
+        blockset, block = vent.getBlockset(), vent.getBlock()
 
         # When you want to flatten it in th end (and avgpool) you first do
         # the rest of the network, then you apply those transformations.
