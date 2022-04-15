@@ -33,7 +33,7 @@ class RepShape(object):
     We ignore the batch dimension.
     """
 
-    NUM_CLASSES = 10
+    NUM_CLASSES: int = 10
 
     def __init__(self: RepShape, shape: Union[Tuple[int, int, int], int]) -> NoReturn:
         self.shape = shape
@@ -85,6 +85,13 @@ class RepShape(object):
     @checkValid
     def isVector(self: RepShape):
         return type(self.shape) == int
+
+    @checkValid
+    def numActivations(self: RepShape) -> int:
+        if self.isVector():
+            return self.shape
+        else:
+            return self.shape[0] * self.shape[1] * self.shape[2]
 
     @checkValid
     def __repr__(self: RepShape) -> str:
