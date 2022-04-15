@@ -33,3 +33,6 @@ We are going to need functions to
 # TODOs
 - Implement the above
 - checkValid should be renamed to something like assertRep and use asserts insofar as is possible so that we can optimize it away with the `-O` flag. Alternatively, we could just insert asserts everywhere. The easiest thing woudld be to create a function called `checkInternals` that returns a boolean (dummy) and that internally has a ton of asserts. You would use it by asserting it. That way we can `-O` it away. For this we should implement a `CheckInternals` superclass. Apprently multiple inheritance is supported (check https://pythonprogramminglanguage.com/multiple-inheritance/) so that may be the pattern we want to use.
+- prefix and suffix should be made to 
+- we should have a dummy `Resnet` subclass that just wraps arbitrary modules so as to allow type annotations (type annotations accept all possible subclasses)
+- should probably set the `__all__` properly for all these classes
