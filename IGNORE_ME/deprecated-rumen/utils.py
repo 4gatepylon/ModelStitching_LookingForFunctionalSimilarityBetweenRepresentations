@@ -6,6 +6,7 @@ import numpy as np
 from torch.cuda.amp import autocast
 import math
 
+
 def fix_seed(seed):
     random.seed(seed)
     np.random.seed(seed)
@@ -45,10 +46,12 @@ def knn_monitor(net, memory_data_loader, test_data_loader, memory_dataset, devic
         # loop test data to predict the label by weighted knn search
         test_bar = tqdm(test_data_loader, desc='kNN', disable=hide_progress)
         for data, target in test_bar:
-            data, target = data.to(device=device, non_blocking=True), target.to(device=device, non_blocking=True)
+            data, target = data.to(device=device, non_blocking=True), target.to(
+                device=device, non_blocking=True)
             feature = net(data)
             feature = F.normalize(feature, dim=1)
-            pred_labels = knn_predict(feature, feature_bank, feature_labels, classes, k, t)
+            pred_labels = knn_predict(
+                feature, feature_bank, feature_labels, classes, k, t)
             total_num += data.size(0)
             total_top1 += (pred_labels[:, 0] == target).float().sum().item()
             test_bar.set_postfix({'Accuracy': total_top1 / total_num * 100})
@@ -66,19 +69,24 @@ def knn_predict(feature, feature_bank, feature_labels, classes, knn_k, knn_t):
     sim_weight, sim_indices = sim_matrix.topk(k=knn_k, dim=-1)
 
     # [B, K]
-    sim_labels = torch.gather(feature_labels.expand(feature.size(0), -1), dim=-1, index=sim_indices)
+    sim_labels = torch.gather(feature_labels.expand(
+        feature.size(0), -1), dim=-1, index=sim_indices)
     sim_weight = (sim_weight / knn_t).exp()
 
     # counts for each class
-    one_hot_label = torch.zeros(feature.size(0) * knn_k, classes, device=sim_labels.device)
+    one_hot_label = torch.zeros(feature.size(
+        0) * knn_k, classes, device=sim_labels.device)
 
     # [B*K, C]
-    one_hot_label = one_hot_label.scatter(dim=-1, index=sim_labels.view(-1, 1), value=1.0)
+    one_hot_label = one_hot_label.scatter(
+        dim=-1, index=sim_labels.view(-1, 1), value=1.0)
 
     # weighted score ---> [B, C]
-    pred_scores = torch.sum(one_hot_label.view(feature.size(0), -1, classes) * sim_weight.unsqueeze(dim=-1), dim=1)
+    pred_scores = torch.sum(one_hot_label.view(feature.size(
+        0), -1, classes) * sim_weight.unsqueeze(dim=-1), dim=1)
     pred_labels = pred_scores.argsort(dim=-1, descending=True)
     return pred_labels
+
 
 def evaluate(model, test_loader):
     # NOTE used to be for layer in model
@@ -101,6 +109,7 @@ def evaluate(model, test_loader):
 
     return total_correct / total_num * 100.
 
+
 def adjust_learning_rate(epochs, warmup_epochs, base_lr, optimizer, loader, step):
     max_steps = epochs * len(loader)
     warmup_steps = warmup_epochs * len(loader)
@@ -117,6 +126,7 @@ def adjust_learning_rate(epochs, warmup_epochs, base_lr, optimizer, loader, step
 
     return lr
 
+
 def combos(length, possibles):
     if (length == 1):
         return [[x] for x in possibles]
@@ -126,3 +136,18 @@ def combos(length, possibles):
         for remainder in remainders:
             combinations.append(remainder + [possible])
     return combinations
+
+
+def all_net_pairs():
+    combinations = combos(4, [1, 2])
+    assert len(combinations) == 16
+    mapping = {}
+    num = 1
+    for i in range(16):
+        for j in range(16):
+            mapping[num] = (
+                "resnet"+"".join(map(lambda c: str(c), combinations[i]))+".pt",
+                "resnet"+"".join(map(lambda c: str(c), combinations[j]))+".pt"
+            )
+            num += 1
+    return mapping, num

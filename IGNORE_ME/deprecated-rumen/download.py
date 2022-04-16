@@ -4,8 +4,8 @@ import os
 import torch
 import torch.nn as nn
 
-from resnet import (
-    model_urls, 
+from resnet.model_utils import (
+    model_urls,
     RESNETS_FOLDER,
     resnet18,
     resnet34,
@@ -31,13 +31,15 @@ model_constructors = {
 }
 
 # generate works once you have downloaded
+
+
 def generate(name):
     fname = f"{name}_imagenet.pt"
     fname = os.path.join(RESNETS_FOLDER, fname)
-    
+
     model = model_constructors[name](pretrained=True, progress=True)
 
-    stateDict= torch.load(fname)
+    stateDict = torch.load(fname)
     # NOTE this is a hack to avoid problems with the state dict
     # This is to fix the problem that arises from the fact that conv1 for imagenet is
     # a 7x7. Note how in the resnet.py code, self.inplanes is 64 at the start. This
@@ -48,6 +50,7 @@ def generate(name):
     model.load_state_dict(stateDict)
     return model
 
+
 def download_imagenet_models():
     for name, url in model_urls.items():
         fname = f"{name}_imagenet.pt"
@@ -57,6 +60,7 @@ def download_imagenet_models():
             r = requests.get(url)
             with open(fname, "wb") as f:
                 f.write(r.content)
+
 
 def cifar_model_from_imagenet_model(name):
     fname = f"{name}.pt"
@@ -69,10 +73,11 @@ def cifar_model_from_imagenet_model(name):
         model = model_constructors[name](pretrained=True, progress=True)
         model.load_state_dict(torch.load(fname))
         return model, True
-    
+
+
 def cifar_models_from_imagenet_models():
-    return { name : cifar_model_from_imagenet_model(name) for name, url in model_urls.items() }
-        
+    return {name: cifar_model_from_imagenet_model(name) for name, url in model_urls.items()}
+
 
 if __name__ == "__main__":
     if not os.path.isdir(RESNETS_FOLDER):
@@ -80,5 +85,3 @@ if __name__ == "__main__":
     download_imagenet_models()
     models = cifar_models_from_imagenet_models()
     # NOTE here you might want to finetune; we do it inside cifar_supervised.py
-    
-            

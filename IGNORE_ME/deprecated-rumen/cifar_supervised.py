@@ -441,6 +441,7 @@ def train_sim_loss(stitch, sender, reciever, snd_label, rcv_label, model_blocks,
             ###############################
             with autocast():
                 # Run both the sender and reciever up to the send label
+                # NOTE this should be a dataset so that
                 stitch_input = sender(inputs, vent=snd_label, into=False)
                 stitch_output = stitch(stitch_input)
                 stitch_target = reciever(

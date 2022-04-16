@@ -1,7 +1,5 @@
 # Enables type annotations using enclosing classes
 from __future__ import annotations
-from multiprocessing.reduction import recv_handle
-
 import unittest
 
 # Enables more interesting type annotations

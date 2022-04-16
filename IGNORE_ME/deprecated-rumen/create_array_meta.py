@@ -3,7 +3,7 @@ from pprint import PrettyPrinter
 pp = PrettyPrinter(indent=4)
 
 # This is it, we hardcode because its easy LOL
-SMALLPAIRNUM2FILENAMES = {   
+SMALLPAIRNUM2FILENAMES = {
     1: ('resnet_1111.pt', 'resnet_1111.pt'),
     2: ('resnet_1111.pt', 'resnet_2111.pt'),
     3: ('resnet_1111.pt', 'resnet_1211.pt'),
