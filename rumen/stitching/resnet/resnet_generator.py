@@ -1,10 +1,12 @@
 from typing import Type, Any, Callable, Union, List, Optional, Tuple
+from resnet import BasicBlock, Bottleneck, Resnet
 
 
 class ResnetGenerator(object):
-    # TODO refactor this and the shit below as much as possible
+    """ An object to encapsulate function to create new resnets """
 
-    def _resnet(
+    @staticmethod
+    def generate(
             arch: str,
             block: Type[Union[BasicBlock, Bottleneck]],
             layers: List[int],
@@ -15,10 +17,7 @@ class ResnetGenerator(object):
         model = Resnet(block, layers, **kwargs)
         return model
 
-    #
-    # These Resnets (below) are "Vanilla" insofar as they are not wide or aggregated or whatever
-    #
-
+    @staticmethod
     def resnet18(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> Resnet:
         r"""Resnet-18 model from
         `"Deep Residual Learning for Image Recognition" <https://arxiv.org/pdf/1512.03385.pdf>`_.
@@ -26,8 +25,9 @@ class ResnetGenerator(object):
             pretrained (bool): If True, returns a model pre-trained on ImageNet
             progress (bool): If True, displays a progress bar of the download to stderr
         """
-        return ResnetGenerator._resnet("resnet18", BasicBlock, [2, 2, 2, 2], pretrained, progress, **kwargs)
+        return ResnetGenerator.generate("resnet18", BasicBlock, [2, 2, 2, 2], pretrained, progress, **kwargs)
 
+    @staticmethod
     def resnet34(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> Resnet:
         r"""Resnet-34 model from
         `"Deep Residual Learning for Image Recognition" <https://arxiv.org/pdf/1512.03385.pdf>`_.
@@ -35,10 +35,9 @@ class ResnetGenerator(object):
             pretrained (bool): If True, returns a model pre-trained on ImageNet
             progress (bool): If True, displays a progress bar of the download to stderr
         """
-        return _resnet("resnet34", BasicBlock, [3, 4, 6, 3], pretrained, progress, **kwargs)
+        return ResnetGenerator.generate("resnet34", BasicBlock, [3, 4, 6, 3], pretrained, progress, **kwargs)
 
-    # NOTE the ones below use bottlenecks and not basic blocks
-
+    @staticmethod
     def resnet50(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> Resnet:
         r"""Resnet-50 model from
         `"Deep Residual Learning for Image Recognition" <https://arxiv.org/pdf/1512.03385.pdf>`_.
@@ -46,8 +45,9 @@ class ResnetGenerator(object):
             pretrained (bool): If True, returns a model pre-trained on ImageNet
             progress (bool): If True, displays a progress bar of the download to stderr
         """
-        return ResnetGenerator._resnet("resnet50", Bottleneck, [3, 4, 6, 3], pretrained, progress, **kwargs)
+        return ResnetGenerator.generate("resnet50", Bottleneck, [3, 4, 6, 3], pretrained, progress, **kwargs)
 
+    @staticmethod
     def resnet101(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> Resnet:
         r"""Resnet-101 model from
         `"Deep Residual Learning for Image Recognition" <https://arxiv.org/pdf/1512.03385.pdf>`_.
@@ -55,8 +55,9 @@ class ResnetGenerator(object):
             pretrained (bool): If True, returns a model pre-trained on ImageNet
             progress (bool): If True, displays a progress bar of the download to stderr
         """
-        return ResnetGenerator._resnet("resnet101", Bottleneck, [3, 4, 23, 3], pretrained, progress, **kwargs)
+        return ResnetGenerator.generate("resnet101", Bottleneck, [3, 4, 23, 3], pretrained, progress, **kwargs)
 
+    @staticmethod
     def resnet152(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> Resnet:
         r"""Resnet-152 model from
         `"Deep Residual Learning for Image Recognition" <https://arxiv.org/pdf/1512.03385.pdf>`_.
@@ -64,12 +65,9 @@ class ResnetGenerator(object):
             pretrained (bool): If True, returns a model pre-trained on ImageNet
             progress (bool): If True, displays a progress bar of the download to stderr
         """
-        return ResnetGenerator._resnet("resnet152", Bottleneck, [3, 8, 36, 3], pretrained, progress, **kwargs)
+        return ResnetGenerator.generate("resnet152", Bottleneck, [3, 8, 36, 3], pretrained, progress, **kwargs)
 
-    #
-    # These Resnets (below) are either ResNext or wide
-    #
-
+    @staticmethod
     def resnext50_32x4d(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> Resnet:
         r"""ResNeXt-50 32x4d model from
         `"Aggregated Residual Transformation for Deep Neural Networks" <https://arxiv.org/pdf/1611.05431.pdf>`_.
@@ -79,8 +77,9 @@ class ResnetGenerator(object):
         """
         kwargs["groups"] = 32
         kwargs["width_per_group"] = 4
-        return ResnetGenerator._resnet("resnext50_32x4d", Bottleneck, [3, 4, 6, 3], pretrained, progress, **kwargs)
+        return ResnetGenerator.generate("resnext50_32x4d", Bottleneck, [3, 4, 6, 3], pretrained, progress, **kwargs)
 
+    @staticmethod
     def resnext101_32x8d(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> Resnet:
         r"""ResNeXt-101 32x8d model from
         `"Aggregated Residual Transformation for Deep Neural Networks" <https://arxiv.org/pdf/1611.05431.pdf>`_.
@@ -90,8 +89,9 @@ class ResnetGenerator(object):
         """
         kwargs["groups"] = 32
         kwargs["width_per_group"] = 8
-        return ResnetGenerator._resnet("resnext101_32x8d", Bottleneck, [3, 4, 23, 3], pretrained, progress, **kwargs)
+        return ResnetGenerator.generate("resnext101_32x8d", Bottleneck, [3, 4, 23, 3], pretrained, progress, **kwargs)
 
+    @staticmethod
     def wide_resnet50_2(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> Resnet:
         r"""Wide Resnet-50-2 model from
         `"Wide Residual Networks" <https://arxiv.org/pdf/1605.07146.pdf>`_.
@@ -104,8 +104,9 @@ class ResnetGenerator(object):
             progress (bool): If True, displays a progress bar of the download to stderr
         """
         kwargs["width_per_group"] = 64 * 2
-        return _resnet("wide_resnet50_2", Bottleneck, [3, 4, 6, 3], pretrained, progress, **kwargs)
+        return ResnetGenerator.generate("wide_resnet50_2", Bottleneck, [3, 4, 6, 3], pretrained, progress, **kwargs)
 
+    @staticmethod
     def wide_resnet101_2(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> Resnet:
         r"""Wide Resnet-101-2 model from
         `"Wide Residual Networks" <https://arxiv.org/pdf/1605.07146.pdf>`_.
@@ -118,7 +119,7 @@ class ResnetGenerator(object):
             progress (bool): If True, displays a progress bar of the download to stderr
         """
         kwargs["width_per_group"] = 64 * 2
-        return ResnetGenerator._resnet("wide_resnet101_2", Bottleneck, [3, 4, 23, 3], pretrained, progress, **kwargs)
+        return ResnetGenerator.generate("wide_resnet101_2", Bottleneck, [3, 4, 23, 3], pretrained, progress, **kwargs)
 
 # model_constructors = {
 #     "resnet18": resnet18,

@@ -14,6 +14,12 @@ from typing import (
 T = TypeVar('T')
 G = TypeVar('G')
 
+# TODO refactor to use https://numpy.org/doc/stable/reference/arrays.html
+# numpy arrays of object types
+
+# NOTE that ideally we'd like to make this lazy, so we can keep calling mapped table
+# without actually having to store all the intermediate results in memory.
+
 
 class Table(object):
     @staticmethod
