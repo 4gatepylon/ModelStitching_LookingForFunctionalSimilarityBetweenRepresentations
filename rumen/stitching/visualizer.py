@@ -1,13 +1,11 @@
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
-import os
-
-from expriment import combos
 
 
 class Visualizer(object):
-    def matrix_heatmap(input_file_name=None, output_file_name=None):
+    @staticmethod
+    def matrix_heatmap(input_file_name: str, output_file_name: str):
         mat = torch.load(input_file_name)
         assert type(mat) == torch.Tensor or type(mat) == np.ndarray
         if type(mat) == torch.Tensor:

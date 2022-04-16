@@ -74,6 +74,27 @@ class Trainer(object):
         # TODO
         pass
 
+    def evaluate(model, test_loader):
+        # NOTE used to be for layer in model
+        model.eval()
+
+        for idx, (images, labels) in enumerate(test_loader):
+            total_correct, total_num = 0., 0.
+
+            with torch.no_grad():
+                with autocast():
+                    h = images
+                    h = model(h)
+                    # print(h.shape)
+                    preds = h.argmax(dim=1)
+                    # print(preds[0])
+                    # print(labels[0])
+                    total_correct = (preds == labels).sum().cpu().item()
+                    # print(total_correct)
+                    total_num += h.shape[0]
+
+        return total_correct / total_num * 100.
+
     def adjust_learning_rate(self: Trainer, epochs: int, warmup_epochs, base_lr, optimizer, loader, step):
         epochs: int = self.epochs
         warmup_epochs: int = self.warmup

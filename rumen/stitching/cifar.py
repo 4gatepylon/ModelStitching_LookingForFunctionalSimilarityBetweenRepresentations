@@ -51,34 +51,6 @@ def show_tensor_normalized(x: torch.Tensor, file=IMG_FILE):
     pass
 
 
-# TODO refactor
-def mean2_model_diff(stitch, sender, reciever, snd_label, rcv_label, model_blocks, train_loader, stitch2=None):
-    # out-vent from the
-    # NOTE we use train_loader but it really doesn't matter
-    num_images = len(train_loader)
-    total = 0.0
-    label_before_rcv_label = rcv_label - 1
-    for x, _ in train_loader:
-        with autocast():
-            # print(f"x shape {x.size()}")
-            sent = sender(x, vent=snd_label, into=False)
-            # print(f"sent shape {sent.size()}")
-            # print(f"label before {label_before_rcv_label}")
-            expected = reciever(x, vent=label_before_rcv_label, into=False,
-                                apply_post=True) if stitch2 is None else stitch2(sent)
-            # print(f"expected shape {expected.size()}")
-
-            gotten = stitch(sent)
-            # print(f"gotten shape {gotten.size()}")
-            # Average mean squared error over the batch and pixels
-            diff = (gotten - expected).pow(2).mean()
-            total += diff.cpu().item()
-        pass
-    # Average over the number of images
-    total /= num_images
-    return total
-
-
 def get_n_inputs(n, loader):
     k = 0
     for x, _ in loader:
