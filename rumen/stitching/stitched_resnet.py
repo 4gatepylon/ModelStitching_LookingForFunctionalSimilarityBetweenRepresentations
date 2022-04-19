@@ -28,6 +28,8 @@ from resnet.resnet import Resnet
 from layer_label import LayerLabel
 from rep_shape import RepShape
 from stitch_generator import StitchGenerator
+from trainer import Trainer, Hyperparams
+from torch.utils.data import DataLoader, Dataset
 
 
 class StitchedResnet(nn.Module):
@@ -150,6 +152,44 @@ class MockResnet(nn.Module):
         return self.layer().parameters()
 
 
+class MockDataset(Dataset):
+    def __init__(self):
+        self.X_Y = [
+            (
+                torch.rand((3, 32, 32)),
+                torch.tensor([1, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+            ),
+        ]
+
+    def __len__(self):
+        return len(self.X_Y)
+
+    def __getitem__(self, idx):
+        return self.X_Y[idx]
+
+
+class MockDataLoader(DataLoader):
+    def __init__(self: MockDataLoader):
+        pass
+
+    @staticmethod
+    def mock(batch_size: int) -> MockDataLoader:
+        assert batch_size == 1
+        return MockDataLoader(
+            dataset=MockDataset(),
+            batch_size=batch_size,
+            shuffle=False,
+            num_workers=0,
+        )
+
+    @staticmethod
+    def mock_loaders(hyps: Hyperparams) -> Tuple[DataLoader, DataLoader]:
+        return (
+            MockDataLoader.mock(hyps.bsz),
+            MockDataLoader.mock(hyps.bsz),
+        )
+
+
 class TestStitchedResnet(unittest.TestCase):
     """
     Test that the stitched resnet works as intended. Specifically,
@@ -174,9 +214,39 @@ class TestStitchedResnet(unittest.TestCase):
         stitched = StitchedResnet(
             prefix, suffix, stitch, output_label, input_label)
         stitched.freeze()
+        args = Hyperparams.forTesting()
+        train_loader, test_loader = MockDataLoader.mock_loaders(args)
 
-        # TODO train!
-        raise NotImplementedError
+        # Make sure that stitched network yields the right parameters so that
+        # we can pass it as a black box "nn.Module"
+        stitched_params = [x.detach().cpu().copy()
+                           for x in stitched.parameters()]
+        should_be_stitched_params = [x.detach().cpu().copy()
+                                     for x in stitch.parameters()]
+        self.assertEqual(stitched_params, should_be_stitched_params)
+
+        # Get the params before training
+        sender_params = [x.detach().cpu().copy()
+                         for x in stitched.sender.parameters()]
+        reciever_params = [x.detach().cpu().copy()
+                           for x in stitched.reciever.parameters()]
+
+        # Train for an epoch
+        Trainer.train_loop(args, stitched)
+
+        # Get the parameters after training
+        new_sender_params = [x.detach().cpu().copy()
+                             for x in stitched.sender.parameters()]
+        new_reciever_params = [x.detach().cpu().copy()
+                               for x in stitched.reciever.parameters()]
+        new_stitched_params = [x.detach().cpu().copy()
+                               for x in stitched.parameters()]
+
+        # Make sure that the stitch updated (learned) but that the prefix and suffix
+        # did NOT update (they should be frozen)
+        self.assertEqual(sender_params, new_sender_params)
+        self.assertEqual(reciever_params, new_reciever_params)
+        self.assertNotEqual(stitched_params, new_stitched_params)
 
     @unittest.skip("Unimplemented, but this would run too slow without a GPU regardless.")
     def test_proper_freeze_full(self: TestStitchedResnet) -> NoReturn:

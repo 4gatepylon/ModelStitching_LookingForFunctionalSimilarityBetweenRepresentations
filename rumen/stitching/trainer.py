@@ -38,8 +38,6 @@ class Hyperparams(object):
     """ Class that replaces `args` from the argument parser. Will have utility later. """
 
     def __init__(self):
-        self.seed: Optional[int] = None
-
         # FFCV Number of workers for loading
         self.fccv_num_workers: int = 1
 
@@ -50,10 +48,20 @@ class Hyperparams(object):
         self.bsz = 256   # Batch Size
         self.lr = 0.01   # Learning Rate
         self.warmup = 10  # Warmup epochs
-        self.epochs = 1  # Total epochs
+        self.epochs = 4  # Total epochs
         self.wd = 0.01   # Weight decay
 
-        raise NotImplementedError
+    @staticmethod
+    def forTesting():
+        hyps = Hyperparams()
+        hyps.lr = 1
+        hyps.epochs = 1
+        hyps.bsz = 1
+        hyps.wd = 0.0
+        hyps.warmup = 1
+        hyps.fraction = 1.0
+        hyps.ffcv_num_workers = 1
+        return hyps
 
 
 class Trainer(object):
