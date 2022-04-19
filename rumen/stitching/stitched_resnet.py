@@ -17,10 +17,12 @@ from typing import (
     Optional,
     Tuple,
 )
-from defusedxml import NotSupportedError
+from black import E
+from regex import R
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from resnet.resnet import Resnet
 from layer_label import LayerLabel
@@ -34,78 +36,45 @@ class StitchedResnet(nn.Module):
     resnet which is created by taking the first N layers of one model (the prefix), outputting
     their intermediate representation into a stitch, then inputting that into the last M
     layers of another model (the suffix).
+
+    NOTE that you require that the sender and reciever have, respectively, outfrom_forward, and
+    into_forward methods. Otherwise this will fail!
     """
 
-    ###########################################################################
-    class ResnetSegment(nn.Module):
-        """ Superclass to prefixes and suffixes """
-
-        def __init__(self: StitchedResnet.ResnetSegment, net: Resnet, outfrom: LayerLabel) -> NoReturn:
-            super().__init__()
-            self.net = net
-            self.outfrom = outfrom
-            self.frozen = False
-            self.freeze()
-
-        def parameters(self: StitchedResnet.ResnetSegment) -> List[torch.Tensor]:
-            raise NotSupportedError(
-                f"ResnetSegiment {self} should not have its parameters used")
-
-        def freeze(self: StitchedResnet.ResnetSegment):
-            self.frozen = True
-            for p in self.net.parameters():
-                p.requires_grad = False
-
-        def forward(self: StitchedResnet.ResnetSegment, x: torch.Tensor) -> torch.Tensor:
-            raise NotImplementedError("Called .forward of ResnetSegment")
-
-    class ResnetPrefix(ResnetSegment):
-        """ Keep state about prefix and enable a simple forward method (args same as ResnetSegment) """
-
-        def __init__(self: StitchedResnet.ResnetPrefix, *args: ..., pool_and_flatten: Optional[bool] = False) -> NoReturn:
-            super().__init__(*args)
-            self.pool_and_flatten = pool_and_flatten
-
-        def forward(self: StitchedResnet.ResnetPrefix, x: torch.Tensor) -> torch.Tensor:
-            return self.net.outfrom_forward(x, self.outfrom, pool_and_flatten=self.pool_and_flatten)
-
-    class ResnetSuffix(ResnetSegment):
-        """ Keep state about suffix and enable a simple forward method (args same as ResnetSegment) """
-
-        def __init__(self: StitchedResnet.ResnetSuffix, *args: ...):
-            super().__init__(*args)
-
-        def forward(self: StitchedResnet.ResnetSuffix, x: torch.Tensor) -> torch.Tensor:
-            return self.net.into_forward(x, self.into)
-    ###########################################################################
-
-    def __init__(self, sender: ResnetPrefix, reciever: ResnetSuffix, stitch: nn.Module):
+    def __init__(self, sender: nn.Module, reciever: nn.Module, stitch: nn.Module, send_label: LayerLabel, recv_label: LayerLabel) -> None:
         super(StitchedResnet, self).__init__()
         self.sender = sender
         self.reciever = reciever
-        self.send_label = StitchedResnet.ResnetPrefix.outfrom
-        self.recv_label = StitchedResnet.ResnetSuffix.into
+        self.send_label = send_label
+        self.recv_label = recv_label
         self.stitch = stitch
 
+    def parameters(self: StitchedResnet) -> List[torch.nn.Parameter]:
+        # Sender and reciever should NOT be optimized
+        return self.stitch.parameters()
+
     def freeze_sender(self: StitchedResnet) -> NoReturn:
-        self.sender.freeze()
+        raise NotImplementedError
 
     def freeze_reciever(self: StitchedResnet) -> NoReturn:
-        self.reciever.freeze()
+        raise NotImplementedError
+
+    def train(self: StitchedResnet) -> NoReturn:
+        raise NotImplementedError
 
     def freeze(self: StitchedResnet) -> NoReturn:
-        self.sender.freeze()
-        self.reciever.freeze()
+        self.freeze_sender()
+        self.freeze_reciever()
 
     def forward(self: StitchedResnet, x: torch.Tensor) -> torch.Tensor:
-        h = self.sender(x)
+        # Pool and flatten should only happen for MSE losses (otherwise we don't, since
+        # we want the full tensor `representation`)
+        h = self.sender.outfrom_forward(
+            x, self.send_label, pool_and_flatten=False)
         h = self.stitch(h)
-        h = self.reciever(h)
+        h = self.reciever.into_forward(
+            h, self.recv_label)
         return h
-
-    def frozen(self: StitchedResnet) -> StitchedResnet:
-        self.freeze()
-        return self
 
     @staticmethod
     def fromLabels(
@@ -123,10 +92,62 @@ class StitchedResnet(nn.Module):
             nets[1],
             shapes[1],
         )
-        stitch: nn.Module = StitchGenerator(shapes).generate()
+        stitch: nn.Module = StitchGenerator.generate(shapes)
         return StitchedResnet(prefix, suffix, stitch)
 
-# TODO the only test we really need here is that freezing works
+
+class MockResnet(nn.Module):
+    """ Mock Resnet that is designed to be faster than a regular Resnet for unit testing. """
+
+    def __init__(self: MockResnet):
+        super().__init__()
+        # input -> conv1 -> flatten -> layer (all blocks/blocksets) -> fc -> output
+        self.conv1 = nn.Conv2d(3, 1, kernel_size=32,
+                               stride=1, padding=0, bias=False)
+        self.layer = nn.Linear(1, 1)
+        self.fc = nn.Linear(1, 10)
+
+    def outfrom_forward(
+        self: MockResnet,
+        x: torch.Tensor,
+        vent: LayerLabel,
+        pool_and_flatten: bool = False,
+    ) -> torch.Tensor:
+        if vent.isInput():
+            return x
+        elif vent.isConv1():
+            return self.conv1(x)
+        elif vent.isFc():
+            return self.forward(x)
+        elif vent.isOutput():
+            raise Exception("Can't vent outfrom output")
+        else:
+            return self.layer(torch.flatten(self.conv1(x)))
+
+    def into_forward(
+        self: MockResnet,
+        x: torch.Tensor,
+        vent: LayerLabel,
+    ) -> torch.Tensor:
+        if vent.isInput():
+            raise Exception("Can't go into input in into_forward")
+        elif vent.isConv1():
+            return self.forward(x)
+        elif vent.isFc():
+            return self.fc(x)
+        elif vent.isOutput():
+            return x
+        else:
+            return self.fc(self.layer(x))
+
+    def forward(
+        self: MockResnet,
+        x: torch.Tensor,
+    ) -> torch.Tensor:
+        return self.fc(self.layer(torch.flatten(self.conv1(x))))
+
+    def parameters(self: MockResnet) -> List[torch.Tensor]:
+        return self.layer().parameters()
 
 
 class TestStitchedResnet(unittest.TestCase):
@@ -136,86 +157,25 @@ class TestStitchedResnet(unittest.TestCase):
     frozen during training, while the stitch should NOT be frozen.
     """
 
-    # These are outside of the MockResnet because they are used elsewhere to test
-    MOCK_IN_DIM: int = 2
-    MOCK_OUT_DIM: int = 2
+    def test_proper_freeze_mock(self: TestStitchedResnet) -> NoReturn:
+        R = [1, 1, 1, 1]
 
-    class MockResnet(Resnet):
-        """ Mock Resnet that is designed to be faster than a regular Resnet for unit testing. """
+        # Create a mock resnet
+        prefix = MockResnet()
+        suffix = MockResnet()
 
-        MOCK_R: List[int] = [1, 1, 1, 1]
-        MOCK_LABEL: LayerLabel = LayerLabel(LayerLabel.CONV1, MOCK_R)
+        # Try stitching the linear layers
+        output_shape = RepShape((1, 1, 1))
+        output_label = LayerLabel(LayerLabel.CONV1, R)
+        input_shape = RepShape(1)
+        input_label = LayerLabel((1, 0), R)
+        stitch = StitchGenerator.generate((output_shape, input_shape))
 
-        def __init__(self: TestStitchedResnet.MockResnet):
-            # NOTE: do NOT call super() because we are creating a mock
-            # for the purposes of enabling fast unit testing. We use a list
-            # because it avoids using the nn.Module's __setattr__ method's
-            # side effects on the `_modules` dictionary (read here:
-            # https://stackoverflow.com/questions/63058355/why-is-the-super-constructor-necessary-in-pytorch-custom-modules)
-            # (Basically, it's a hack.)
-            self.layers = [None]
-            self.layers[0] = layer = nn.Linear(
-                TestStitchedResnet.MOCK_IN_DIM,
-                TestStitchedResnet.MOCK_OUT_DIM,
-            )
+        stitched = StitchedResnet(
+            prefix, suffix, stitch, output_label, input_label)
+        stitched.freeze()
 
-        def layer(self: TestStitchedResnet.MockResnet) -> nn.Module:
-            return self.layers[0]
-
-        def outfrom_forward(
-            self: TestStitchedResnet.MockResnet,
-            x: torch.Tensor,
-            vent: LayerLabel,
-            pool_and_flatten: bool = False,
-        ) -> torch.Tensor:
-            # Coming out from the layer (imagine this is a prefix)
-            return self.layer()(x)
-
-        def into_forward(
-            self: TestStitchedResnet.MockResnet,
-            x: torch.Tensor,
-            vent: LayerLabel,
-        ) -> torch.Tensor:
-            # Going into the Layer (imagine this is a suffix)
-            return self.layer()(x)
-
-        def forward(
-            self: TestStitchedResnet.MockResnet,
-            x: torch.Tensor,
-        ) -> torch.Tensor:
-            # Going through the layer (imagine this is a regular network)
-            return self.layer()(x)
-
-        def parameters(self: TestStitchedResnet.MockResnet) -> List[torch.Tensor]:
-            return self.layer().parameters()
-
-    # These methods are just to help test Prefixes easier
-    def MockResnetPrefix(self: TestStitchedResnet) -> StitchedResnet.ResnetPrefix:
-        return StitchedResnet.ResnetPrefix(
-            TestStitchedResnet.MockResnet(),
-            TestStitchedResnet.MockResnet.MOCK_LABEL,
-        )
-
-    def MockResnetSuffix(self: TestStitchedResnet) -> StitchedResnet.ResnetSuffix:
-        return StitchedResnet.ResnetSuffix(
-            TestStitchedResnet.MockResnet(),
-            TestStitchedResnet.MockResnet.MOCK_LABEL,
-        )
-
-    def test_prefix_parameters(self: TestStitchedResnet) -> NoReturn:
-        self.assertRaises(Exception, self.MockResnetPrefix().parameters)
-
-    def test_suffix_parameters(self: TestStitchedResnet) -> NoReturn:
-        self.assertRaises(Exception, self.MockResnetSuffix().parameters)
-    ###########################################################################
-
-    def test_proper_freeze_mock_flatten(self: TestStitchedResnet) -> NoReturn:
-        raise NotImplementedError
-
-    def test_proper_freeze_mock_downsample(self: TestStitchedResnet) -> NoReturn:
-        raise NotImplementedError
-
-    def test_proper_freeze_mock_upsample(self: TestStitchedResnet) -> NoReturn:
+        # TODO train!
         raise NotImplementedError
 
     @unittest.skip("Unimplemented, but this would run too slow without a GPU regardless.")

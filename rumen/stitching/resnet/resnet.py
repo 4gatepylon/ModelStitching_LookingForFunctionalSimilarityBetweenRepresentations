@@ -143,7 +143,6 @@ class Resnet(nn.Module):
             )
         return nn.Sequential(*layers)
 
-    ################################################################################
     def into_forward(self, x: Tensor, vent: LayerLabel) -> Tensor:
         if vent.isInput():
             raise Exception(
@@ -213,4 +212,3 @@ class Resnet(nn.Module):
         x = self.fc(x)
 
         return x
-    ################################################################################
