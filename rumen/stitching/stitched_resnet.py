@@ -17,6 +17,7 @@ from typing import (
     Optional,
     Tuple,
 )
+from xmlrpc.client import Boolean
 from black import E
 from regex import R
 
@@ -56,13 +57,22 @@ class StitchedResnet(nn.Module):
         return self.stitch.parameters()
 
     def freeze_sender(self: StitchedResnet) -> NoReturn:
-        raise NotImplementedError
+        for p in self.sender.parameters():
+            p.requires_grad = False
 
     def freeze_reciever(self: StitchedResnet) -> NoReturn:
-        raise NotImplementedError
+        for p in self.reciever.parameters():
+            p.requires_grad = False
 
     def train(self: StitchedResnet) -> NoReturn:
-        raise NotImplementedError
+        self.stitch.train()
+        self.sender.eval()
+        self.reciever.eval()
+
+    def eval(self: StitchedResnet) -> NoReturn:
+        self.stitch.eval()
+        self.sender.eval()
+        self.reciever.eval()
 
     def freeze(self: StitchedResnet) -> NoReturn:
         self.freeze_sender()
@@ -124,7 +134,7 @@ class MockResnet(nn.Module):
         elif vent.isOutput():
             raise Exception("Can't vent outfrom output")
         else:
-            return self.layer(torch.flatten(self.conv1(x)))
+            return self.layer(torch.flatten(self.conv1(x), 1))
 
     def into_forward(
         self: MockResnet,
@@ -148,18 +158,14 @@ class MockResnet(nn.Module):
     ) -> torch.Tensor:
         return self.fc(self.layer(torch.flatten(self.conv1(x))))
 
-    def parameters(self: MockResnet) -> List[torch.Tensor]:
-        return self.layer().parameters()
-
 
 class MockDataset(Dataset):
+    NUM_SAMPLES = 1000
+    Xs = [torch.rand((3, 32, 32)) for _ in range(NUM_SAMPLES)]
+    Ys = [torch.tensor(0) for _ in range(NUM_SAMPLES)]
+
     def __init__(self):
-        self.X_Y = [
-            (
-                torch.rand((3, 32, 32)),
-                torch.tensor([1, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
-            ),
-        ]
+        self.X_Y = list(zip(MockDataset.Xs, MockDataset.Ys))
 
     def __len__(self):
         return len(self.X_Y)
@@ -172,17 +178,17 @@ class MockDataLoader(DataLoader):
     def __init__(self: MockDataLoader):
         pass
 
-    @staticmethod
+    @ staticmethod
     def mock(batch_size: int) -> MockDataLoader:
         assert batch_size == 1
-        return MockDataLoader(
+        return DataLoader(
             dataset=MockDataset(),
             batch_size=batch_size,
             shuffle=False,
             num_workers=0,
         )
 
-    @staticmethod
+    @ staticmethod
     def mock_loaders(hyps: Hyperparams) -> Tuple[DataLoader, DataLoader]:
         return (
             MockDataLoader.mock(hyps.bsz),
@@ -200,6 +206,11 @@ class TestStitchedResnet(unittest.TestCase):
     def test_proper_freeze_mock(self: TestStitchedResnet) -> NoReturn:
         R = [1, 1, 1, 1]
 
+        def pclone(model): return [p.data.detach().clone()
+                                   for p in model.parameters()]
+        def listeq(l1, l2): return min((torch.eq(a, b).int().min().item()
+                                        for a, b in zip(l1, l2))) == 1
+
         # Create a mock resnet
         prefix = MockResnet()
         suffix = MockResnet()
@@ -215,40 +226,36 @@ class TestStitchedResnet(unittest.TestCase):
             prefix, suffix, stitch, output_label, input_label)
         stitched.freeze()
         args = Hyperparams.forTesting()
+
         train_loader, test_loader = MockDataLoader.mock_loaders(args)
 
         # Make sure that stitched network yields the right parameters so that
         # we can pass it as a black box "nn.Module"
-        stitched_params = [x.detach().cpu().copy()
-                           for x in stitched.parameters()]
-        should_be_stitched_params = [x.detach().cpu().copy()
-                                     for x in stitch.parameters()]
-        self.assertEqual(stitched_params, should_be_stitched_params)
+        stitched_params = pclone(stitched)
+        should_be_stitched_params = pclone(stitched.stitch)
+        self.assertTrue(listeq(stitched_params, should_be_stitched_params))
 
         # Get the params before training
-        sender_params = [x.detach().cpu().copy()
-                         for x in stitched.sender.parameters()]
-        reciever_params = [x.detach().cpu().copy()
-                           for x in stitched.reciever.parameters()]
+        sender_params = pclone(stitched.sender)
+        reciever_params = pclone(stitched.reciever)
 
         # Train for an epoch
-        Trainer.train_loop(args, stitched)
+        acc = Trainer.train_loop(args, stitched, train_loader, test_loader)
+        # self.assertTrue(acc > 0.0)
+        # self.assertTrue(acc < 1.0)
 
         # Get the parameters after training
-        new_sender_params = [x.detach().cpu().copy()
-                             for x in stitched.sender.parameters()]
-        new_reciever_params = [x.detach().cpu().copy()
-                               for x in stitched.reciever.parameters()]
-        new_stitched_params = [x.detach().cpu().copy()
-                               for x in stitched.parameters()]
+        new_reciever_params = pclone(stitched.reciever)
+        new_sender_params = pclone(stitched.sender)
+        new_stitched_params = pclone(stitched)
 
         # Make sure that the stitch updated (learned) but that the prefix and suffix
         # did NOT update (they should be frozen)
-        self.assertEqual(sender_params, new_sender_params)
-        self.assertEqual(reciever_params, new_reciever_params)
-        self.assertNotEqual(stitched_params, new_stitched_params)
+        self.assertTrue(listeq(new_reciever_params, reciever_params))
+        self.assertTrue(listeq(new_sender_params, sender_params))
+        self.assertFalse(listeq(new_reciever_params, reciever_params))
 
-    @unittest.skip("Unimplemented, but this would run too slow without a GPU regardless.")
+    @ unittest.skip("Unimplemented, but this would run too slow without a GPU regardless.")
     def test_proper_freeze_full(self: TestStitchedResnet) -> NoReturn:
         """
         This big test (requires GPU) uses two real resnets to test whether the stitched resnet

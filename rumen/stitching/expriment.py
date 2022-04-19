@@ -379,24 +379,20 @@ class Experiment(object):
         print("Evaluating accuracies of pretrained models")
         accp = 0.0
         accp = Trainer.evaluate(model1, test_loader)
-        model1_acc = accp / 100.0
-        print(f"Accuracy of {name1} is {accp}%")
-        assert accp > 90
+        print(f"Accuracy of {name1} is {accp * 100}%")
+        assert accp > 0.9
 
         accp = Trainer.evaluate(model1_rand, test_loader)
-        model1_rand_acc = accp / 100.0
-        print(f"Accuracy of {name1} random is {accp}%")
-        assert accp < 20
+        print(f"Accuracy of {name1} random is {accp * 100}%")
+        assert accp < 0.2
 
         accp = Trainer.evaluate(model2, test_loader)
-        model2_acc = accp / 100.0
-        print(f"Accuracy of {name2} is {accp}%")
-        assert accp > 90
+        print(f"Accuracy of {name2} is {accp * 100}%")
+        assert accp > 0.9
 
         accp = Trainer.evaluate(model2_rand, test_loader)
-        model2_rand_acc = accp / 100.0
-        print(f"Accuracy of {name2} random is {accp}%")
-        assert accp < 20
+        print(f"Accuracy of {name2} random is {accp * 100}%")
+        assert accp < 0.2
 
         print("Generating table of labels")
         labels: List[List[Tuple[LayerLabel, LayerLabel]]] = \

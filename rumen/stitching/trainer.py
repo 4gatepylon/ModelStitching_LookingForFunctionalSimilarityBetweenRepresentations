@@ -90,7 +90,7 @@ class Trainer(object):
                     # print(total_correct)
                     total_num += h.shape[0]
 
-        return total_correct / total_num * 100.
+        return total_correct / total_num
 
     @staticmethod
     def adjust_learning_rate(
@@ -157,6 +157,7 @@ class Trainer(object):
                 with autocast():
                     h = inputs
                     h = model(h)
+                    # TODO modularize this out to enable sim training
                     loss = F.cross_entropy(h, y)
 
                 scaler.scale(loss).backward()
