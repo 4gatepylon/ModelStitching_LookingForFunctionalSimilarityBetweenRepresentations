@@ -417,9 +417,9 @@ class Experiment(object):
 
         net_pairs = [
             (nets[0], nets[1]),
-            (nets[0], nets[3])
+            (nets[0], nets[3]),
             (nets[2], nets[1]),
-            (nets[2], nets[3])
+            (nets[2], nets[3]),
         ]
 
         stitched_nets: Dict[Tuple[str, str], List[List[StitchedResnet]]] = {
