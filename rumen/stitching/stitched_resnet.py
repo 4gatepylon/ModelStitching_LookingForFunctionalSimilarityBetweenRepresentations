@@ -251,9 +251,9 @@ class TestStitchedResnet(unittest.TestCase):
 
         # Make sure that the stitch updated (learned) but that the prefix and suffix
         # did NOT update (they should be frozen)
-        self.assertTrue(listeq(new_reciever_params, reciever_params))
+        self.assertFalse(listeq(new_stitched_params, stitched_params))
         self.assertTrue(listeq(new_sender_params, sender_params))
-        self.assertFalse(listeq(new_reciever_params, reciever_params))
+        self.assertTrue(listeq(new_reciever_params, reciever_params))
 
     @ unittest.skip("Unimplemented, but this would run too slow without a GPU regardless.")
     def test_proper_freeze_full(self: TestStitchedResnet) -> NoReturn:

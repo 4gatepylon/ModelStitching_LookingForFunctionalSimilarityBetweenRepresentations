@@ -126,6 +126,7 @@ class Trainer(object):
         # None signifies do all parameters (we might finetune single layers an that will speed up training)
         if parameters is None:
             parameters = list(model.parameters())
+        print(parameters)
 
         optimizer = torch.optim.SGD(
             params=parameters,
