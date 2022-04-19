@@ -38,3 +38,22 @@ We are going to need functions to
 - prefix and suffix should be made to 
 - we should have a dummy `Resnet` subclass that just wraps arbitrary modules so as to allow type annotations (type annotations accept all possible subclasses)
 - should probably set the `__all__` properly for all these classes
+
+From my old code for `experiment.py`:
+
+```
+# TODO
+        # 3. Get LIST of tables of stitches [vanilla_table, sims_table]
+        # 4. Get LIST of tables table of stitched networks [vanilla_table, sims_table]
+        # (remember to get idx2label for ease of debugging)
+        # 5. Use table mapping to train the stitched networks, getting their sims
+        # 6. Use table mapping to get the mean2
+        # 7. Save sims to a file (or call visualizer)
+        # 8. Save mean2 to a file (or call visualizer)
+        # 9. Select the stitches that stitch into into conv1
+        #    For each of these stitches sample N = 5 images (or some other constant)
+        #    For each of these images input them into the prefix, then into the stitch
+        #    Then use our image functionality to un-normalize it. Store that image into
+        #    A file. Next to it store the image that was input (this will help us
+        #    visualize whether the stitch is doing any funny business).
+```
