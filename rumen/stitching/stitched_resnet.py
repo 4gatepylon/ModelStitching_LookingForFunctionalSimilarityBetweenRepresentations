@@ -22,7 +22,7 @@ from defusedxml import NotSupportedError
 import torch
 import torch.nn as nn
 
-from resnet import Resnet
+from resnet.resnet import Resnet
 from layer_label import LayerLabel
 from rep_shape import RepShape
 from stitch_generator import StitchGenerator
