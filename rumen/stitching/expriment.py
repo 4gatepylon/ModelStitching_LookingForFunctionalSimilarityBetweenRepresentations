@@ -27,19 +27,18 @@ import torch
 import torch.nn as nn
 import random
 import numpy as np
-from rumen.stitching.rep_shape import RepShape
-from rumen.stitching.stitch_generator import StitchGenerator
 
+# Utility that I have written
 from table import Table
-
 from stitched_resnet import StitchedResnet
 from torch.utils.data import DataLoader
 from layer_label import LayerLabel
 from resnet.resnet import Resnet, BasicBlock
 from resnet.resnet_utils import Identity
+from rep_shape import RepShape
 from loaders import Loaders
 from resnet.resnet_generator import ResnetGenerator
-from trainer import Trainer
+from trainer import Trainer, Hyperparams
 
 T = TypeVar('T')
 G = TypeVar('G')
@@ -311,7 +310,7 @@ class Experiment(object):
     @staticmethod
     def stitchtrain(args: Any, filename_pair: Tuple[str, str]) -> NoReturn:
         # TODO refactor this
-        file1, file2 = filename_pair[int(args.smallpairnum)]
+        file1, file2 = filename_pair
         numbers1 = list(map(int, file1.split(".")[0][-4:]))
         numbers2 = list(map(int, file2.split(".")[0][-4:]))
         name1 = "resnet_" + "".join(map(str, numbers1))
@@ -450,5 +449,7 @@ class Experiment(object):
 
 
 if __name__ == "__main__":
-    Experiment.pretrain()
-    # Experiment.stitchtrain()
+    file_pair = "resnet_1111.pt", "resnet_1111.pt"
+    hyps = Hyperparams()
+    Experiment.pretrain(hyps)
+    Experiment.stitchtrain(hyps, file_pair)
