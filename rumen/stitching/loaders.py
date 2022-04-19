@@ -33,9 +33,11 @@ from ffcv.fields import (
 import torchvision
 import torch
 import torchvision
+from torchvision import datasets, transforms
+from torch.utils.data import DataLoader
 
 import os
-from typing import List
+from typing import List, Any, Tuple
 
 from cifar import (
     NORMALIZE_TRANSFORM,
@@ -52,7 +54,10 @@ class Loaders(object):
         Squeeze(),
     ]
 
-    def get_loaders_ffcv(args):
+    NO_FFCV_FOLDER = "../../data/"
+
+    @staticmethod
+    def get_loaders_ffcv(args: Any) -> Tuple[DataLoader, DataLoader]:
         num_of_points = 50000
         split = [int(num_of_points * args.fraction),
                  int(num_of_points * (1 - args.fraction))]
@@ -122,4 +127,39 @@ class Loaders(object):
                                  'image': image_pipeline_test,
                                  'label': Loaders.LABEL_PIPELINE
                              })
+        return train_loader, test_loader
+
+    @staticmethod
+    def get_dataloaders_not_ffcv(args: Any) -> Tuple[DataLoader, DataLoader]:
+        use_cuda = torch.cuda.is_available()
+        train_batch_size = args.bsz
+        test_batch_size = 2048
+
+        device = torch.device("cuda" if use_cuda else "cpu")
+
+        train_kwargs = {'batch_size': train_batch_size}
+        test_kwargs = {'batch_size': test_batch_size}
+        if use_cuda:
+            cuda_kwargs = {'num_workers': 1,
+                           'pin_memory': True}
+            train_kwargs.update(cuda_kwargs)
+            test_kwargs.update(cuda_kwargs)
+        train_kwargs['shuffle'] = True
+        test_kwargs['shuffle'] = True
+
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            # Unclear which should be used?
+            # transforms.Normalize(CIFAR_MEAN, CIFAR_STD)
+            transforms.Normalize((0.1307,), (0.3081,))
+        ])
+
+        dataset1 = datasets.MNIST(
+            Loaders.NO_FFCV_FOLDER, train=True, download=False, transform=transform)
+        dataset2 = datasets.MNIST(
+            Loaders.NO_FFCV_FOLDER, train=False, transform=transform)
+
+        train_loader = DataLoader(dataset1, **train_kwargs)
+        test_loader = DataLoader(dataset2, **test_kwargs)
+
         return train_loader, test_loader

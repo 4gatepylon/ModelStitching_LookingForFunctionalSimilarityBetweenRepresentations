@@ -126,6 +126,8 @@ class StitchedResnet(nn.Module):
         stitch: nn.Module = StitchGenerator(shapes).generate()
         return StitchedResnet(prefix, suffix, stitch)
 
+# TODO the only test we really need here is that freezing works
+
 
 class TestStitchedResnet(unittest.TestCase):
     """

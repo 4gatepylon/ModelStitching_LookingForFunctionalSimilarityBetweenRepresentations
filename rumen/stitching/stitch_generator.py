@@ -34,28 +34,30 @@ class StitchGenerator(object):
 
     USE_BIAS: bool = True
 
-    def __init__(self: StitchGenerator, shape: Tuple(RepShape, RepShape)) -> NoReturn:
-        self.send_shape, self.recv_shape = shape
+    def __init__(self: StitchGenerator) -> NoReturn:
+        pass
 
-    def generate(self: StitchGenerator) -> nn.Module:
-        if self.send_shape.isVector():
+    @staticmethod
+    def generate(shape: Tuple[RepShape, RepShape]) -> nn.Module:
+        send_shape, recv_shape = shape
+        if send_shape.isVector():
             raise ValueError(
-                f"Cannot send from vector layer {self.send_shape}")
+                f"Cannot send from vector layer {send_shape}")
         else:
-            if self.recv_shape.isVector():
+            if recv_shape.isVector():
                 return nn.Sequential(
                     nn.Flatten(),
-                    nn.Linear(self.send_shape.numActivations(),
-                              self.recv_shape.numActivations()),
+                    nn.Linear(send_shape.numActivations(),
+                              recv_shape.numActivations()),
                 )
             else:
                 # Recall that depth always doubles and width/height each always halve
                 # so the greater of the two heights corresponds to the earlier layer.
                 # NOTE It is cleaner to use height because depth might be 3.
-                send_height = self.send_shape.height()
-                send_depth = self.send_shape.depth()
-                recv_height = self.recv_shape.height()
-                recv_depth = self.recv_shape.depth()
+                send_height = send_shape.height()
+                send_depth = send_shape.depth()
+                recv_height = recv_shape.height()
+                recv_depth = recv_shape.depth()
                 if recv_height <= send_height:
                     ratio = send_height // recv_height
                     return nn.Conv2d(
@@ -89,12 +91,12 @@ class TestStitchGenerator(unittest.TestCase):
         # Downsample example
         tensor1: RepShape = RepShape((3, 32, 32))
         tensor2: RepShape = RepShape((128, 16, 16))
-        stitch12: nn.Module = StitchGenerator((tensor1, tensor2)).generate()
+        stitch12: nn.Module = StitchGenerator.generate((tensor1, tensor2))
 
         # Upsample example
         tensor3: RepShape = RepShape((512, 4, 4))
         tensor4: RepShape = RepShape((64, 32, 32))
-        stitch34: nn.Module = StitchGenerator((tensor3, tensor4)).generate()
+        stitch34: nn.Module = StitchGenerator.generate((tensor3, tensor4))
 
         # Test the downsampling exmaple
         self.assertEqual(type(stitch12), nn.Conv2d)
@@ -122,7 +124,7 @@ class TestStitchGenerator(unittest.TestCase):
     def test_tensor2vector(self: TestStitchGenerator) -> NoReturn:
         tensor: RepShape = RepShape((3, 64, 64))
         vector: RepShape = RepShape(10)
-        stitch: nn.Module = StitchGenerator((tensor, vector)).generate()
+        stitch: nn.Module = StitchGenerator.generate((tensor, vector))
 
         self.assertEqual(type(stitch), nn.Sequential)
         self.assertEqual(len(stitch), 2)
@@ -135,8 +137,8 @@ class TestStitchGenerator(unittest.TestCase):
         vector: RepShape = RepShape(10)
         tensor: RepShape = RepShape((3, 64, 64))
 
-        self.assertRaises(Exception, StitchGenerator(
-            (vector, tensor)).generate)
+        self.assertRaises(
+            Exception, StitchGenerator.generate, (vector, tensor))
 
 
 if __name__ == '__main__':

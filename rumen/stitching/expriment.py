@@ -305,11 +305,11 @@ class Experiment(object):
                 )
                 print(f"acc_percent was {acc_percent}")
 
-                # NOTE this is ../pretrained_resnet
+                # NOTE this is ../../pretrained_resnet
                 torch.save(model.state_dict(), fname)
 
     @staticmethod
-    def main_stitchtrain_small(args: Any, filename_pair: Tuple[str, str]) -> NoReturn:
+    def stitchtrain(args: Any, filename_pair: Tuple[str, str]) -> NoReturn:
         # TODO refactor this
         file1, file2 = filename_pair[int(args.smallpairnum)]
         numbers1 = list(map(int, file1.split(".")[0][-4:]))
@@ -447,3 +447,8 @@ class Experiment(object):
         #    A file. Next to it store the image that was input (this will help us
         #    visualize whether the stitch is doing any funny business).
         raise NotImplementedError
+
+
+if __name__ == "__main__":
+    Experiment.pretrain()
+    # Experiment.stitchtrain()

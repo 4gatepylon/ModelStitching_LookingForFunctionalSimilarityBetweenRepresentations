@@ -14,6 +14,7 @@ from typing import (
     Callable,
     Union,
     List,
+    Any,
     Optional,
     Tuple,
     TypeVar,
@@ -34,6 +35,8 @@ P = ParamSpec('P')
 
 
 class Hyperparams(object):
+    """ Class that replaces `args` from the argument parser. Will have utility later. """
+
     def __init__(self):
         self.seed: Optional[int] = None
 
@@ -43,23 +46,7 @@ class Hyperparams(object):
         # Used by FFCV for train/test split
         self.fraction = 1.0
 
-        raise NotImplementedError
-
-
-class ExperimentHyperparams(Hyperparams):
-    def __init__(self: ExperimentHyperparams, trainer_hyperparams: TrainerHyperparams) -> NoReturn:
-        super().__init__()
-
-        self.trainer_hyperparams = trainer_hyperparams
-
-        # TODO
-        raise NotImplementedError
-
-
-class TrainerHyperparams(Hyperparams):
-    def __init__(self: TrainerHyperparams):
-        super().__init__()
-
+        # Training Hyperparams
         self.bsz = 256   # Batch Size
         self.lr = 0.01   # Learning Rate
         self.warmup = 10  # Warmup epochs
@@ -70,15 +57,17 @@ class TrainerHyperparams(Hyperparams):
 
 
 class Trainer(object):
-    def __init__(self: Trainer, hyperparams: TrainerHyperparams):
-        # TODO
+    """ Just a class to encapsulate our training methods """
+
+    def __init__(self: Trainer):
         pass
 
+    @staticmethod
     def evaluate(model, test_loader):
         # NOTE used to be for layer in model
         model.eval()
 
-        for idx, (images, labels) in enumerate(test_loader):
+        for _, (images, labels) in enumerate(test_loader):
             total_correct, total_num = 0., 0.
 
             with torch.no_grad():
@@ -95,14 +84,15 @@ class Trainer(object):
 
         return total_correct / total_num * 100.
 
-    def adjust_learning_rate(self: Trainer, epochs: int, warmup_epochs, base_lr, optimizer, loader, step):
-        epochs: int = self.epochs
-        warmup_epochs: int = self.warmup
-        base_lr: int = self.lr
-        optimizer: torch.optim.Optimizer = self.optimizer
-        loader: DataLoader = self.loader
-        step: int = self.step
-
+    @staticmethod
+    def adjust_learning_rate(
+        epochs: int,
+        warmup_epochs: int,
+        base_lr: int,
+        optimizer: Any,
+        loader: DataLoader,
+        step: int,
+    ) -> NoReturn:
         max_steps = epochs * len(loader)
         warmup_steps = warmup_epochs * len(loader)
         if step < warmup_steps:
@@ -116,16 +106,15 @@ class Trainer(object):
         for param_group in optimizer.param_groups:
             param_group['lr'] = lr
 
-        return lr
-
+    @staticmethod
     def train_loop(
-        self: Trainer,
+        args: Any,
         model: nn.Module,
         train_loader: DataLoader,
         test_loader: DataLoader,
         parameters: Optional[List[torch.Tensor]] = None,
         epochs: Optional[int] = None,
-    ):
+    ) -> int:
         # None signifies do all parameters (we might finetune single layers an that will speed up training)
         if parameters is None:
             parameters = list(model.parameters())
@@ -148,13 +137,13 @@ class Trainer(object):
             for it, (inputs, y) in enumerate(train_loader, start=(e - 1) * len(train_loader)):
 
                 # adjust
-                adjust_learning_rate(epochs=epochs,
-                                     warmup_epochs=args.warmup,
-                                     base_lr=args.lr * args.bsz / 256,
-                                     optimizer=optimizer,
-                                     loader=train_loader,
-                                     step=it)
-                # zero grad
+                Trainer.adjust_learning_rate(epochs=epochs,
+                                             warmup_epochs=args.warmup,
+                                             base_lr=args.lr * args.bsz / 256,
+                                             optimizer=optimizer,
+                                             loader=train_loader,
+                                             step=it)
+                # zero grad (should we set to none?)
                 optimizer.zero_grad(set_to_none=True)
 
                 with autocast():
@@ -168,6 +157,6 @@ class Trainer(object):
 
             print(f'\t\tepoch: {e} | time: {time.time() - start:.3f}')
 
-        eval_acc = evaluate(model, test_loader)
+        eval_acc = Trainer.evaluate(model, test_loader)
 
-        return eval_acc, model
+        return eval_acc

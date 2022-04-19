@@ -1,9 +1,13 @@
 import numpy as np
 import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 
 
 class Visualizer(object):
+    """ Class to encapsulate our visualization methods."""
+
     @staticmethod
     def matrix_heatmap(input_file_name: str, output_file_name: str):
         mat = torch.load(input_file_name)
@@ -37,3 +41,7 @@ class Visualizer(object):
         fig.tight_layout()
         plt.savefig(output_file_name)
         plt.clf()
+
+    @staticmethod
+    def images(model: nn.Module, test_loader: DataLoader, output_folder: str):
+        raise NotImplementedError

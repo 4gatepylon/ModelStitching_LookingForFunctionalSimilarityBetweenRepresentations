@@ -29,6 +29,8 @@ We are going to need functions to
 - Generate the sequence of networks relevant for an experiment (i.e. some sort of experiment class)
 - Manage files for an experiment (some sort of experiment file manager class)
 - Selection of dataloaders from either default Pytorch ones for CNNs or FFCV's ones.
+- File Manager (utility to save models in an orderly fashion)
+- Rep Dataset so that we can do model stitching with similarity loss (or whatever)
 
 # TODOs
 - Implement the above
