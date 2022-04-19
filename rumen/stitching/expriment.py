@@ -259,6 +259,7 @@ class PairExp(object):
 
 class Experiment(object):
     RESNETS_FOLDER = "../../resnets/"
+    SIMS_FOLDER = "../../sims/"
 
     def __init__(self: Experiment) -> NoReturn:
         pass
@@ -407,6 +408,7 @@ class Experiment(object):
         print("Bypassing generating stitches")
         print("Generating stitched Nets list (pairs")
         nets: List[Resnet] = [
+            # TODO change this name
             ("model1", model1),
             ("model2", model2),
             ("model1_rand", model1_rand),
@@ -415,9 +417,8 @@ class Experiment(object):
 
         net_pairs = choose_unordered_subset(nets, 2)
 
-        stitched_nets: List[List[List[StitchedResnet]]] = [
-            (
-                (model1_name, model2_name),
+        stitched_nets: Dict[Tuple[str, str], List[List[StitchedResnet]]] = {
+            (model1_name, model2_name):
                 Table.mappedTable(
                     lambda labels_tuple: StitchedResnet.fromLabels(
                         (model1, model2),
@@ -425,12 +426,27 @@ class Experiment(object):
                         pool_and_flatten=False,
                     ),
                     labels,
-                )
             )
             for (model1_name, model1), (model2_name, model2) in net_pairs
-        ]
+        }
 
-        print("Initializing the stitches (note all idx2label are the same)")
+        print("Training stitches")
+        vanilla_sims: Dict[Tuple[str, str], List[List[float]]] = {
+            (model1_name, model2_name):
+            Table.mappedTable(
+                stitched_nets_table,
+                lambda st: Trainer.train_loop(st))
+            for (model1_name, model2_name), stitched_nets_table in stitched_nets.items()
+        }
+
+        if not os.path.exists(Experiment.SIMS_FOLDER):
+            os.mkdir(Experiment.SIMS_FOLDER)
+        for (model1_name, model2_name), vanilla_sim_table in vanilla_sims.items():
+            name_no_folder = f"{model1_name}_{model2_name}_sims.pt"
+            name_w_folder = os.path.join(
+                Experiment.SIMS_FOLDER, name_no_folder)
+            torch.save(torch.tensor(vanilla_sim_table), name_w_folder)
+
         # TODO
         # 3. Get LIST of tables of stitches [vanilla_table, sims_table]
         # 4. Get LIST of tables table of stitched networks [vanilla_table, sims_table]
