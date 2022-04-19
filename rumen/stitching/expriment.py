@@ -327,6 +327,7 @@ class Experiment(object):
         print(f"name1: {name1}")
         print(f"name2: {name2}")
 
+        # So we can find them!
         file1 = os.path.join(Experiment.RESNETS_FOLDER, file1)
         file2 = os.path.join(Experiment.RESNETS_FOLDER, file2)
 
@@ -408,11 +409,10 @@ class Experiment(object):
         print("Bypassing generating stitches")
         print("Generating stitched Nets list (pairs")
         nets: List[Resnet] = [
-            # TODO change this name
-            ("model1", model1),
-            ("model2", model2),
-            ("model1_rand", model1_rand),
-            ("model2_rand", model2_rand)
+            (name1, model1),
+            (name2, model2),
+            (name1 + "_rand", model1_rand),
+            (name2 + "_rand", model2_rand)
         ]
 
         net_pairs = choose_unordered_subset(nets, 2)
