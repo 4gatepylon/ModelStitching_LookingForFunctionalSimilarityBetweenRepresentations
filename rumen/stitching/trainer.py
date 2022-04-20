@@ -34,6 +34,28 @@ T = TypeVar('T')
 P = ParamSpec('P')
 
 
+def adjust_learning_rate(
+    epochs: int,
+    warmup_epochs: int,
+    base_lr: int,
+    optimizer: Any,
+    loader: DataLoader,
+    step: int,
+) -> NoReturn:
+    max_steps = epochs * len(loader)
+    warmup_steps = warmup_epochs * len(loader)
+    if step < warmup_steps:
+        lr = base_lr * step / warmup_steps
+    else:
+        step -= warmup_steps
+        max_steps -= warmup_steps
+        q = 0.5 * (1 + math.cos(math.pi * step / max_steps))
+        end_lr = 0
+        lr = base_lr * q + end_lr * (1 - q)
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = lr
+
+
 class Hyperparams(object):
     """ Class that replaces `args` from the argument parser. Will have utility later. """
 
@@ -161,12 +183,12 @@ class Trainer(object):
             for it, (inputs, y) in enumerate(train_loader, start=(e - 1) * len(train_loader)):
 
                 # adjust
-                Trainer.adjust_learning_rate(epochs=epochs,
-                                             warmup_epochs=args.warmup,
-                                             base_lr=args.lr * args.bsz / 256,
-                                             optimizer=optimizer,
-                                             loader=train_loader,
-                                             step=it)
+                adjust_learning_rate(epochs=epochs,
+                                     warmup_epochs=args.warmup,
+                                     base_lr=args.lr * args.bsz / 256,
+                                     optimizer=optimizer,
+                                     loader=train_loader,
+                                     step=it)
                 # zero grad (should we set to none?)
                 optimizer.zero_grad(set_to_none=True)
 
