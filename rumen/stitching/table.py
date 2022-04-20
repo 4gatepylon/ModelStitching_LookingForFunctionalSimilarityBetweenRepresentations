@@ -25,5 +25,5 @@ class Table(object):
     # TODO it would be super helpful to have zipped tables and other utility
 
     @staticmethod
-    def mappedTable(table: List[List[T]], transform: Callable[[T], G]) -> List[List[G]]:
+    def mappedTable(transform: Callable[[T], G], table: List[List[T]]) -> List[List[G]]:
         return [[transform(x) for x in row] for row in table]

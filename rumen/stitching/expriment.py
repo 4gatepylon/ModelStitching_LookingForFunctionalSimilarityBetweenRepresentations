@@ -407,8 +407,9 @@ class Experiment(object):
         vanilla_sims: Dict[Tuple[str, str], List[List[float]]] = {
             (model1_name, model2_name):
             Table.mappedTable(
+                lambda st: Trainer.train_loop(st),
                 stitched_nets_table,
-                lambda st: Trainer.train_loop(st))
+            )
             for (model1_name, model2_name), stitched_nets_table in stitched_nets.items()
         }
 
