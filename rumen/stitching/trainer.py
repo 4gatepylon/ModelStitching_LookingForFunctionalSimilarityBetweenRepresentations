@@ -59,7 +59,8 @@ class Hyperparams(object):
         # while control toggles whether to create control models
         # (True True -> 8 trainings; False True -> 4 trainings; False False -> 1 training)
         self.two_way = False
-        self.control = True
+        # self.control = True
+        self.control = False
 
     @staticmethod
     def forTesting():
