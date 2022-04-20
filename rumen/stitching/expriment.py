@@ -273,14 +273,23 @@ class Experiment(object):
         unless they are already trained (in which case we will use them later). Store them in
         the resnets folder.
         """
+        print("Getting FFCV loaders")
         train_loader, test_loader = Loaders.get_loaders_ffcv(args)
 
-        combinations = choose_product([1, 2], 4)
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        print(f"Using device: {device}")
+
+        print("Generating combinations")
+        # combinations = choose_product([1, 2], 4)
+        combinations = [[1, 1, 1, 1]]
+
+        print("Training all combinations")
         for combination in combinations:
+            comb_name = "".join(map(str, combination))
+            print(f"Training combination {comb_name}")
             x, y, z, w = combination
-            fname = os.path.join(
-                Experiment.RESNETS_FOLDER, f"resnet_{x}{y}{z}{w}.pt",
-            )
+            fname = os.path.join(Experiment.RESNETS_FOLDER,
+                                 f"resnet_{comb_name}.pt")
             if os.path.exists(fname):
                 print(f"Skipping {fname}")
                 continue
@@ -288,26 +297,32 @@ class Experiment(object):
 
                 # NOT pretrained and NO progress bar (these aren't supported anyways)
                 model = ResnetGenerator.generate(
-                    f"resnet_{x}{y}{z}{w}", BasicBlock, combination, False, False, num_classes=10)
-                model = model.cuda()
+                    f"resnet_{comb_name}",
+                    BasicBlock,
+                    combination,
+                    False,
+                    False,
+                    num_classes=10,
+                )
+                model = model.to(device)
 
-                print(f"will train net {x}{y}{z}{w}")
-
-                epochs = 40
+                print(
+                    f"will train resnet_{comb_name} for {args.epochs} epochs")
                 Trainer.train_loop(
+                    args,
                     model,
                     train_loader,
                     test_loader,
-                    parameters=None,
-                    epochs=epochs,
                 )
-                acc_percent = Trainer.evaluate(
+                acc = Trainer.evaluate(
                     model,
                     test_loader
                 )
-                print(f"acc_percent was {acc_percent}")
+                print(f"acc was {acc}")
 
-                # NOTE this is ../../pretrained_resnet
+                assert acc < 1.0
+                assert acc > 0.8
+
                 torch.save(model.state_dict(), fname)
 
     @staticmethod
@@ -413,5 +428,7 @@ class Experiment(object):
 if __name__ == "__main__":
     file_pair = "resnet_1111.pt", "resnet_1111.pt"
     hyps = Hyperparams()
+    hyps.epochs = 40
     Experiment.pretrain(hyps)
-    #Experiment.stitchtrain(hyps,("resnet_1111.pt", "resnet_1111.pt"))
+    # hyps.epochs = 4
+    # Experiment.stitchtrain(hyps, file_pair)

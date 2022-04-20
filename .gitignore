@@ -173,3 +173,10 @@ long/**/*.pt
 **/sims/
 */viz/
 **/viz/
+
+data_ffcv/
+data_no_ffcv/
+*/data_ffcv/
+**/data_ffcv/
+*/data_no_ffcv/
+**/data_no_ffcv/
