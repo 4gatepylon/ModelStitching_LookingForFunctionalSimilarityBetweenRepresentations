@@ -57,7 +57,12 @@ except:
 
 
 class Loaders(object):
-    NO_FFCV_FOLDER = "../../data/"
+    NO_FFCV_FOLDER = "../../data_no_ffcv/"
+    FFCV_FOLDER = "../../data_ffcv/"
+
+    # NOTE I don't really know exactly what this is used for (I don't think I'm using it
+    # but I might by accident...)
+    MISC_FFCV_FOLDER = "../tmp/"
 
     @staticmethod
     def get_loaders_ffcv(args: Any) -> Tuple[DataLoader, DataLoader]:
@@ -70,12 +75,14 @@ class Loaders(object):
 
         dataset_class = torchvision.datasets.CIFAR10 if (
             args.dataset == 'cifar10') else torchvision.datasets.CIFAR100
-        if not os.path.exists(f'tmp/finetune_{args.dataset}_{args.fraction}_train_data.beton'):
+        finetune_file = os.path.join(
+            Loaders.MISC_FFCV_FOLDER, f"finetune_{args.dataset}_{args.fraction}_train_data.beton")
+        if not os.path.exists(finetune_file):
             train_data = dataset_class(
-                '../Data', train=True, download=True
+                Loaders.FFCV_FOLDER, train=True, download=True
             )
             train_data = torch.utils.data.random_split(train_data, split)[0]
-            train_writer = DatasetWriter(f'tmp/finetune_{args.dataset}_{args.fraction}_train_data.beton', {
+            train_writer = DatasetWriter(finetune_file, {
                 'image': RGBImageField(),
                 'label': IntField()
             })
@@ -99,7 +106,7 @@ class Loaders(object):
             Convert(torch.float16),
             FFCV_NORMALIZE_TRANSFORM
         ]
-        train_loader = Loader(f'./tmp/finetune_{args.dataset}_{args.fraction}_train_data.beton',
+        train_loader = Loader(finetune_file,
                               batch_size=args.bsz,
                               num_workers=args.num_workers,
                               order=OrderOption.RANDOM,
@@ -110,12 +117,14 @@ class Loaders(object):
                                   'label': label_pipeline,
                               })
 
-        if not os.path.exists(f'tmp/{args.dataset}_test_data.beton'):
+        test_data_file = os.path.join(
+            Loaders.MISC_FFCV_FOLDER, f"{args.dataset}_test_data.beton")
+        if not os.path.exists(test_data_file):
             test_data = dataset_class(
-                '../Data', train=False, download=True
+                Loaders.FFCV_FOLDER, train=False, download=True
             )
 
-            test_writer = DatasetWriter(f'tmp/{args.dataset}_test_data.beton', {
+            test_writer = DatasetWriter(test_data_file, {
                 'image': RGBImageField(),
                 'label': IntField()
             })
@@ -130,7 +139,7 @@ class Loaders(object):
             torchvision.transforms.Normalize(FFCV_CIFAR_MEAN, FFCV_CIFAR_STD)
         ]
 
-        test_loader = Loader(f'./tmp/{args.dataset}_test_data.beton',
+        test_loader = Loader(test_data_file,
                              batch_size=2048,
                              num_workers=args.num_workers,
                              order=OrderOption.SEQUENTIAL,
