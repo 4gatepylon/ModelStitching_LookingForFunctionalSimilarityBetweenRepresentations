@@ -52,7 +52,7 @@ class Hyperparams(object):
         self.wd = 0.01   # Weight decay
 
         # In theory it's fast
-        self.use_ffcv = False
+        self.use_ffcv = True
 
         # options used for experiment details
         # two_way toggles whether to stitch the second model into the first
@@ -61,6 +61,8 @@ class Hyperparams(object):
         self.two_way = False
         # self.control = True
         self.control = False
+        # Alternative is "cifar100"
+        self.dataset = "cifar10"
 
     @staticmethod
     def forTesting():
