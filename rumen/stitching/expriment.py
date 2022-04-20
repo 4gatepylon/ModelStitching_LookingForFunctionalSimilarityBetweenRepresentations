@@ -413,5 +413,5 @@ class Experiment(object):
 if __name__ == "__main__":
     file_pair = "resnet_1111.pt", "resnet_1111.pt"
     hyps = Hyperparams()
-    #Experiment.pretrain(hyps)
-    Experiment.stitchtrain(hyps, file_pair)
+    Experiment.pretrain(hyps)
+    #Experiment.stitchtrain(hyps,("resnet_1111.pt", "resnet_1111.pt"))
