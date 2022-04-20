@@ -40,6 +40,7 @@ class Hyperparams(object):
     def __init__(self):
         # FFCV Number of workers for loading
         self.fccv_num_workers: int = 1
+        self.num_workers = 1
 
         # Used by FFCV for train/test split
         self.fraction = 1.0
@@ -141,7 +142,7 @@ class Trainer(object):
         # None signifies do all parameters (we might finetune single layers an that will speed up training)
         if parameters is None:
             parameters = list(model.parameters())
-        print(parameters)
+        #print(parameters)
 
         optimizer = torch.optim.SGD(
             params=parameters,
@@ -155,11 +156,12 @@ class Trainer(object):
         start = time.time()
         epochs = args.epochs if epochs is None else epochs
         for e in range(1, epochs + 1):
+            print(f"\t\t starting on epoch {e} for {len(train_loader)} iterations")
             model.train()
             # epoch
             # NOTE that enumerate's start changes the starting index
             for it, (inputs, y) in enumerate(train_loader, start=(e - 1) * len(train_loader)):
-
+                print(f"iteration {it}")
                 # adjust
                 Trainer.adjust_learning_rate(epochs=epochs,
                                              warmup_epochs=args.warmup,
