@@ -33,7 +33,7 @@ import math
 T = TypeVar('T')
 P = ParamSpec('P')
 
-
+# In theory it's faster this way...
 def adjust_learning_rate(
     epochs: int,
     warmup_epochs: int,
@@ -184,7 +184,7 @@ class Trainer(object):
             # epoch
             # NOTE that enumerate's start changes the starting index
             for it, (inputs, y) in enumerate(train_loader, start=(e - 1) * len(train_loader)):
-                print(f"iteration {it}")
+                #print(f"iteration {it}")
                 # adjust
                 adjust_learning_rate(epochs=epochs,
                                      warmup_epochs=args.warmup,

@@ -379,14 +379,14 @@ class Experiment(object):
             assert acc < hi
 
         print("Generating table of labels")
-        def iden(x): return x
+        def iden(x,y): return (x,y)
         labels: List[List[Tuple[LayerLabel, LayerLabel]]
                      ] = LayerLabel.generateTable(iden, numbers1, numbers2)
 
         print("Generating pairs of networks to stitch")
         named_models = list(zip(names, models))
         pairs = [(named_models[0], named_models[2])]
-        if args.control or args.control_rand:
+        if args.control or args.control:
             raise NotImplementedError("Only stitching model1 with model2")
 
         print("Generating stitches for each pair of layers for each pair of models")
@@ -431,5 +431,5 @@ if __name__ == "__main__":
     hyps = Hyperparams()
     hyps.epochs = 40
     Experiment.pretrain(hyps)
-    # hyps.epochs = 4
-    # Experiment.stitchtrain(hyps, file_pair)
+    hyps.epochs = 4
+    Experiment.stitchtrain(hyps, file_pair)
