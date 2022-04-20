@@ -7,7 +7,6 @@
 # - numerical shit
 
 # modified from https://github.com/pytorch/vision/blob/main/torchvision/models/resnet.py
-from re import A
 from typing import Type, Any, Callable, Union, List, Optional, Tuple
 
 import torch

@@ -1,5 +1,5 @@
 from typing import Type, Any, Callable, Union, List, Optional, Tuple
-from resnet import BasicBlock, Bottleneck, Resnet
+from resnet.resnet import BasicBlock, Bottleneck, Resnet
 
 
 class ResnetGenerator(object):
