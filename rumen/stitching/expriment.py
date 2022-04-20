@@ -259,7 +259,7 @@ def choose_product(possibles: List[T], length: int) -> List[List[T]]:
 
 
 class Experiment(object):
-    RESNETS_FOLDER = "../../resnets/"
+    RESNETS_FOLDER = "../../pretrained_resnets/"
     SIMS_FOLDER = "../../sims/"
     HEATMAPS_FOLDER = "../../heatmaps/"
 
@@ -348,7 +348,7 @@ class Experiment(object):
         ]
         print(f"Using device {device}")
         for (model, pretrained_file) in zip(models, pretrained_files):
-            model.to_device(device)
+            model.to(device)
             if pretrained_file:
                 print(f"Loaded pretrained model {pretrained_file}")
                 model.load_state_dict(torch.load(pretrained_file))
@@ -413,5 +413,5 @@ class Experiment(object):
 if __name__ == "__main__":
     file_pair = "resnet_1111.pt", "resnet_1111.pt"
     hyps = Hyperparams()
-    Experiment.pretrain(hyps)
+    #Experiment.pretrain(hyps)
     Experiment.stitchtrain(hyps, file_pair)

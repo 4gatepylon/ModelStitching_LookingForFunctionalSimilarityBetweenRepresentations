@@ -61,6 +61,8 @@ class Hyperparams(object):
         self.two_way = False
         # self.control = True
         self.control = False
+        # Alternative is "cifar100"
+        self.dataset = "cifar10"
 
     @staticmethod
     def forTesting():
