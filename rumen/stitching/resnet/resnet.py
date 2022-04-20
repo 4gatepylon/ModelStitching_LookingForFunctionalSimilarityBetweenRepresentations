@@ -147,7 +147,7 @@ class Resnet(nn.Module):
             raise Exception(
                 "can vent out from input but NOT into input in `intoForward(x, vent)`")
         elif vent.isConv1():
-            return self.full_forward(x)
+            return self.forward(x)
         elif vent.isBlock():
             # Resnets vent every time so that we can shorten our code
             blockset, block = vent.getBlockset(), vent.getBlock()
@@ -171,7 +171,7 @@ class Resnet(nn.Module):
             # Are you sure we don't want to use the RELU? NOTE
             return self.conv1(x)
         elif vent.isFc():
-            return self.full_forward(x)
+            return self.forward(x)
         elif vent.isOutput():
             raise ValueError(f"Can't have output for `outfrom_forward`")
         elif vent.isInput():

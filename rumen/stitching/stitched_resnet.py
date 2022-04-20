@@ -22,6 +22,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+# A little bit of a hack for ffcv
+from torch.cuda.amp import autocast
+
 from resnet.resnet import Resnet
 from layer_label import LayerLabel
 from rep_shape import RepShape
@@ -78,11 +81,10 @@ class StitchedResnet(nn.Module):
     def forward(self: StitchedResnet, x: torch.Tensor) -> torch.Tensor:
         # Pool and flatten should only happen for MSE losses (otherwise we don't, since
         # we want the full tensor `representation`)
-        h = self.sender.outfrom_forward(
-            x, self.send_label, pool_and_flatten=False)
-        h = self.stitch(h)
-        h = self.reciever.into_forward(
-            h, self.recv_label)
+        with autocast():
+            h = self.sender.outfrom_forward(x, self.send_label, pool_and_flatten=False)
+            h = self.stitch(h)
+            h = self.reciever.into_forward(h, self.recv_label)
         return h
 
     @staticmethod

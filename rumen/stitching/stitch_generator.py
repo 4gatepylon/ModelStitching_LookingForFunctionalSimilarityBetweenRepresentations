@@ -15,6 +15,7 @@ from typing import (
     TypeVar,
 )
 
+import torch
 import torch.nn as nn
 
 from rep_shape import RepShape
@@ -48,7 +49,9 @@ class StitchGenerator(object):
                 return nn.Sequential(
                     nn.Flatten(),
                     nn.Linear(send_shape.numActivations(),
-                              recv_shape.numActivations()),
+                              recv_shape.numActivations(),
+                              #dtype=torch.half,
+                    ),
                 )
             else:
                 # Recall that depth always doubles and width/height each always halve
@@ -66,6 +69,7 @@ class StitchGenerator(object):
                         ratio,
                         stride=ratio,
                         bias=StitchGenerator.USE_BIAS,
+                        #dtype=torch.half,
                     )
                 else:
                     ratio = send_height // recv_height
@@ -79,7 +83,8 @@ class StitchGenerator(object):
                             recv_depth,
                             1,
                             stride=1,
-                            bias=True,
+                            bias=StitchGenerator.USE_BIAS,
+                            #dtype=torch.half,
                         ),
                     )
 

@@ -402,7 +402,7 @@ class Experiment(object):
                         labels_tuple[0],
                         labels_tuple[1],
                         pool_and_flatten=False,
-                    ),
+                    ).to(device),
                     labels,
             )
             for (model1_name, model1), (model2_name, model2) in pairs
