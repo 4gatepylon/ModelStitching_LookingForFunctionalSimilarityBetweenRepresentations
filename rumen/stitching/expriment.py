@@ -368,8 +368,8 @@ class Experiment(object):
                 print(f"Loaded pretrained model {pretrained_file}")
                 model.load_state_dict(torch.load(pretrained_file))
 
-        print("Getting loaders")
-        train_loader, test_loader = Loaders.get_loaders(args)
+        print("Getting loaders for FFCV")
+        train_loader, test_loader = Loaders.get_loaders_ffcv(args)
 
         print("Sanity testing accuracies of pretrained models")
         for name, model, (lo, hi) in zip(names, models, expected_acc_bounds):
@@ -380,8 +380,12 @@ class Experiment(object):
 
         print("Generating table of labels")
         def iden(x,y): return (x,y)
-        labels: List[List[Tuple[LayerLabel, LayerLabel]]
-                     ] = LayerLabel.generateTable(iden, numbers1, numbers2)
+        labels, idx2labels = LayerLabel.generateTable(iden, numbers1, numbers2)
+        print("***************** labels *******************")
+        print(labels)
+        print("************** *idx2labels *****************")
+        print(idx2labels)
+        print("********************************************")
 
         print("Generating pairs of networks to stitch")
         named_models = list(zip(names, models))
@@ -395,7 +399,8 @@ class Experiment(object):
                 Table.mappedTable(
                     lambda labels_tuple: StitchedResnet.fromLabels(
                         (model1, model2),
-                        *labels_tuple,
+                        labels_tuple[0],
+                        labels_tuple[1],
                         pool_and_flatten=False,
                     ),
                     labels,
@@ -407,7 +412,7 @@ class Experiment(object):
         vanilla_sims: Dict[Tuple[str, str], List[List[float]]] = {
             (model1_name, model2_name):
             Table.mappedTable(
-                lambda st: Trainer.train_loop(st),
+                lambda st: Trainer.train_loop(args, st, train_loader, test_loader),
                 stitched_nets_table,
             )
             for (model1_name, model2_name), stitched_nets_table in stitched_nets.items()

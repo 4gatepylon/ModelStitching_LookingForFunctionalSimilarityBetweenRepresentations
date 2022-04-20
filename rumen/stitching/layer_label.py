@@ -186,6 +186,10 @@ class LayerLabel(object):
             raise Exception("There is no prevLabel(LayerLabel.INPUT)")
         elif str_label == LayerLabel.CONV1:
             return LayerLabel(LayerLabel.INPUT, model_blocksets)
+        elif str_label == LayerLabel.FC:
+            blockset = 4
+            block = model_blocksets[3] - 1
+            return LayerLabel((blockset, block), model_blocksets)
         elif str_label is None:
             assert not blockset is None, "blockset cannot be None if str_label is None"
             assert not block is None, "block cannot be None if str_label is None"

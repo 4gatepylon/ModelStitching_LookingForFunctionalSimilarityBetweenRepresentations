@@ -91,18 +91,10 @@ class StitchedResnet(nn.Module):
             send_label: LayerLabel,
             recv_label: LayerLabel,
             pool_and_flatten: Optional[bool] = False) -> StitchedResnet:
+        #print(f"send label is {send_label} and recv_label is {recv_label}")
         shapes = RepShape.stitchShapes(send_label, recv_label)
-        prefix: StitchedResnet.ResnetPrefix = StitchedResnet.ResnetPrefix(
-            nets[0],
-            shapes[0],
-            pool_and_flatten=pool_and_flatten,
-        )
-        suffix: StitchedResnet.ResnetSuffix = StitchedResnet.ResnetSuffix(
-            nets[1],
-            shapes[1],
-        )
         stitch: nn.Module = StitchGenerator.generate(shapes)
-        return StitchedResnet(prefix, suffix, stitch)
+        return StitchedResnet(nets[0], nets[1], stitch, send_label, recv_label)
 
 
 class MockResnet(nn.Module):
