@@ -51,6 +51,16 @@ class Hyperparams(object):
         self.epochs = 4  # Total epochs
         self.wd = 0.01   # Weight decay
 
+        # In theory it's fast
+        self.use_ffcv = False
+
+        # options used for experiment details
+        # two_way toggles whether to stitch the second model into the first
+        # while control toggles whether to create control models
+        # (True True -> 8 trainings; False True -> 4 trainings; False False -> 1 training)
+        self.two_way = False
+        self.control = True
+
     @staticmethod
     def forTesting():
         hyps = Hyperparams()
@@ -61,6 +71,8 @@ class Hyperparams(object):
         hyps.warmup = 1
         hyps.fraction = 1.0
         hyps.ffcv_num_workers = 1
+        hyps.two_way = False
+        hyps.control = False
         return hyps
 
 

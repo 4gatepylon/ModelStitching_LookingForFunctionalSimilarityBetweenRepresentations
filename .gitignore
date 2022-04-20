@@ -167,3 +167,9 @@ long/**/*.pt
 # Vscode artifacts
 .vscode/
 .vscde*
+
+# Look at experiment in stitching
+*/sims/
+**/sims/
+*/viz/
+**/viz/

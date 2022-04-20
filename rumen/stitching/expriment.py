@@ -39,6 +39,7 @@ from rep_shape import RepShape
 from loaders import Loaders
 from resnet.resnet_generator import ResnetGenerator
 from trainer import Trainer, Hyperparams
+from visualizer import Visualizer
 
 T = TypeVar('T')
 G = TypeVar('G')
@@ -260,6 +261,7 @@ def choose_product(possibles: List[T], length: int) -> List[List[T]]:
 class Experiment(object):
     RESNETS_FOLDER = "../../resnets/"
     SIMS_FOLDER = "../../sims/"
+    HEATMAPS_FOLDER = "../../heatmaps/"
 
     def __init__(self: Experiment) -> NoReturn:
         pass
@@ -310,7 +312,6 @@ class Experiment(object):
 
     @staticmethod
     def stitchtrain(args: Any, filename_pair: Tuple[str, str]) -> NoReturn:
-        # TODO refactor this
         file1, file2 = filename_pair
         numbers1 = list(map(int, file1.split(".")[0][-4:]))
         numbers2 = list(map(int, file2.split(".")[0][-4:]))
@@ -319,105 +320,61 @@ class Experiment(object):
         output_folder = f"sims_{name1}_{name2}"
         if not os.path.exists(output_folder):
             os.mkdir(output_folder)
+        file1 = os.path.join(Experiment.RESNETS_FOLDER, file1)
+        file2 = os.path.join(Experiment.RESNETS_FOLDER, file2)
 
-        print(
-            f"Will stitch {file1} and {file2} in {Experiment.RESNETS_FOLDER}")
+        print(f"Experiment {name1} x {name2} in {Experiment.RESNETS_FOLDER}")
         print(f"numbers1: {numbers1}")
         print(f"numbers2: {numbers2}")
         print(f"name1: {name1}")
         print(f"name2: {name2}")
 
-        # So we can find them!
-        file1 = os.path.join(Experiment.RESNETS_FOLDER, file1)
-        file2 = os.path.join(Experiment.RESNETS_FOLDER, file2)
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         print("Loading models")
-        model1 = ResnetGenerator.generate(
-            name1,
-            BasicBlock,
-            numbers1,
-            False,
-            False,
-            num_classes=10,
-        )
-        model2 = ResnetGenerator.generate(
-            name2,
-            BasicBlock,
-            numbers2,
-            False,
-            False,
-            num_classes=10,
-        )
-        model1_rand = ResnetGenerator.generate(
-            name1 + "_rand",
-            BasicBlock,
-            numbers1,
-            False,
-            False,
-            num_classes=10,
-        )
-        model2_rand = ResnetGenerator.generate(
-            name2 + "_rand",
-            BasicBlock,
-            numbers2,
-            False,
-            False,
-            num_classes=10,
-        )
-
-        print("Converting everything to Cuda")
-        model1.cuda()
-        model2.cuda()
-        model1_rand.cuda()
-        model2_rand.cuda()
-        model1.load_state_dict(torch.load(file1))
-        model2.load_state_dict(torch.load(file2))
+        pretrained_files = [file1, None, file2, None]
+        names = [name1, name1 + "_rand", name2, name2 + "_rand"]
+        numbers = [numbers1, numbers1, numbers2, numbers2]
+        expected_acc_bounds = [(0.9, 1.0), (0.0, 0.2), (0.9, 1.0), (0.0, 0.2)]
+        models = [
+            ResnetGenerator.generate(
+                name,
+                BasicBlock,
+                number,
+                False,
+                False,
+                num_classes=10,
+            ) for name, number in zip(names, numbers)
+        ]
+        print(f"Using device {device}")
+        for (model, pretrained_file) in zip(models, pretrained_files):
+            model.to_device(device)
+            if pretrained_file:
+                print(f"Loaded pretrained model {pretrained_file}")
+                model.load_state_dict(torch.load(pretrained_file))
 
         print("Getting loaders")
-        train_loader, test_loader = Loaders.get_loaders_ffcv(args)
+        train_loader, test_loader = Loaders.get_loaders(args)
 
-        print("Evaluating accuracies of pretrained models")
-        accp = 0.0
-        accp = Trainer.evaluate(model1, test_loader)
-        print(f"Accuracy of {name1} is {accp * 100}%")
-        assert accp > 0.9
-
-        accp = Trainer.evaluate(model1_rand, test_loader)
-        print(f"Accuracy of {name1} random is {accp * 100}%")
-        assert accp < 0.2
-
-        accp = Trainer.evaluate(model2, test_loader)
-        print(f"Accuracy of {name2} is {accp * 100}%")
-        assert accp > 0.9
-
-        accp = Trainer.evaluate(model2_rand, test_loader)
-        print(f"Accuracy of {name2} random is {accp * 100}%")
-        assert accp < 0.2
+        print("Sanity testing accuracies of pretrained models")
+        for name, model, (lo, hi) in zip(names, models, expected_acc_bounds):
+            print(f"Asserting that accuracy of {name} is in ({lo}, {hi})")
+            acc = Trainer.evaluate(model, test_loader)
+            assert acc > lo
+            assert acc < hi
 
         print("Generating table of labels")
-        labels: List[List[Tuple[LayerLabel, LayerLabel]]] = \
-            LayerLabel.generateTable(
-                lambda l1, l2: (l1, l2),
-                numbers1,
-                numbers2,
-        )
-        print("Bypassing generating rep shapes")
-        print("Bypassing generating stitches")
-        print("Generating stitched Nets list (pairs")
-        nets: List[Resnet] = [
-            (name1, model1),
-            (name2, model2),
-            (name1 + "_rand", model1_rand),
-            (name2 + "_rand", model2_rand)
-        ]
+        def iden(x): return x
+        labels: List[List[Tuple[LayerLabel, LayerLabel]]
+                     ] = LayerLabel.generateTable(iden, numbers1, numbers2)
 
-        net_pairs = [
-            (nets[0], nets[1]),
-            (nets[0], nets[3]),
-            (nets[2], nets[1]),
-            (nets[2], nets[3]),
-        ]
+        print("Generating pairs of networks to stitch")
+        named_models = list(zip(names, models))
+        pairs = [(named_models[0], named_models[2])]
+        if args.control or args.control_rand:
+            raise NotImplementedError("Only stitching model1 with model2")
 
+        print("Generating stitches for each pair of layers for each pair of models")
         stitched_nets: Dict[Tuple[str, str], List[List[StitchedResnet]]] = {
             (model1_name, model2_name):
                 Table.mappedTable(
@@ -428,7 +385,7 @@ class Experiment(object):
                     ),
                     labels,
             )
-            for (model1_name, model1), (model2_name, model2) in net_pairs
+            for (model1_name, model1), (model2_name, model2) in pairs
         }
 
         print("Training stitches")
@@ -443,12 +400,14 @@ class Experiment(object):
         if not os.path.exists(Experiment.SIMS_FOLDER):
             os.mkdir(Experiment.SIMS_FOLDER)
         for (model1_name, model2_name), vanilla_sim_table in vanilla_sims.items():
-            name_no_folder = f"{model1_name}_{model2_name}_sims.pt"
-            name_w_folder = os.path.join(
-                Experiment.SIMS_FOLDER, name_no_folder)
-            torch.save(torch.tensor(vanilla_sim_table), name_w_folder)
+            sim_path = os.path.join(
+                Experiment.SIMS_FOLDER, f"{model1_name}_{model2_name}_sims.pt")
+            heat_path = os.path.join(
+                Experiment.HEATMAPS_FOLDER, f"{model1_name}_{model2_name}_heatmaps.pt")
+            torch.save(torch.tensor(vanilla_sim_table), sim_path)
 
-        # TODO visualize!
+            # Note might be nice to not have to save and then re-load
+            Visualizer.matrix_heatmap(sim_path, heat_path)
 
 
 if __name__ == "__main__":

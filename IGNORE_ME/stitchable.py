@@ -26,16 +26,17 @@ import torch.nn as nn
 # 4. The input of your model should be a tensor and so should the output.
 
 # Interface:
-# 1. Constructor `Stitchable(model: nn.Module) -> NoReturn` 
+# 1. Constructor `Stitchable(model: nn.Module) -> NoReturn`
 #    that takes in a model that is an nn.Module following the requirements. Proper usage is to simply pass in your
-#    model and then 
-#   
+#    model and then
+#
 # 2. Function `forward(x: torch.Tensor, into: Optional[Union[str, int]] = None, outfrom: Optional[Union[str, int]] = None)`
 #    that enables you to declare where to inject your input into as well as where to vent your output from. By default
 #    input should go into the first layer and come outfrom the last layer (i.e. if you pass in None).
 # 3. Functions for sanity testing:
 #    `sanityTest_compareAcc(original: nn.Module, verbose: bool = True) -> bool`
 #    that will run sanity tests on your stitched model by comparing its accuracy with the original model (should be the same).
+
 
 class Stitchable(nn.Module):
     def __init__(self, model: nn.Module) -> NoReturn:
@@ -45,23 +46,23 @@ class Stitchable(nn.Module):
         print("\n".join(list(stateDict.keys())))
         print(model)
         raise NotImplementedError
-    
+
     def forward(self, x: torch.Tensor,
-        into: Optional[Union[str, int]] = None,
-        outfrom: Optional[Union[str, int]] = None) -> torch.Tensor:
-        return x # TODO
-    
+                into: Optional[Union[str, int]] = None,
+                outfrom: Optional[Union[str, int]] = None) -> torch.Tensor:
+        return x  # TODO
+
     def sanityTest_compareAcc(self, original: nn.Module, verbose: bool = True) -> bool:
         return False
 
-# A stitched model is the model that uses the first n (out of N > n) layers from the N-layer sending network and last M - m 
-# (out of M > m) layers from the M-layer recieving network. Between those two layers it inserts a stitch 
+# A stitched model is the model that uses the first n (out of N > n) layers from the N-layer sending network and last M - m
+# (out of M > m) layers from the M-layer recieving network. Between those two layers it inserts a stitch
 # for which the user is expected to pass a function. Thus you can think of the output as
 # out = reciever_m_M(stitch(sender_0_n(x))) if we use underscores to illustrate what sections of the networks
 # are being used.
 
 # Interface:
-# 1. Constructor `Stitched(sender: Stitchable, reciever: Stitchable, 
+# 1. Constructor `Stitched(sender: Stitchable, reciever: Stitchable,
 #     sendingLayer: Union[str, int], recievingLayer: Union[str, int],
 #     create_stitch: Callable[[int, int], nn.Module]) -> NoReturn that stitches the first senderLayer layers of
 #     the sender (network) through the stitch into the latter M - recievingLayer layers of the reciever network. You
@@ -81,15 +82,16 @@ class Stitchable(nn.Module):
 #     the way stitchable works).
 # 4.2 A static sanity tester `sanityTest_ptrsShareOk(other: Stitched) -> bool` which will test that the pointers of your model
 #  differ when you differ the parameter or the model.
-# 4.3 `sanityTest_gradientUpdateOk() -> bool` which will test that if you do training your gradients update 
+# 4.3 `sanityTest_gradientUpdateOk() -> bool` which will test that if you do training your gradients update
 #     properly (i.e. only the stitch should update, while the rest of the model, that is parameters from the sender and the reciever,
 #     should NOT update).
 
+
 class Stitched(nn.Module):
     def __init__(self,
-        sender: Stitchable, reciever: Stitchable, 
-        sendingLayer: Union[str, int], recievingLayer: Union[str, int],
-        create_stitch: Callable[[int, int], nn.Module]) -> NoReturn:
+                 sender: Stitchable, reciever: Stitchable,
+                 sendingLayer: Union[str, int], recievingLayer: Union[str, int],
+                 create_stitch: Callable[[int, int], nn.Module]) -> NoReturn:
         super(StitchedResnet, self).__init__()
 
         self.sender = sender
@@ -100,32 +102,36 @@ class Stitched(nn.Module):
         self.stitch = create_stitch(
             self.out_layer,
             self.in_layer)
-        
+
         # NOTE that we only support same model by reference
         self.sameModel = sender == reciever
-        
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         out = self.sendert(x, outfrom=self.sndLayer)
         out = self.stitch(out)
         out = self.reciever(x, into=self.rcvLayer)
         return out
-    
+
     def get_stitch(self) -> nn.Module:
         return self.stitch
+
     def get_sender(self) -> Stitchable:
         return self.sender
+
     def get_reciever(self) -> Stitchable:
         return self.reciever
+
     def get_sendingLayer(self) -> Union[str, int]:
         return self.sendingLayer
+
     def get_recievingLayer(self) -> Union[str, int]:
         return self.recievingLayer
 
     def sanityTest(self) -> bool:
         return (
-            self.sanityTest_rightNumberParams() and 
+            self.sanityTest_rightNumberParams() and
             self.sanityTest_gradientUpdateOk())
-    
+
     def sanityTest_rightNumberParams(self) -> bool:
         sane = True
         failStr = "sanityTest_rightNumberParams FAIL"
@@ -140,18 +146,22 @@ class Stitched(nn.Module):
         numRecieverParams = len(list(reciever.parameters()))
 
         if numParams <= 0:
-            warn(f"{failStr}: Stitched model has {numParams} parameters (should be more than zero)")
+            warn(
+                f"{failStr}: Stitched model has {numParams} parameters (should be more than zero)")
             sane = False
         if numStitchParams <= 0:
-            warn(f"{failStr}: Stitch has {numStitchParams} parameters (should be more than zero)")
+            warn(
+                f"{failStr}: Stitch has {numStitchParams} parameters (should be more than zero)")
             sane = False
         if numSenderParams <= 0:
-            warn(f"{failStr}: Model 1 has {numSenderParams} parameters (should be more than zero)")
+            warn(
+                f"{failStr}: Model 1 has {numSenderParams} parameters (should be more than zero)")
             sane = False
         if numRecieverParams <= 0:
-            warn(f"{failStr}: Model 2 has {numRecieverParams} parameters (should be more than zero)")
+            warn(
+                f"{failStr}: Model 2 has {numRecieverParams} parameters (should be more than zero)")
             sane = False
-        
+
         total_params = numSenderParams + numStitchParams
         if self.sameModel and total_params != numParams:
             warn(f"{failStr}: Self-stitch, but number of stitched model parameters is {numParams}, when it should be {total_params} = (sender/reciever) {numSenderParams} + (stitch) {numStitchParams}")
@@ -166,31 +176,36 @@ class Stitched(nn.Module):
     def sanityTest_gradientUpdateOk(self) -> bool:
         failStr = "sanityTest_gradientUpdateOk FAIL"
         # TODO move this to a utility file (potentially create an object to do this)
-        pclone = lambda model: [p.data.detach().clone() for p in model.parameters()]
-        listeq = lambda l1, l2: min((torch.eq(a, b).int().min().item() for a, b in zip(l1, l2))) == 1
-        sndParams0, recvParams0, stitchParams0 = pclone(self.sender), pclone(self.reciever), pclone(self.stitch)
+
+        def pclone(model): return [p.data.detach().clone()
+                                   for p in model.parameters()]
+        def listeq(l1, l2): return min((torch.eq(a, b).int().min().item()
+                                        for a, b in zip(l1, l2))) == 1
+        sndParams0, recvParams0, stitchParams0 = pclone(
+            self.sender), pclone(self.reciever), pclone(self.stitch)
 
         # TODO create clean training modular code for this...
         # scale_train_model(
         #     self, optimizer, criterion, scaler,
-        #     trainloader, None, 
+        #     trainloader, None,
         #     epochs=1, print_every=2, save_every=2, save_name=None,
         #     tensorboardx_writer=None, tensorboardx_scalar=None)
         raise NotImplementedError
-        
-        sndParams1, recvParams1, stitchParams1 = pclone(sender), pclone(reciever), pclone(stitch)
+
+        sndParams1, recvParams1, stitchParams1 = pclone(
+            sender), pclone(reciever), pclone(stitch)
         if not listeq(sender_params, sndParams1):
             warn(f"{failStr}: Model 1 was updated by stitch training")
             sane = False
         if not listeq(reciever_params, recvParams1):
             warn(f"{failStr}: Model 2 was updated by stitch training")
             sane = False
-        
+
         if listeq(stitch_params, stitchParams1):
             warn(f"{failStr}: Model 3 was not updated by stitch training")
             sane = False
         return sane
-    
+
     @staticmethod
     def sanityTest_ptrsShareOk(stitchedModels: List[List[Stitched]]) -> bool:
         failStr = "sanityTest_ptrsShareOk FAIL"
@@ -211,10 +226,12 @@ class Stitched(nn.Module):
                             sameStitch = l1a == l1b and l2a == l2b
                             if sameStitch:
                                 if model_a != model_b:
-                                    warn(f"{failStr}: Model at {l1a}{l2a} was not same as itself")
+                                    warn(
+                                        f"{failStr}: Model at {l1a}{l2a} was not same as itself")
                                     sane = False
                                 if model_a_st != model_b_st:
-                                    warn(f"{failStr}: Model at {l1a}{l2a} had stitch that was not same as itself")
+                                    warn(
+                                        f"{failStr}: Model at {l1a}{l2a} had stitch that was not same as itself")
                                     sane = False
                             for p_a_idx, p_a in enumerate(model_a_st.parameters()):
                                 for p_b_idx, p_b in enumerate(model_b_st.parameters()):
@@ -225,13 +242,16 @@ class Stitched(nn.Module):
                                     if not ptr_ok:
                                         err = "not" if sameParam else ""
                                         errinv = "" if sameParam else "not"
-                                        warn(f"{failStr}: Stitches from layers({l1a}->{l2a})param({p_a_idx}) and layers({l1b}-{l2b})param({p_b_idx}):\n\tptrs are {err} equal but should {errinv} be\n\tptrs were {ptr_a} and {ptr_b}")
+                                        warn(
+                                            f"{failStr}: Stitches from layers({l1a}->{l2a})param({p_a_idx}) and layers({l1b}-{l2b})param({p_b_idx}):\n\tptrs are {err} equal but should {errinv} be\n\tptrs were {ptr_a} and {ptr_b}")
                                         sane = False
             return sane
 
+
 # TODO
 ValidStitchesDict: TypeAlias = Dict[Union[str, int], List[Union[str, int]]]
-ModelsToStitch:TypeAlias = Dict[str, Tuple[nn.Module, ValidStitchesDict]]
+ModelsToStitch: TypeAlias = Dict[str, Tuple[nn.Module, ValidStitchesDict]]
+
 
 class StitchExperiments(object):
     def __init__(self) -> NoReturn:

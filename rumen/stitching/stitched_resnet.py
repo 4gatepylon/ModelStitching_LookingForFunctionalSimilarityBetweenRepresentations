@@ -30,7 +30,7 @@ from layer_label import LayerLabel
 from rep_shape import RepShape
 from stitch_generator import StitchGenerator
 from trainer import Trainer, Hyperparams
-from torch.utils.data import DataLoader, Dataset
+from loaders import MockDataLoader
 
 
 class StitchedResnet(nn.Module):
@@ -159,49 +159,19 @@ class MockResnet(nn.Module):
         return self.fc(self.layer(torch.flatten(self.conv1(x))))
 
 
-class MockDataset(Dataset):
-    NUM_SAMPLES = 1000
-    Xs = [torch.rand((3, 32, 32)) for _ in range(NUM_SAMPLES)]
-    Ys = [torch.tensor(0) for _ in range(NUM_SAMPLES)]
-
-    def __init__(self):
-        self.X_Y = list(zip(MockDataset.Xs, MockDataset.Ys))
-
-    def __len__(self):
-        return len(self.X_Y)
-
-    def __getitem__(self, idx):
-        return self.X_Y[idx]
-
-
-class MockDataLoader(DataLoader):
-    def __init__(self: MockDataLoader):
-        pass
-
-    @ staticmethod
-    def mock(batch_size: int) -> MockDataLoader:
-        assert batch_size == 1
-        return DataLoader(
-            dataset=MockDataset(),
-            batch_size=batch_size,
-            shuffle=False,
-            num_workers=0,
-        )
-
-    @ staticmethod
-    def mock_loaders(hyps: Hyperparams) -> Tuple[DataLoader, DataLoader]:
-        return (
-            MockDataLoader.mock(hyps.bsz),
-            MockDataLoader.mock(hyps.bsz),
-        )
-
-
 class TestStitchedResnet(unittest.TestCase):
     """
     Test that the stitched resnet works as intended. Specifically,
     and most importantly, the prefix and suffix should both be
     frozen during training, while the stitch should NOT be frozen.
     """
+
+    # TODO test these options
+    # 1. FFCV dataloader
+    # 2. CIFAR dataloader
+    # 3. full model (real resnet)
+    # 4. number of parameters is right
+    # 5. pointers are different for different stitches in the stitching table
 
     def test_proper_freeze_mock(self: TestStitchedResnet) -> NoReturn:
         R = [1, 1, 1, 1]

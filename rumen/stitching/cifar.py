@@ -2,6 +2,7 @@ import torchvision
 import torchvision.transforms.functional as TF
 import torch
 import torchvision
+from torchvision import transforms
 from torch.cuda.amp import autocast
 
 import cv2
@@ -10,17 +11,27 @@ from typing import List
 
 from layer_label import LayerLabel
 
-CIFAR_MEAN = [125.307, 122.961, 113.8575]
-CIFAR_STD = [51.5865, 50.847, 51.255]
-INV_CIFAR_MEAN = [-ans for ans in CIFAR_MEAN]
-INV_CIFAR_STD = [1.0/ans for ans in CIFAR_STD]
-
-NORMALIZE_TRANSFORM = torchvision.transforms.Normalize(CIFAR_MEAN, CIFAR_STD)
-INV_NORMALIZE_TRANSFORM = torchvision.transforms.Compose([
-    torchvision.transforms.Normalize(mean=[0, 0, 0], std=INV_CIFAR_STD),
-    torchvision.transforms.Normalize(mean=INV_CIFAR_MEAN, std=[1, 1, 1])
+FFCV_CIFAR_MEAN = [125.307, 122.961, 113.8575]
+FFCV_CIFAR_STD = [51.5865, 50.847, 51.255]
+FFCV_INV_CIFAR_MEAN = [-ans for ans in FFCV_CIFAR_MEAN]
+FFCV_INV_CIFAR_STD = [1.0/ans for ans in FFCV_CIFAR_STD]
+FFCV_NORMALIZE_TRANSFORM = transforms.Normalize(
+    FFCV_CIFAR_MEAN, FFCV_CIFAR_STD)
+FFCV_INV_NORMALIZE_TRANSFORM = transforms.Compose([
+    transforms.Normalize(mean=[0, 0, 0], std=FFCV_INV_CIFAR_STD),
+    transforms.Normalize(mean=FFCV_INV_CIFAR_MEAN, std=[1, 1, 1])
 ])
 
+NO_FFCV_CIFAR_MEAN = [0.1307, ]
+NO_FFCV_CIFAR_STD = [0.3081, ]
+NO_FFCV_INV_CIFAR_MEAN = [-ans for ans in NO_FFCV_CIFAR_MEAN]
+NO_FFCV_INV_CIFAR_STD = [1.0/ans for ans in NO_FFCV_CIFAR_STD]
+NO_FFCV_NORMALIZE_TRANSFORM = transforms.Normalize(
+    NO_FFCV_CIFAR_MEAN, NO_FFCV_CIFAR_STD)
+NO_FFCV_INV_NORMALIZE_TRANSFORM = transforms.Compose([
+    transforms.Normalize(mean=[0, 0, 0], std=NO_FFCV_INV_CIFAR_STD),
+    transforms.Normalize(mean=NO_FFCV_INV_CIFAR_MEAN, std=[1, ])
+])
 
 # def tensor_normalized2rgb(x: torch.Tensor):
 #     f = x.float()

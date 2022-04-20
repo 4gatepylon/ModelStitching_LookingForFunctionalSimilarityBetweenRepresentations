@@ -1,63 +1,69 @@
-from ffcv.writer import (
-    DatasetWriter,
+# Enables type annotations using enclosing classes
+from __future__ import annotations
+from cifar import (
+    FFCV_NORMALIZE_TRANSFORM,
+    FFCV_CIFAR_MEAN,
+    FFCV_CIFAR_STD,
+    NO_FFCV_NORMALIZE_TRANSFORM,
+    NO_FFCV_CIFAR_MEAN,
+    NO_FFCV_CIFAR_STD,
 )
-from ffcv.transforms.common import (
-    Squeeze,
-)
-from ffcv.transforms import (
-    RandomHorizontalFlip,
-    Cutout,
-    RandomTranslate,
-    Convert,
-    ToDevice,
-    ToTensor,
-    ToTorchImage,
-)
-from ffcv.pipeline.operation import (
-    Operation,
-)
-from ffcv.loader import (
-    Loader,
-    OrderOption,
-)
-from ffcv.fields.decoders import (
-    IntDecoder,
-    SimpleRGBImageDecoder,
-    RandomResizedCropRGBImageDecoder,
-)
-from ffcv.fields import (
-    IntField,
-    RGBImageField,
-)
-
-import torchvision
+from typing import List, Any, Tuple
+import os
+from torch.utils.data import DataLoader, Dataset
+from torchvision import datasets, transforms
 import torch
 import torchvision
-from torchvision import datasets, transforms
-from torch.utils.data import DataLoader
 
-import os
-from typing import List, Any, Tuple
+from trainer import Hyperparams
+from warnings import warn
 
-from cifar import (
-    NORMALIZE_TRANSFORM,
-    CIFAR_MEAN,
-    CIFAR_STD,
-)
+FFCV_AVAIL = True
+try:
+    from ffcv.writer import (
+        DatasetWriter,
+    )
+    from ffcv.transforms.common import (
+        Squeeze,
+    )
+    from ffcv.transforms import (
+        RandomHorizontalFlip,
+        Cutout,
+        RandomTranslate,
+        Convert,
+        ToDevice,
+        ToTensor,
+        ToTorchImage,
+    )
+    from ffcv.pipeline.operation import (
+        Operation,
+    )
+    from ffcv.loader import (
+        Loader,
+        OrderOption,
+    )
+    from ffcv.fields.decoders import (
+        IntDecoder,
+        SimpleRGBImageDecoder,
+        RandomResizedCropRGBImageDecoder,
+    )
+    from ffcv.fields import (
+        IntField,
+        RGBImageField,
+    )
+except:
+    FFCV_AVAIL = False
+    warn("WARNING: FFCV is not available, getting ffcv loaders may not run")
 
 
 class Loaders(object):
-    LABEL_PIPELINE: List[Operation] = [
-        IntDecoder(),
-        ToTensor(),
-        ToDevice('cuda:0'),
-        Squeeze(),
-    ]
-
     NO_FFCV_FOLDER = "../../data/"
 
     @staticmethod
     def get_loaders_ffcv(args: Any) -> Tuple[DataLoader, DataLoader]:
+        if FFCV_AVAIL == False:
+            raise RuntimeError(
+                "Need FFCV available for get_loaders_ffcv, try get_loaders_no_ffcv for a vanilla implementation")
         num_of_points = 50000
         split = [int(num_of_points * args.fraction),
                  int(num_of_points * (1 - args.fraction))]
@@ -75,16 +81,23 @@ class Loaders(object):
             })
             train_writer.from_indexed_dataset(train_data)
 
+        label_pipeline: List[Operation] = [
+            IntDecoder(),
+            ToTensor(),
+            ToDevice('cuda:0'),
+            Squeeze(),
+        ]
+
         image_pipeline_train: List[Operation] = [
             SimpleRGBImageDecoder(),
             RandomHorizontalFlip(),
-            RandomTranslate(padding=2, fill=tuple(map(int, CIFAR_MEAN))),
-            Cutout(4, tuple(map(int, CIFAR_MEAN))),
+            RandomTranslate(padding=2, fill=tuple(map(int, FFCV_CIFAR_MEAN))),
+            Cutout(4, tuple(map(int, FFCV_CIFAR_MEAN))),
             ToTensor(),
             ToDevice('cuda:0', non_blocking=True),
             ToTorchImage(),
             Convert(torch.float16),
-            NORMALIZE_TRANSFORM
+            FFCV_NORMALIZE_TRANSFORM
         ]
         train_loader = Loader(f'./tmp/finetune_{args.dataset}_{args.fraction}_train_data.beton',
                               batch_size=args.bsz,
@@ -94,7 +107,7 @@ class Loaders(object):
                               drop_last=True,
                               pipelines={
                                   'image': image_pipeline_train,
-                                  'label': Loaders.LABEL_PIPELINE
+                                  'label': label_pipeline,
                               })
 
         if not os.path.exists(f'tmp/{args.dataset}_test_data.beton'):
@@ -114,7 +127,7 @@ class Loaders(object):
             ToDevice('cuda:0', non_blocking=True),
             ToTorchImage(),
             Convert(torch.float16),
-            torchvision.transforms.Normalize(CIFAR_MEAN, CIFAR_STD)
+            torchvision.transforms.Normalize(FFCV_CIFAR_MEAN, FFCV_CIFAR_STD)
         ]
 
         test_loader = Loader(f'./tmp/{args.dataset}_test_data.beton',
@@ -125,12 +138,12 @@ class Loaders(object):
                              drop_last=False,
                              pipelines={
                                  'image': image_pipeline_test,
-                                 'label': Loaders.LABEL_PIPELINE
+                                 'label': label_pipeline,
                              })
         return train_loader, test_loader
 
     @staticmethod
-    def get_dataloaders_not_ffcv(args: Any) -> Tuple[DataLoader, DataLoader]:
+    def get_loaders_no_ffcv(args: Any) -> Tuple[DataLoader, DataLoader]:
         use_cuda = torch.cuda.is_available()
         train_batch_size = args.bsz
         test_batch_size = 2048
@@ -149,13 +162,11 @@ class Loaders(object):
 
         transform = transforms.Compose([
             transforms.ToTensor(),
-            # Unclear which should be used?
-            # transforms.Normalize(CIFAR_MEAN, CIFAR_STD)
-            transforms.Normalize((0.1307,), (0.3081,))
+            transforms.Normalize(NO_FFCV_CIFAR_MEAN, NO_FFCV_CIFAR_STD)
         ])
 
         dataset1 = datasets.MNIST(
-            Loaders.NO_FFCV_FOLDER, train=True, download=False, transform=transform)
+            Loaders.NO_FFCV_FOLDER, train=True, download=True, transform=transform)
         dataset2 = datasets.MNIST(
             Loaders.NO_FFCV_FOLDER, train=False, transform=transform)
 
@@ -163,3 +174,55 @@ class Loaders(object):
         test_loader = DataLoader(dataset2, **test_kwargs)
 
         return train_loader, test_loader
+
+    @staticmethod
+    def get_loaders(args: Any) -> Tuple[DataLoader, DataLoader]:
+        if args.use_ffcv:
+            return Loaders.get_loaders_ffcv(args)
+        else:
+            return Loaders.get_loaders_no_ffcv(args)
+
+
+class MockDataset(Dataset):
+    """ Mocks dataset so that we can test other things (like loaders) """
+    NUM_SAMPLES = 1000
+    Xs = [torch.rand((3, 32, 32)) for _ in range(NUM_SAMPLES)]
+    Ys = [torch.tensor(0) for _ in range(NUM_SAMPLES)]
+
+    def __init__(self):
+        self.X_Y = list(zip(MockDataset.Xs, MockDataset.Ys))
+
+    def __len__(self):
+        return len(self.X_Y)
+
+    def __getitem__(self, idx):
+        return self.X_Y[idx]
+
+
+class MockDataLoader(DataLoader):
+    """ Mocks a dataloader so that we can test training, freezing, etcetera """
+
+    def __init__(self: MockDataLoader):
+        pass
+
+    @ staticmethod
+    def mock(batch_size: int) -> MockDataLoader:
+        assert batch_size == 1
+        return DataLoader(
+            dataset=MockDataset(),
+            batch_size=batch_size,
+            shuffle=False,
+            num_workers=0,
+        )
+
+    @ staticmethod
+    def mock_loaders(hyps: Hyperparams) -> Tuple[DataLoader, DataLoader]:
+        return (
+            MockDataLoader.mock(hyps.bsz),
+            MockDataLoader.mock(hyps.bsz),
+        )
+
+
+if __name__ == "__main__":
+    Loaders.get_loaders_no_ffcv(Hyperparams.forTesting())
+    pass
