@@ -279,12 +279,11 @@ class Experiment(object):
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         print(f"Using device: {device}")
 
-        args = Hyperparams()
-        args.epochs = 40
-
         print("Generating combinations")
         # combinations = choose_product([1, 2], 4)
         combinations = [[1, 1, 1, 1]]
+
+        print("Training all combinations")
         for combination in combinations:
             comb_name = "".join(map(str, combination))
             print(f"Training combination {comb_name}")
@@ -429,5 +428,7 @@ class Experiment(object):
 if __name__ == "__main__":
     file_pair = "resnet_1111.pt", "resnet_1111.pt"
     hyps = Hyperparams()
-    # Experiment.pretrain(hyps)
-    Experiment.stitchtrain(hyps, file_pair)
+    hyps.epochs = 40
+    Experiment.pretrain(hyps)
+    # hyps.epochs = 4
+    # Experiment.stitchtrain(hyps, file_pair)
