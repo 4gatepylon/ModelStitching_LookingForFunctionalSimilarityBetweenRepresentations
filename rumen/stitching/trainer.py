@@ -130,27 +130,27 @@ class Trainer(object):
 
         return total_correct / total_num
 
-    @staticmethod
-    def adjust_learning_rate(
-        epochs: int,
-        warmup_epochs: int,
-        base_lr: int,
-        optimizer: Any,
-        loader: DataLoader,
-        step: int,
-    ) -> NoReturn:
-        max_steps = epochs * len(loader)
-        warmup_steps = warmup_epochs * len(loader)
-        if step < warmup_steps:
-            lr = base_lr * step / warmup_steps
-        else:
-            step -= warmup_steps
-            max_steps -= warmup_steps
-            q = 0.5 * (1 + math.cos(math.pi * step / max_steps))
-            end_lr = 0
-            lr = base_lr * q + end_lr * (1 - q)
-        for param_group in optimizer.param_groups:
-            param_group['lr'] = lr
+    # @staticmethod
+    # def adjust_learning_rate(
+    #     epochs: int,
+    #     warmup_epochs: int,
+    #     base_lr: int,
+    #     optimizer: Any,
+    #     loader: DataLoader,
+    #     step: int,
+    # ) -> NoReturn:
+    #     max_steps = epochs * len(loader)
+    #     warmup_steps = warmup_epochs * len(loader)
+    #     if step < warmup_steps:
+    #         lr = base_lr * step / warmup_steps
+    #     else:
+    #         step -= warmup_steps
+    #         max_steps -= warmup_steps
+    #         q = 0.5 * (1 + math.cos(math.pi * step / max_steps))
+    #         end_lr = 0
+    #         lr = base_lr * q + end_lr * (1 - q)
+    #     for param_group in optimizer.param_groups:
+    #         param_group['lr'] = lr
 
     @staticmethod
     def train_loop(
@@ -164,7 +164,7 @@ class Trainer(object):
         # None signifies do all parameters (we might finetune single layers an that will speed up training)
         if parameters is None:
             parameters = list(model.parameters())
-        #print(parameters)
+        # print(parameters)
 
         optimizer = torch.optim.SGD(
             params=parameters,
@@ -178,7 +178,8 @@ class Trainer(object):
         start = time.time()
         epochs = args.epochs if epochs is None else epochs
         for e in range(1, epochs + 1):
-            print(f"\t\t starting on epoch {e} for {len(train_loader)} iterations")
+            print(
+                f"\t\t starting on epoch {e} for {len(train_loader)} iterations")
             model.train()
             # epoch
             # NOTE that enumerate's start changes the starting index
