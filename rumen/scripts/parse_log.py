@@ -29,6 +29,12 @@ class Label(object):
     def __str__(self) -> str:
         return self.label_str
 
+    def __eq__(self, __o: object) -> bool:
+        return type(__o) == type(self) and self.label_str == __o.label_str
+
+    def __hash__(self) -> int:
+        return hash(self.label_str)
+
 
 def parse_percent_or_float(s):
     if s[-1] == '%':
@@ -114,6 +120,38 @@ def parse_entry(string, idx):
     assert not labels[0] is None and not labels[
         1] is None, f"failed to set labels: {labels[0]}, {labels[1]}"
     return idx, ((index1, index2), (labels[0], labels[1]))
+
+
+def parse_label_line(line, idx2label):
+    # First stores indices, second stores labels
+    first, second = line.split("which is")
+    first = first.strip()
+    second = second.strip()
+    first = first.split(" ")
+    first = first[-1]
+
+    f1, f2 = map(int, first.split("->"))
+
+    label_strs = second.split("->")
+    labels = [None, None]
+    for i in range(len(labels)):
+        label_str = label_strs[i].strip()
+        if label_str == "fc":
+            labels[i] = Label("fc")
+        elif label_str == "conv1":
+            labels[i] = Label("conv1")
+        else:
+            label_str = label_str[1:-1]
+            num1_str, num2_str = label_str.split(",")
+            num1_str = num1_str.strip()
+            num2_str = num2_str.strip()
+            num1, num2 = int(num1_str), int(num2_str)
+            labels[i] = Label(f"({num1},{num2})")
+
+    label1, label2 = labels
+    assert not label1 is None and not label2 is None
+    assert idx2label[(f1, f2)] == (label1, label2)
+    return label1, label2
 
 
 class StitchInfo(object):
@@ -214,15 +252,18 @@ class ExperimentInfo(object):
         assert not self.idx2labels is None
         # TODO
         # Assert that the parser was able to find each of these
-        # assert not self.labels2stitchinfo_rand_rand is None
-        # assert not self.labels2stitchinfo_orig_rand is None
-        # assert not self.labels2stitchinfo_rand_orig is None
-        # assert not self.labels2stitchinfo_orig_orig is None
+        assert not self.labels2stitchinfo_rand_rand is None
+        assert not self.labels2stitchinfo_orig_rand is None
+        assert not self.labels2stitchinfo_rand_orig is None
+        assert not self.labels2stitchinfo_orig_orig is None
         # Sanity test that we got the same sizes for each of these (it's a table in the form of a dictionary)
-        # assert len(self.labels2stitchinfo_orig_orig) == len(self.labels2stitchinfo_orig_rand)
-        # assert len(self.labels2stitchinfo_orig_orig) == len(self.labels2stitchinfo_rand_orig)
-        # assert len(self.labels2stitchinfo_orig_orig) == len(self.labels2stitchinfo_rand_rand)
-        # assert len(self.labels2stitchinfo_orig_orig) == len(self.idx2labels)
+        assert len(self.labels2stitchinfo_orig_orig) == len(
+            self.labels2stitchinfo_orig_rand)
+        assert len(self.labels2stitchinfo_orig_orig) == len(
+            self.labels2stitchinfo_rand_orig)
+        assert len(self.labels2stitchinfo_orig_orig) == len(
+            self.labels2stitchinfo_rand_rand)
+        assert len(self.labels2stitchinfo_orig_orig) == len(self.idx2labels)
 
     def parse_global_header(self, header):
         # Example:
@@ -356,8 +397,44 @@ class ExperimentInfo(object):
 
     # TODO
     def parse_blocks_with_local_headers(self, blocks):
-        # raise NotImplementedError
-        pass
+        # Pretty sure this is the general order but I could be wrong
+        # If we are wrong we'll see it seem swapped and then we can actually parse the strings...
+        labels2stitchinfos = [
+            {},
+            {},
+            {},
+            {}
+        ]
+        # Start at -1 because the first block is going to increment
+        labels2stitchinfos_idx = -1
+        # We ignore the first line which includes stitch information and looks like this:
+        # stitching 1->4 which is (1, 0)->(4, 0)
+        assert len(blocks[0]) == StitchInfo.NUM_LINES + 2
+        for block in blocks:
+            label_line = block[0]
+            if len(block) > StitchInfo.NUM_LINES + 1:
+                assert len(block) == StitchInfo.NUM_LINES + 2,\
+                    f"badly formatted block, had {len(block)} lines, expected {StitchInfo.NUM_LINES + 2}"
+                label_line = block[1]
+                block = block[2:]
+                labels2stitchinfos_idx += 1
+                assert labels2stitchinfos_idx < len(labels2stitchinfos),\
+                    "found more combinations than 4 for labels2stitchinfos"
+            else:
+                assert len(block) == StitchInfo.NUM_LINES + 1, \
+                    f"badly formatted block, had {len(block)} lines (expected {StitchInfo.NUM_LINES + 1})"
+                block = block[1:]
+            label1, label2 = parse_label_line(label_line, self.idx2labels)
+            stitch_info = StitchInfo.from_lines(
+                block, self.name1, self.name2, label1, label2)
+
+            labels2stitchinfos[labels2stitchinfos_idx][(
+                label1, label2)] = stitch_info
+
+        self.labels2stitchinfo_orig_orig = labels2stitchinfos[0]
+        self.labels2stitchinfo_rand_orig = labels2stitchinfos[1]
+        self.labels2stitchinfo_orig_rand = labels2stitchinfos[2]
+        self.labels2stitchinfo_rand_rand = labels2stitchinfos[3]
 
     def parse(self, contents):
         # This delimiter is missing on the very first block unfortunately but otherwise works
