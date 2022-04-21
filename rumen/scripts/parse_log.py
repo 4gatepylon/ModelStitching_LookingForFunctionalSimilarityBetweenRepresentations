@@ -1,12 +1,9 @@
-from argparse import ArgumentParser
-
+import os
 from typing import Dict, List, Tuple
 
 # Pretty printer is invaluable for debuggings
 from pprint import PrettyPrinter
 pp = PrettyPrinter(indent=4)
-
-TEST_LOG_FILE = 'r1111-r1111.log'
 
 
 class Label(object):
@@ -467,13 +464,17 @@ class ExperimentInfo(object):
         self.parse_blocks_with_local_headers(blocks)
 
 
+class MultiExperimentInfo(object):
+    LOG_FOLDER = "./logs2analyze"
+
+    def __init__(self, log_folder=LOG_FOLDER):
+        self.experiments = [ExperimentInfo(file) for file in os.listdir(log_folder)]
+
+    @staticmethod
+    def from_log_folder():
+        multi = MultiExperimentInfo()
+        multi.experiments = ExperimentInfo()
+
+
 if __name__ == "__main__":
-    parser = ArgumentParser()
-    parser.add_argument(
-        "--input",
-        type=str,
-        default=TEST_LOG_FILE,
-        required=False,
-    )
-    args = parser.parse_args()
-    info = ExperimentInfo(args.input)
+    multi = MultiExperimentInfo()

@@ -1,0 +1,6124 @@
+importing
+done importing
+Will stitch resnet_1211.pt and resnet_2111.pt in ../pretrained_resnets
+numbers1: [1, 2, 1, 1]
+numbers2: [2, 1, 1, 1]
+name1: resnet_1211
+name2: resnet_2111
+Loading models
+Getting loaders
+Evaluating accuracies of pretrained models
+Accuracy of resnet_1211 is 93.97123893805309%
+Accuracy of resnet_1211 random is 10.121681415929205%
+Accuracy of resnet_2111 is 93.80530973451327%
+Accuracy of resnet_2111 random is 10.121681415929205%
+Initializing the stitches (note all idx2label are the same)
+{   (0, 1): ('conv1', (1, 0)),
+    (0, 2): ('conv1', (1, 1)),
+    (0, 3): ('conv1', (2, 0)),
+    (0, 4): ('conv1', (3, 0)),
+    (0, 5): ('conv1', (4, 0)),
+    (0, 6): ('conv1', 'fc'),
+    (1, 1): ((1, 0), (1, 0)),
+    (1, 2): ((1, 0), (1, 1)),
+    (1, 3): ((1, 0), (2, 0)),
+    (1, 4): ((1, 0), (3, 0)),
+    (1, 5): ((1, 0), (4, 0)),
+    (1, 6): ((1, 0), 'fc'),
+    (2, 1): ((2, 0), (1, 0)),
+    (2, 2): ((2, 0), (1, 1)),
+    (2, 3): ((2, 0), (2, 0)),
+    (2, 4): ((2, 0), (3, 0)),
+    (2, 5): ((2, 0), (4, 0)),
+    (2, 6): ((2, 0), 'fc'),
+    (3, 1): ((2, 1), (1, 0)),
+    (3, 2): ((2, 1), (1, 1)),
+    (3, 3): ((2, 1), (2, 0)),
+    (3, 4): ((2, 1), (3, 0)),
+    (3, 5): ((2, 1), (4, 0)),
+    (3, 6): ((2, 1), 'fc'),
+    (4, 1): ((3, 0), (1, 0)),
+    (4, 2): ((3, 0), (1, 1)),
+    (4, 3): ((3, 0), (2, 0)),
+    (4, 4): ((3, 0), (3, 0)),
+    (4, 5): ((3, 0), (4, 0)),
+    (4, 6): ((3, 0), 'fc'),
+    (5, 1): ((4, 0), (1, 0)),
+    (5, 2): ((4, 0), (1, 1)),
+    (5, 3): ((4, 0), (2, 0)),
+    (5, 4): ((4, 0), (3, 0)),
+    (5, 5): ((4, 0), (4, 0)),
+    (5, 6): ((4, 0), 'fc')}
+Stitching, will save in sims_resnet_1211_resnet_2111
+Stitching resnet_1211_resnet_2111
+	stitching 0->1 which is conv1->(1, 0)
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 23.208
+		epoch: 2 | time: 26.624
+		epoch: 3 | time: 30.034
+		epoch: 4 | time: 33.458
+	Accuracy of vanilla stitch model is 0.9153761061946902
+	Vanilla stitch mean2 difference is 0.020399855850980832
+		epoch: 1 | time: 1.221
+		epoch: 2 | time: 2.457
+		epoch: 3 | time: 3.672
+		epoch: 4 | time: 4.880
+		epoch: 5 | time: 6.116
+		epoch: 6 | time: 7.334
+		epoch: 7 | time: 8.576
+		epoch: 8 | time: 9.791
+		epoch: 9 | time: 11.018
+		epoch: 10 | time: 12.220
+		epoch: 11 | time: 13.434
+		epoch: 12 | time: 14.652
+		epoch: 13 | time: 15.870
+		epoch: 14 | time: 17.100
+		epoch: 15 | time: 18.315
+		epoch: 16 | time: 19.544
+		epoch: 17 | time: 20.770
+		epoch: 18 | time: 21.983
+		epoch: 19 | time: 23.189
+		epoch: 20 | time: 24.412
+		epoch: 21 | time: 25.640
+		epoch: 22 | time: 26.901
+		epoch: 23 | time: 28.116
+		epoch: 24 | time: 29.336
+		epoch: 25 | time: 30.560
+		epoch: 26 | time: 31.784
+		epoch: 27 | time: 33.010
+		epoch: 28 | time: 34.229
+		epoch: 29 | time: 35.480
+		epoch: 30 | time: 36.705
+	Accuracy of autoencoder stitch model is 47.51106194690266
+	Autoencoder stitch mean2 difference is 0.007849711203613342
+	Vanilla stitch autoencoder mean2 difference is 0.0064827192741899915
+***
+	stitching 0->2 which is conv1->(1, 1)
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 2.743
+		epoch: 2 | time: 5.516
+		epoch: 3 | time: 8.336
+		epoch: 4 | time: 11.112
+	Accuracy of vanilla stitch model is 0.7859513274336283
+	Vanilla stitch mean2 difference is 0.01279783285676669
+		epoch: 1 | time: 2.233
+		epoch: 2 | time: 4.446
+		epoch: 3 | time: 6.662
+		epoch: 4 | time: 8.866
+		epoch: 5 | time: 11.074
+		epoch: 6 | time: 13.269
+		epoch: 7 | time: 15.467
+		epoch: 8 | time: 17.683
+		epoch: 9 | time: 19.871
+		epoch: 10 | time: 22.069
+		epoch: 11 | time: 24.285
+		epoch: 12 | time: 26.498
+		epoch: 13 | time: 28.700
+		epoch: 14 | time: 30.902
+		epoch: 15 | time: 33.115
+		epoch: 16 | time: 35.331
+		epoch: 17 | time: 37.552
+		epoch: 18 | time: 39.771
+		epoch: 19 | time: 41.994
+		epoch: 20 | time: 44.214
+		epoch: 21 | time: 46.428
+		epoch: 22 | time: 48.638
+		epoch: 23 | time: 50.865
+		epoch: 24 | time: 53.062
+		epoch: 25 | time: 55.273
+		epoch: 26 | time: 57.484
+		epoch: 27 | time: 59.699
+		epoch: 28 | time: 61.898
+		epoch: 29 | time: 64.102
+		epoch: 30 | time: 66.292
+	Accuracy of autoencoder stitch model is 10.951327433628318
+	Autoencoder stitch mean2 difference is 0.0006535627789652118
+	Vanilla stitch autoencoder mean2 difference is 0.012366826383349223
+***
+	stitching 0->3 which is conv1->(2, 0)
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 2.193
+		epoch: 2 | time: 4.382
+		epoch: 3 | time: 6.501
+		epoch: 4 | time: 8.640
+	Accuracy of vanilla stitch model is 0.40873893805309736
+	Vanilla stitch mean2 difference is 0.018384607776235313
+		epoch: 1 | time: 3.020
+		epoch: 2 | time: 6.063
+		epoch: 3 | time: 9.067
+		epoch: 4 | time: 12.106
+		epoch: 5 | time: 15.118
+		epoch: 6 | time: 18.153
+		epoch: 7 | time: 21.184
+		epoch: 8 | time: 24.204
+		epoch: 9 | time: 27.228
+		epoch: 10 | time: 30.244
+		epoch: 11 | time: 33.266
+		epoch: 12 | time: 36.307
+		epoch: 13 | time: 39.325
+		epoch: 14 | time: 42.349
+		epoch: 15 | time: 45.358
+		epoch: 16 | time: 48.387
+		epoch: 17 | time: 51.402
+		epoch: 18 | time: 54.422
+		epoch: 19 | time: 57.422
+		epoch: 20 | time: 60.435
+		epoch: 21 | time: 63.445
+		epoch: 22 | time: 66.458
+		epoch: 23 | time: 69.489
+		epoch: 24 | time: 72.511
+		epoch: 25 | time: 75.548
+		epoch: 26 | time: 78.563
+		epoch: 27 | time: 81.597
+		epoch: 28 | time: 84.648
+		epoch: 29 | time: 87.665
+		epoch: 30 | time: 90.665
+	Accuracy of autoencoder stitch model is 10.951327433628318
+	Autoencoder stitch mean2 difference is 0.0004890902624584925
+	Vanilla stitch autoencoder mean2 difference is 0.017798280983399122
+***
+	stitching 0->4 which is conv1->(3, 0)
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 1.659
+		epoch: 2 | time: 3.298
+		epoch: 3 | time: 4.935
+		epoch: 4 | time: 6.617
+	Accuracy of vanilla stitch model is 0.3910398230088495
+	Vanilla stitch mean2 difference is 0.023296103091576162
+		epoch: 1 | time: 3.460
+		epoch: 2 | time: 6.903
+		epoch: 3 | time: 10.342
+		epoch: 4 | time: 13.801
+		epoch: 5 | time: 17.251
+		epoch: 6 | time: 20.718
+		epoch: 7 | time: 24.164
+		epoch: 8 | time: 27.608
+		epoch: 9 | time: 31.054
+		epoch: 10 | time: 34.501
+		epoch: 11 | time: 37.964
+		epoch: 12 | time: 41.435
+		epoch: 13 | time: 44.898
+		epoch: 14 | time: 48.351
+		epoch: 15 | time: 51.847
+		epoch: 16 | time: 55.305
+		epoch: 17 | time: 58.754
+		epoch: 18 | time: 62.210
+		epoch: 19 | time: 65.653
+		epoch: 20 | time: 69.098
+		epoch: 21 | time: 72.566
+		epoch: 22 | time: 76.017
+		epoch: 23 | time: 79.492
+		epoch: 24 | time: 82.937
+		epoch: 25 | time: 86.385
+		epoch: 26 | time: 89.845
+		epoch: 27 | time: 93.336
+		epoch: 28 | time: 96.764
+		epoch: 29 | time: 100.217
+		epoch: 30 | time: 103.683
+	Accuracy of autoencoder stitch model is 9.623893805309734
+	Autoencoder stitch mean2 difference is 0.0010555694249864572
+	Vanilla stitch autoencoder mean2 difference is 0.020327049809006546
+***
+	stitching 0->5 which is conv1->(4, 0)
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 1.205
+		epoch: 2 | time: 2.380
+		epoch: 3 | time: 3.542
+		epoch: 4 | time: 4.705
+	Accuracy of vanilla stitch model is 0.3478982300884956
+	Vanilla stitch mean2 difference is 0.021168110959040812
+		epoch: 1 | time: 3.848
+		epoch: 2 | time: 7.702
+		epoch: 3 | time: 11.540
+		epoch: 4 | time: 15.387
+		epoch: 5 | time: 19.222
+		epoch: 6 | time: 23.053
+		epoch: 7 | time: 26.884
+		epoch: 8 | time: 30.721
+		epoch: 9 | time: 34.572
+		epoch: 10 | time: 38.422
+		epoch: 11 | time: 42.291
+		epoch: 12 | time: 46.149
+		epoch: 13 | time: 49.991
+		epoch: 14 | time: 53.847
+		epoch: 15 | time: 57.691
+		epoch: 16 | time: 61.529
+		epoch: 17 | time: 65.371
+		epoch: 18 | time: 69.216
+		epoch: 19 | time: 73.058
+		epoch: 20 | time: 76.906
+		epoch: 21 | time: 80.753
+		epoch: 22 | time: 84.607
+		epoch: 23 | time: 88.461
+		epoch: 24 | time: 92.310
+		epoch: 25 | time: 96.181
+		epoch: 26 | time: 100.031
+		epoch: 27 | time: 103.877
+		epoch: 28 | time: 107.737
+		epoch: 29 | time: 111.599
+		epoch: 30 | time: 115.454
+	Accuracy of autoencoder stitch model is 9.29203539823009
+	Autoencoder stitch mean2 difference is 0.00018141631153412163
+	Vanilla stitch autoencoder mean2 difference is 0.020824311167383806
+***
+	stitching 0->6 which is conv1->fc
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 1.078
+		epoch: 2 | time: 2.076
+		epoch: 3 | time: 3.066
+		epoch: 4 | time: 4.058
+	Accuracy of vanilla stitch model is 0.37112831858407075
+	Vanilla stitch mean2 difference is 0.03949493762010183
+		epoch: 1 | time: 4.540
+		epoch: 2 | time: 9.067
+		epoch: 3 | time: 13.599
+		epoch: 4 | time: 18.138
+		epoch: 5 | time: 22.685
+		epoch: 6 | time: 27.221
+		epoch: 7 | time: 31.754
+		epoch: 8 | time: 36.276
+		epoch: 9 | time: 40.799
+		epoch: 10 | time: 45.317
+		epoch: 11 | time: 49.842
+		epoch: 12 | time: 54.395
+		epoch: 13 | time: 58.924
+		epoch: 14 | time: 63.456
+		epoch: 15 | time: 67.978
+		epoch: 16 | time: 72.502
+		epoch: 17 | time: 77.023
+		epoch: 18 | time: 81.558
+		epoch: 19 | time: 86.082
+		epoch: 20 | time: 90.628
+		epoch: 21 | time: 95.160
+		epoch: 22 | time: 99.688
+		epoch: 23 | time: 104.215
+		epoch: 24 | time: 108.743
+		epoch: 25 | time: 113.266
+		epoch: 26 | time: 117.791
+		epoch: 27 | time: 122.312
+		epoch: 28 | time: 126.847
+		epoch: 29 | time: 131.373
+		epoch: 30 | time: 135.896
+	Accuracy of autoencoder stitch model is 11.393805309734512
+	Autoencoder stitch mean2 difference is 0.002429012421112603
+	Vanilla stitch autoencoder mean2 difference is 0.035988736229065135
+***
+	stitching 1->1 which is (1, 0)->(1, 0)
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 4.190
+		epoch: 2 | time: 8.388
+		epoch: 3 | time: 12.581
+		epoch: 4 | time: 16.768
+	Accuracy of vanilla stitch model is 0.9170353982300885
+	Vanilla stitch mean2 difference is 0.022968386027675407
+		epoch: 1 | time: 2.225
+		epoch: 2 | time: 4.447
+		epoch: 3 | time: 6.670
+		epoch: 4 | time: 8.895
+		epoch: 5 | time: 11.115
+		epoch: 6 | time: 13.329
+		epoch: 7 | time: 15.540
+		epoch: 8 | time: 17.758
+		epoch: 9 | time: 19.989
+		epoch: 10 | time: 22.230
+		epoch: 11 | time: 24.459
+		epoch: 12 | time: 26.669
+		epoch: 13 | time: 28.889
+		epoch: 14 | time: 31.101
+		epoch: 15 | time: 33.346
+		epoch: 16 | time: 35.554
+		epoch: 17 | time: 37.775
+		epoch: 18 | time: 39.999
+		epoch: 19 | time: 42.222
+		epoch: 20 | time: 44.443
+		epoch: 21 | time: 46.648
+		epoch: 22 | time: 48.869
+		epoch: 23 | time: 51.105
+		epoch: 24 | time: 53.333
+		epoch: 25 | time: 55.567
+		epoch: 26 | time: 57.799
+		epoch: 27 | time: 60.033
+		epoch: 28 | time: 62.245
+		epoch: 29 | time: 64.462
+		epoch: 30 | time: 66.694
+	Accuracy of autoencoder stitch model is 10.3429203539823
+	Autoencoder stitch mean2 difference is 0.022999428241298747
+	Vanilla stitch autoencoder mean2 difference is 0.0018008938572632196
+***
+	stitching 1->2 which is (1, 0)->(1, 1)
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 3.541
+		epoch: 2 | time: 7.071
+		epoch: 3 | time: 10.598
+		epoch: 4 | time: 14.121
+	Accuracy of vanilla stitch model is 0.909845132743363
+	Vanilla stitch mean2 difference is 0.0033402398622666414
+		epoch: 1 | time: 3.223
+		epoch: 2 | time: 6.435
+		epoch: 3 | time: 9.646
+		epoch: 4 | time: 12.847
+		epoch: 5 | time: 16.042
+		epoch: 6 | time: 19.248
+		epoch: 7 | time: 22.462
+		epoch: 8 | time: 25.678
+		epoch: 9 | time: 28.893
+		epoch: 10 | time: 32.117
+		epoch: 11 | time: 35.304
+		epoch: 12 | time: 38.501
+		epoch: 13 | time: 41.719
+		epoch: 14 | time: 44.939
+		epoch: 15 | time: 48.141
+		epoch: 16 | time: 51.361
+		epoch: 17 | time: 54.575
+		epoch: 18 | time: 57.786
+		epoch: 19 | time: 61.004
+		epoch: 20 | time: 64.207
+		epoch: 21 | time: 67.405
+		epoch: 22 | time: 70.610
+		epoch: 23 | time: 73.805
+		epoch: 24 | time: 77.028
+		epoch: 25 | time: 80.235
+		epoch: 26 | time: 83.435
+		epoch: 27 | time: 86.643
+		epoch: 28 | time: 89.838
+		epoch: 29 | time: 93.035
+		epoch: 30 | time: 96.242
+	Accuracy of autoencoder stitch model is 10.45353982300885
+	Autoencoder stitch mean2 difference is 0.002601250571509202
+	Vanilla stitch autoencoder mean2 difference is 0.0013437078728412207
+***
+	stitching 1->3 which is (1, 0)->(2, 0)
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 2.869
+		epoch: 2 | time: 5.747
+		epoch: 3 | time: 8.616
+		epoch: 4 | time: 11.488
+	Accuracy of vanilla stitch model is 0.8926991150442478
+	Vanilla stitch mean2 difference is 0.010320872058853126
+		epoch: 1 | time: 4.008
+		epoch: 2 | time: 8.018
+		epoch: 3 | time: 12.039
+		epoch: 4 | time: 16.055
+		epoch: 5 | time: 20.073
+		epoch: 6 | time: 24.091
+		epoch: 7 | time: 28.114
+		epoch: 8 | time: 32.159
+		epoch: 9 | time: 36.185
+		epoch: 10 | time: 40.224
+		epoch: 11 | time: 44.249
+		epoch: 12 | time: 48.269
+		epoch: 13 | time: 52.311
+		epoch: 14 | time: 56.342
+		epoch: 15 | time: 60.360
+		epoch: 16 | time: 64.380
+		epoch: 17 | time: 68.391
+		epoch: 18 | time: 72.406
+		epoch: 19 | time: 76.421
+		epoch: 20 | time: 80.460
+		epoch: 21 | time: 84.496
+		epoch: 22 | time: 88.516
+		epoch: 23 | time: 92.541
+		epoch: 24 | time: 96.567
+		epoch: 25 | time: 100.588
+		epoch: 26 | time: 104.609
+		epoch: 27 | time: 108.615
+		epoch: 28 | time: 112.623
+		epoch: 29 | time: 116.638
+		epoch: 30 | time: 120.666
+	Accuracy of autoencoder stitch model is 10.951327433628318
+	Autoencoder stitch mean2 difference is 0.00521145101923209
+	Vanilla stitch autoencoder mean2 difference is 0.00514350970968222
+***
+	stitching 1->4 which is (1, 0)->(3, 0)
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 2.335
+		epoch: 2 | time: 4.702
+		epoch: 3 | time: 7.064
+		epoch: 4 | time: 9.408
+	Accuracy of vanilla stitch model is 0.7594026548672567
+	Vanilla stitch mean2 difference is 0.006936402105463621
+		epoch: 1 | time: 4.456
+		epoch: 2 | time: 8.902
+		epoch: 3 | time: 13.339
+		epoch: 4 | time: 17.791
+		epoch: 5 | time: 22.246
+		epoch: 6 | time: 26.751
+		epoch: 7 | time: 31.210
+		epoch: 8 | time: 35.664
+		epoch: 9 | time: 40.113
+		epoch: 10 | time: 44.566
+		epoch: 11 | time: 49.018
+		epoch: 12 | time: 53.491
+		epoch: 13 | time: 57.940
+		epoch: 14 | time: 62.409
+		epoch: 15 | time: 66.880
+		epoch: 16 | time: 71.344
+		epoch: 17 | time: 75.804
+		epoch: 18 | time: 80.265
+		epoch: 19 | time: 84.726
+		epoch: 20 | time: 89.198
+		epoch: 21 | time: 93.653
+		epoch: 22 | time: 98.116
+		epoch: 23 | time: 102.570
+		epoch: 24 | time: 107.024
+		epoch: 25 | time: 111.500
+		epoch: 26 | time: 115.948
+		epoch: 27 | time: 120.411
+		epoch: 28 | time: 124.865
+		epoch: 29 | time: 129.336
+		epoch: 30 | time: 133.806
+	Accuracy of autoencoder stitch model is 9.734513274336283
+	Autoencoder stitch mean2 difference is 0.0025273995390400674
+	Vanilla stitch autoencoder mean2 difference is 0.0035881728148804263
+***
+	stitching 1->5 which is (1, 0)->(4, 0)
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 1.899
+		epoch: 2 | time: 3.832
+		epoch: 3 | time: 5.731
+		epoch: 4 | time: 7.631
+	Accuracy of vanilla stitch model is 0.5204646017699115
+	Vanilla stitch mean2 difference is 0.004582540566722552
+		epoch: 1 | time: 4.865
+		epoch: 2 | time: 9.739
+		epoch: 3 | time: 14.612
+		epoch: 4 | time: 19.477
+		epoch: 5 | time: 24.354
+		epoch: 6 | time: 29.226
+		epoch: 7 | time: 34.075
+		epoch: 8 | time: 38.933
+		epoch: 9 | time: 43.812
+		epoch: 10 | time: 48.663
+		epoch: 11 | time: 53.513
+		epoch: 12 | time: 58.364
+		epoch: 13 | time: 63.229
+		epoch: 14 | time: 68.091
+		epoch: 15 | time: 72.949
+		epoch: 16 | time: 77.804
+		epoch: 17 | time: 82.663
+		epoch: 18 | time: 87.518
+		epoch: 19 | time: 92.384
+		epoch: 20 | time: 97.236
+		epoch: 21 | time: 102.097
+		epoch: 22 | time: 106.964
+		epoch: 23 | time: 111.819
+		epoch: 24 | time: 116.660
+		epoch: 25 | time: 121.522
+		epoch: 26 | time: 126.370
+		epoch: 27 | time: 131.230
+		epoch: 28 | time: 136.091
+		epoch: 29 | time: 140.954
+		epoch: 30 | time: 145.795
+	Accuracy of autoencoder stitch model is 9.623893805309734
+	Autoencoder stitch mean2 difference is 0.00151178118868325
+	Vanilla stitch autoencoder mean2 difference is 0.0022706191258457225
+***
+	stitching 1->6 which is (1, 0)->fc
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 1.748
+		epoch: 2 | time: 3.483
+		epoch: 3 | time: 5.226
+		epoch: 4 | time: 6.984
+	Accuracy of vanilla stitch model is 0.6012168141592921
+	Vanilla stitch mean2 difference is 0.02759844211813731
+		epoch: 1 | time: 5.507
+		epoch: 2 | time: 11.019
+		epoch: 3 | time: 16.542
+		epoch: 4 | time: 22.055
+		epoch: 5 | time: 27.568
+		epoch: 6 | time: 33.075
+		epoch: 7 | time: 38.598
+		epoch: 8 | time: 44.105
+		epoch: 9 | time: 49.621
+		epoch: 10 | time: 55.153
+		epoch: 11 | time: 60.673
+		epoch: 12 | time: 66.201
+		epoch: 13 | time: 71.700
+		epoch: 14 | time: 77.215
+		epoch: 15 | time: 82.742
+		epoch: 16 | time: 88.254
+		epoch: 17 | time: 93.768
+		epoch: 18 | time: 99.281
+		epoch: 19 | time: 104.796
+		epoch: 20 | time: 110.311
+		epoch: 21 | time: 115.824
+		epoch: 22 | time: 121.354
+		epoch: 23 | time: 126.887
+		epoch: 24 | time: 132.420
+		epoch: 25 | time: 137.942
+		epoch: 26 | time: 143.469
+		epoch: 27 | time: 148.987
+		epoch: 28 | time: 154.500
+		epoch: 29 | time: 160.021
+		epoch: 30 | time: 165.531
+	Accuracy of autoencoder stitch model is 16.261061946902654
+	Autoencoder stitch mean2 difference is 0.0005758756485122901
+	Vanilla stitch autoencoder mean2 difference is 0.02691697288209047
+***
+	stitching 2->1 which is (2, 0)->(1, 0)
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 4.987
+		epoch: 2 | time: 9.931
+		epoch: 3 | time: 14.887
+		epoch: 4 | time: 19.828
+	Accuracy of vanilla stitch model is 0.8246681415929202
+	Vanilla stitch mean2 difference is 0.029678726884034962
+		epoch: 1 | time: 3.084
+		epoch: 2 | time: 6.178
+		epoch: 3 | time: 9.270
+		epoch: 4 | time: 12.369
+		epoch: 5 | time: 15.482
+		epoch: 6 | time: 18.582
+		epoch: 7 | time: 21.678
+		epoch: 8 | time: 24.784
+		epoch: 9 | time: 27.890
+		epoch: 10 | time: 30.985
+		epoch: 11 | time: 34.077
+		epoch: 12 | time: 37.179
+		epoch: 13 | time: 40.281
+		epoch: 14 | time: 43.360
+		epoch: 15 | time: 46.445
+		epoch: 16 | time: 49.530
+		epoch: 17 | time: 52.631
+		epoch: 18 | time: 55.719
+		epoch: 19 | time: 58.799
+		epoch: 20 | time: 61.887
+		epoch: 21 | time: 64.975
+		epoch: 22 | time: 68.077
+		epoch: 23 | time: 71.165
+		epoch: 24 | time: 74.253
+		epoch: 25 | time: 77.350
+		epoch: 26 | time: 80.422
+		epoch: 27 | time: 83.526
+		epoch: 28 | time: 86.619
+		epoch: 29 | time: 89.711
+		epoch: 30 | time: 92.817
+	Accuracy of autoencoder stitch model is 9.734513274336283
+	Autoencoder stitch mean2 difference is 0.023404742586307037
+	Vanilla stitch autoencoder mean2 difference is 0.006737591087436065
+***
+	stitching 2->2 which is (2, 0)->(1, 1)
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 4.289
+		epoch: 2 | time: 8.574
+		epoch: 3 | time: 12.873
+		epoch: 4 | time: 17.154
+	Accuracy of vanilla stitch model is 0.9009955752212391
+	Vanilla stitch mean2 difference is 0.024496128648901598
+		epoch: 1 | time: 4.074
+		epoch: 2 | time: 8.154
+		epoch: 3 | time: 12.232
+		epoch: 4 | time: 16.317
+		epoch: 5 | time: 20.393
+		epoch: 6 | time: 24.480
+		epoch: 7 | time: 28.570
+		epoch: 8 | time: 32.649
+		epoch: 9 | time: 36.724
+		epoch: 10 | time: 40.796
+		epoch: 11 | time: 44.867
+		epoch: 12 | time: 48.960
+		epoch: 13 | time: 53.021
+		epoch: 14 | time: 57.088
+		epoch: 15 | time: 61.205
+		epoch: 16 | time: 65.276
+		epoch: 17 | time: 69.349
+		epoch: 18 | time: 73.426
+		epoch: 19 | time: 77.503
+		epoch: 20 | time: 81.577
+		epoch: 21 | time: 85.656
+		epoch: 22 | time: 89.735
+		epoch: 23 | time: 93.819
+		epoch: 24 | time: 97.901
+		epoch: 25 | time: 101.975
+		epoch: 26 | time: 106.060
+		epoch: 27 | time: 110.147
+		epoch: 28 | time: 114.256
+		epoch: 29 | time: 118.384
+		epoch: 30 | time: 122.463
+	Accuracy of autoencoder stitch model is 9.734513274336283
+	Autoencoder stitch mean2 difference is 0.011452313044514412
+	Vanilla stitch autoencoder mean2 difference is 0.010631143822310826
+***
+	stitching 2->3 which is (2, 0)->(2, 0)
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 3.627
+		epoch: 2 | time: 7.246
+		epoch: 3 | time: 10.874
+		epoch: 4 | time: 14.495
+	Accuracy of vanilla stitch model is 0.909845132743363
+	Vanilla stitch mean2 difference is 0.05373620834106054
+		epoch: 1 | time: 4.877
+		epoch: 2 | time: 9.761
+		epoch: 3 | time: 14.643
+		epoch: 4 | time: 19.536
+		epoch: 5 | time: 24.422
+		epoch: 6 | time: 29.318
+		epoch: 7 | time: 34.202
+		epoch: 8 | time: 39.100
+		epoch: 9 | time: 43.983
+		epoch: 10 | time: 48.886
+		epoch: 11 | time: 53.760
+		epoch: 12 | time: 58.644
+		epoch: 13 | time: 63.528
+		epoch: 14 | time: 68.410
+		epoch: 15 | time: 73.288
+		epoch: 16 | time: 78.159
+		epoch: 17 | time: 83.055
+		epoch: 18 | time: 87.941
+		epoch: 19 | time: 92.834
+		epoch: 20 | time: 97.734
+		epoch: 21 | time: 102.623
+		epoch: 22 | time: 107.511
+		epoch: 23 | time: 112.417
+		epoch: 24 | time: 117.392
+		epoch: 25 | time: 122.294
+		epoch: 26 | time: 127.179
+		epoch: 27 | time: 132.070
+		epoch: 28 | time: 136.962
+		epoch: 29 | time: 141.873
+		epoch: 30 | time: 146.753
+	Accuracy of autoencoder stitch model is 10.508849557522124
+	Autoencoder stitch mean2 difference is 0.032304611104803205
+	Vanilla stitch autoencoder mean2 difference is 0.014581187083744085
+***
+	stitching 2->4 which is (2, 0)->(3, 0)
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 2.852
+		epoch: 2 | time: 5.686
+		epoch: 3 | time: 8.528
+		epoch: 4 | time: 11.368
+	Accuracy of vanilla stitch model is 0.8561946902654867
+	Vanilla stitch mean2 difference is 0.07351782914155569
+		epoch: 1 | time: 5.033
+		epoch: 2 | time: 10.076
+		epoch: 3 | time: 15.126
+		epoch: 4 | time: 20.178
+		epoch: 5 | time: 25.227
+		epoch: 6 | time: 30.296
+		epoch: 7 | time: 35.345
+		epoch: 8 | time: 40.383
+		epoch: 9 | time: 45.429
+		epoch: 10 | time: 50.481
+		epoch: 11 | time: 55.526
+		epoch: 12 | time: 60.567
+		epoch: 13 | time: 65.616
+		epoch: 14 | time: 70.670
+		epoch: 15 | time: 75.736
+		epoch: 16 | time: 80.790
+		epoch: 17 | time: 85.840
+		epoch: 18 | time: 90.890
+		epoch: 19 | time: 95.936
+		epoch: 20 | time: 100.991
+		epoch: 21 | time: 106.054
+		epoch: 22 | time: 111.105
+		epoch: 23 | time: 116.161
+		epoch: 24 | time: 121.215
+		epoch: 25 | time: 126.268
+		epoch: 26 | time: 131.313
+		epoch: 27 | time: 136.363
+		epoch: 28 | time: 141.442
+		epoch: 29 | time: 146.519
+		epoch: 30 | time: 151.580
+	Accuracy of autoencoder stitch model is 10.508849557522124
+	Autoencoder stitch mean2 difference is 0.02760962755061113
+	Vanilla stitch autoencoder mean2 difference is 0.021300962127936193
+***
+	stitching 2->5 which is (2, 0)->(4, 0)
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 2.393
+		epoch: 2 | time: 4.790
+		epoch: 3 | time: 7.184
+		epoch: 4 | time: 9.572
+	Accuracy of vanilla stitch model is 0.6581858407079646
+	Vanilla stitch mean2 difference is 0.05589539380027698
+		epoch: 1 | time: 5.471
+		epoch: 2 | time: 10.937
+		epoch: 3 | time: 16.423
+		epoch: 4 | time: 21.884
+		epoch: 5 | time: 27.348
+		epoch: 6 | time: 32.811
+		epoch: 7 | time: 38.266
+		epoch: 8 | time: 43.729
+		epoch: 9 | time: 49.196
+		epoch: 10 | time: 54.682
+		epoch: 11 | time: 60.152
+		epoch: 12 | time: 65.622
+		epoch: 13 | time: 71.091
+		epoch: 14 | time: 76.575
+		epoch: 15 | time: 82.041
+		epoch: 16 | time: 87.506
+		epoch: 17 | time: 92.968
+		epoch: 18 | time: 98.431
+		epoch: 19 | time: 103.894
+		epoch: 20 | time: 109.364
+		epoch: 21 | time: 114.843
+		epoch: 22 | time: 120.304
+		epoch: 23 | time: 125.783
+		epoch: 24 | time: 131.259
+		epoch: 25 | time: 136.729
+		epoch: 26 | time: 142.194
+		epoch: 27 | time: 147.665
+		epoch: 28 | time: 153.133
+		epoch: 29 | time: 158.588
+		epoch: 30 | time: 164.054
+	Accuracy of autoencoder stitch model is 9.900442477876107
+	Autoencoder stitch mean2 difference is 0.03228322073626213
+	Vanilla stitch autoencoder mean2 difference is 0.007478737253218125
+***
+	stitching 2->6 which is (2, 0)->fc
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 2.188
+		epoch: 2 | time: 4.274
+		epoch: 3 | time: 6.384
+		epoch: 4 | time: 8.471
+	Accuracy of vanilla stitch model is 0.620575221238938
+	Vanilla stitch mean2 difference is 0.22125149766604105
+		epoch: 1 | time: 5.965
+		epoch: 2 | time: 11.937
+		epoch: 3 | time: 17.892
+		epoch: 4 | time: 23.858
+		epoch: 5 | time: 29.821
+		epoch: 6 | time: 35.790
+		epoch: 7 | time: 41.760
+		epoch: 8 | time: 47.716
+		epoch: 9 | time: 53.670
+		epoch: 10 | time: 59.636
+		epoch: 11 | time: 65.608
+		epoch: 12 | time: 71.576
+		epoch: 13 | time: 77.540
+		epoch: 14 | time: 83.509
+		epoch: 15 | time: 89.486
+		epoch: 16 | time: 95.461
+		epoch: 17 | time: 101.456
+		epoch: 18 | time: 107.445
+		epoch: 19 | time: 113.434
+		epoch: 20 | time: 119.407
+		epoch: 21 | time: 125.369
+		epoch: 22 | time: 131.333
+		epoch: 23 | time: 137.289
+		epoch: 24 | time: 143.243
+		epoch: 25 | time: 149.217
+		epoch: 26 | time: 155.177
+		epoch: 27 | time: 163.359
+		epoch: 28 | time: 169.422
+		epoch: 29 | time: 175.393
+		epoch: 30 | time: 181.348
+	Accuracy of autoencoder stitch model is 9.734513274336283
+	Autoencoder stitch mean2 difference is 0.03264330348525292
+	Vanilla stitch autoencoder mean2 difference is 0.10117855687171985
+***
+	stitching 3->1 which is (2, 1)->(1, 0)
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 5.502
+		epoch: 2 | time: 10.971
+		epoch: 3 | time: 16.452
+		epoch: 4 | time: 21.919
+	Accuracy of vanilla stitch model is 0.8506637168141593
+	Vanilla stitch mean2 difference is 0.03587919569168335
+		epoch: 1 | time: 3.677
+		epoch: 2 | time: 7.362
+		epoch: 3 | time: 11.045
+		epoch: 4 | time: 14.728
+		epoch: 5 | time: 18.416
+		epoch: 6 | time: 22.114
+		epoch: 7 | time: 25.818
+		epoch: 8 | time: 29.518
+		epoch: 9 | time: 33.206
+		epoch: 10 | time: 36.898
+		epoch: 11 | time: 40.584
+		epoch: 12 | time: 44.275
+		epoch: 13 | time: 47.956
+		epoch: 14 | time: 51.636
+		epoch: 15 | time: 55.324
+		epoch: 16 | time: 59.002
+		epoch: 17 | time: 62.682
+		epoch: 18 | time: 66.387
+		epoch: 19 | time: 70.060
+		epoch: 20 | time: 73.732
+		epoch: 21 | time: 77.409
+		epoch: 22 | time: 81.093
+		epoch: 23 | time: 84.777
+		epoch: 24 | time: 88.479
+		epoch: 25 | time: 92.168
+		epoch: 26 | time: 95.859
+		epoch: 27 | time: 99.549
+		epoch: 28 | time: 103.228
+		epoch: 29 | time: 106.919
+		epoch: 30 | time: 110.589
+	Accuracy of autoencoder stitch model is 10.951327433628318
+	Autoencoder stitch mean2 difference is 0.023422424896405294
+	Vanilla stitch autoencoder mean2 difference is 0.01272580932157162
+***
+	stitching 3->2 which is (2, 1)->(1, 1)
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 4.808
+		epoch: 2 | time: 9.607
+		epoch: 3 | time: 14.406
+		epoch: 4 | time: 19.208
+	Accuracy of vanilla stitch model is 0.8667035398230089
+	Vanilla stitch mean2 difference is 0.015619517600116057
+		epoch: 1 | time: 4.673
+		epoch: 2 | time: 9.336
+		epoch: 3 | time: 14.017
+		epoch: 4 | time: 18.689
+		epoch: 5 | time: 23.342
+		epoch: 6 | time: 28.006
+		epoch: 7 | time: 32.672
+		epoch: 8 | time: 37.345
+		epoch: 9 | time: 42.004
+		epoch: 10 | time: 46.670
+		epoch: 11 | time: 51.330
+		epoch: 12 | time: 56.013
+		epoch: 13 | time: 60.691
+		epoch: 14 | time: 65.379
+		epoch: 15 | time: 70.058
+		epoch: 16 | time: 74.737
+		epoch: 17 | time: 79.413
+		epoch: 18 | time: 84.092
+		epoch: 19 | time: 88.762
+		epoch: 20 | time: 93.444
+		epoch: 21 | time: 98.118
+		epoch: 22 | time: 102.800
+		epoch: 23 | time: 107.460
+		epoch: 24 | time: 112.119
+		epoch: 25 | time: 116.796
+		epoch: 26 | time: 121.471
+		epoch: 27 | time: 126.171
+		epoch: 28 | time: 130.841
+		epoch: 29 | time: 135.498
+		epoch: 30 | time: 140.156
+	Accuracy of autoencoder stitch model is 9.734513274336283
+	Autoencoder stitch mean2 difference is 0.004057812791031141
+	Vanilla stitch autoencoder mean2 difference is 0.009641996756769144
+***
+	stitching 3->3 which is (2, 1)->(2, 0)
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 4.143
+		epoch: 2 | time: 8.301
+		epoch: 3 | time: 12.460
+		epoch: 4 | time: 16.626
+	Accuracy of vanilla stitch model is 0.907079646017699
+	Vanilla stitch mean2 difference is 0.03675492407801824
+		epoch: 1 | time: 5.475
+		epoch: 2 | time: 10.957
+		epoch: 3 | time: 16.463
+		epoch: 4 | time: 21.937
+		epoch: 5 | time: 27.421
+		epoch: 6 | time: 32.926
+		epoch: 7 | time: 38.422
+		epoch: 8 | time: 43.903
+		epoch: 9 | time: 49.392
+		epoch: 10 | time: 54.869
+		epoch: 11 | time: 60.358
+		epoch: 12 | time: 65.830
+		epoch: 13 | time: 71.321
+		epoch: 14 | time: 76.817
+		epoch: 15 | time: 82.303
+		epoch: 16 | time: 87.807
+		epoch: 17 | time: 93.289
+		epoch: 18 | time: 98.774
+		epoch: 19 | time: 104.261
+		epoch: 20 | time: 109.745
+		epoch: 21 | time: 115.231
+		epoch: 22 | time: 120.731
+		epoch: 23 | time: 126.205
+		epoch: 24 | time: 131.682
+		epoch: 25 | time: 137.160
+		epoch: 26 | time: 142.645
+		epoch: 27 | time: 148.136
+		epoch: 28 | time: 153.633
+		epoch: 29 | time: 159.112
+		epoch: 30 | time: 164.592
+	Accuracy of autoencoder stitch model is 10.508849557522124
+	Autoencoder stitch mean2 difference is 0.013160717143462255
+	Vanilla stitch autoencoder mean2 difference is 0.015406563782539124
+***
+	stitching 3->4 which is (2, 1)->(3, 0)
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 3.352
+		epoch: 2 | time: 6.696
+		epoch: 3 | time: 10.036
+		epoch: 4 | time: 13.382
+	Accuracy of vanilla stitch model is 0.902654867256637
+	Vanilla stitch mean2 difference is 0.028015409037470816
+		epoch: 1 | time: 5.640
+		epoch: 2 | time: 11.299
+		epoch: 3 | time: 16.954
+		epoch: 4 | time: 22.591
+		epoch: 5 | time: 28.246
+		epoch: 6 | time: 33.910
+		epoch: 7 | time: 39.575
+		epoch: 8 | time: 45.231
+		epoch: 9 | time: 50.896
+		epoch: 10 | time: 56.548
+		epoch: 11 | time: 62.181
+		epoch: 12 | time: 67.817
+		epoch: 13 | time: 73.456
+		epoch: 14 | time: 79.105
+		epoch: 15 | time: 84.745
+		epoch: 16 | time: 90.399
+		epoch: 17 | time: 96.059
+		epoch: 18 | time: 101.716
+		epoch: 19 | time: 107.368
+		epoch: 20 | time: 113.009
+		epoch: 21 | time: 118.644
+		epoch: 22 | time: 124.290
+		epoch: 23 | time: 129.958
+		epoch: 24 | time: 135.597
+		epoch: 25 | time: 141.230
+		epoch: 26 | time: 146.866
+		epoch: 27 | time: 152.512
+		epoch: 28 | time: 158.169
+		epoch: 29 | time: 163.820
+		epoch: 30 | time: 169.485
+	Accuracy of autoencoder stitch model is 9.734513274336283
+	Autoencoder stitch mean2 difference is 0.008501942646809113
+	Vanilla stitch autoencoder mean2 difference is 0.010507399622255411
+***
+	stitching 3->5 which is (2, 1)->(4, 0)
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 2.986
+		epoch: 2 | time: 5.912
+		epoch: 3 | time: 8.844
+		epoch: 4 | time: 11.760
+	Accuracy of vanilla stitch model is 0.8777654867256637
+	Vanilla stitch mean2 difference is 0.011643485400157097
+		epoch: 1 | time: 6.064
+		epoch: 2 | time: 12.136
+		epoch: 3 | time: 18.202
+		epoch: 4 | time: 24.262
+		epoch: 5 | time: 30.319
+		epoch: 6 | time: 36.370
+		epoch: 7 | time: 42.427
+		epoch: 8 | time: 48.489
+		epoch: 9 | time: 54.562
+		epoch: 10 | time: 60.629
+		epoch: 11 | time: 66.697
+		epoch: 12 | time: 72.767
+		epoch: 13 | time: 78.830
+		epoch: 14 | time: 84.913
+		epoch: 15 | time: 90.972
+		epoch: 16 | time: 97.022
+		epoch: 17 | time: 103.085
+		epoch: 18 | time: 109.150
+		epoch: 19 | time: 115.205
+		epoch: 20 | time: 121.269
+		epoch: 21 | time: 127.334
+		epoch: 22 | time: 133.395
+		epoch: 23 | time: 139.454
+		epoch: 24 | time: 145.506
+		epoch: 25 | time: 151.560
+		epoch: 26 | time: 157.614
+		epoch: 27 | time: 163.701
+		epoch: 28 | time: 169.759
+		epoch: 29 | time: 175.824
+		epoch: 30 | time: 181.896
+	Accuracy of autoencoder stitch model is 9.734513274336283
+	Autoencoder stitch mean2 difference is 0.006317363932537727
+	Vanilla stitch autoencoder mean2 difference is 0.0022155837442439335
+***
+	stitching 3->6 which is (2, 1)->fc
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 2.617
+		epoch: 2 | time: 5.242
+		epoch: 3 | time: 7.849
+		epoch: 4 | time: 10.468
+	Accuracy of vanilla stitch model is 0.7870575221238938
+	Vanilla stitch mean2 difference is 0.022891663014888763
+		epoch: 1 | time: 6.547
+		epoch: 2 | time: 13.261
+		epoch: 3 | time: 19.835
+		epoch: 4 | time: 26.382
+		epoch: 5 | time: 32.943
+		epoch: 6 | time: 39.510
+		epoch: 7 | time: 46.067
+		epoch: 8 | time: 52.625
+		epoch: 9 | time: 59.192
+		epoch: 10 | time: 65.751
+		epoch: 11 | time: 72.312
+		epoch: 12 | time: 78.870
+		epoch: 13 | time: 85.429
+		epoch: 14 | time: 91.995
+		epoch: 15 | time: 98.563
+		epoch: 16 | time: 105.125
+		epoch: 17 | time: 111.682
+		epoch: 18 | time: 118.251
+		epoch: 19 | time: 124.829
+		epoch: 20 | time: 131.369
+		epoch: 21 | time: 137.914
+		epoch: 22 | time: 144.482
+		epoch: 23 | time: 151.045
+		epoch: 24 | time: 157.599
+		epoch: 25 | time: 164.166
+		epoch: 26 | time: 170.715
+		epoch: 27 | time: 177.257
+		epoch: 28 | time: 183.817
+		epoch: 29 | time: 190.404
+		epoch: 30 | time: 196.979
+	Accuracy of autoencoder stitch model is 9.734513274336283
+	Autoencoder stitch mean2 difference is 0.0018816094702252975
+	Vanilla stitch autoencoder mean2 difference is 0.01811550677013703
+***
+	stitching 4->1 which is (3, 0)->(1, 0)
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 6.039
+		epoch: 2 | time: 12.071
+		epoch: 3 | time: 18.089
+		epoch: 4 | time: 24.129
+	Accuracy of vanilla stitch model is 0.8954646017699115
+	Vanilla stitch mean2 difference is 0.029183172033383296
+		epoch: 1 | time: 4.308
+		epoch: 2 | time: 8.634
+		epoch: 3 | time: 12.938
+		epoch: 4 | time: 17.251
+		epoch: 5 | time: 21.556
+		epoch: 6 | time: 25.863
+		epoch: 7 | time: 30.169
+		epoch: 8 | time: 34.486
+		epoch: 9 | time: 38.814
+		epoch: 10 | time: 43.153
+		epoch: 11 | time: 47.481
+		epoch: 12 | time: 51.792
+		epoch: 13 | time: 56.117
+		epoch: 14 | time: 60.436
+		epoch: 15 | time: 64.758
+		epoch: 16 | time: 69.074
+		epoch: 17 | time: 73.383
+		epoch: 18 | time: 77.722
+		epoch: 19 | time: 82.045
+		epoch: 20 | time: 86.375
+		epoch: 21 | time: 90.703
+		epoch: 22 | time: 95.018
+		epoch: 23 | time: 99.348
+		epoch: 24 | time: 103.683
+		epoch: 25 | time: 108.017
+		epoch: 26 | time: 112.350
+		epoch: 27 | time: 116.679
+		epoch: 28 | time: 121.008
+		epoch: 29 | time: 125.350
+		epoch: 30 | time: 129.670
+	Accuracy of autoencoder stitch model is 8.462389380530974
+	Autoencoder stitch mean2 difference is 0.023380921905239424
+	Vanilla stitch autoencoder mean2 difference is 0.005787068232893944
+***
+	stitching 4->2 which is (3, 0)->(1, 1)
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 5.398
+		epoch: 2 | time: 10.787
+		epoch: 3 | time: 16.171
+		epoch: 4 | time: 21.559
+	Accuracy of vanilla stitch model is 0.9009955752212391
+	Vanilla stitch mean2 difference is 0.00958665275038817
+		epoch: 1 | time: 5.313
+		epoch: 2 | time: 10.615
+		epoch: 3 | time: 15.930
+		epoch: 4 | time: 21.230
+		epoch: 5 | time: 26.540
+		epoch: 6 | time: 31.860
+		epoch: 7 | time: 37.169
+		epoch: 8 | time: 42.462
+		epoch: 9 | time: 47.803
+		epoch: 10 | time: 53.288
+		epoch: 11 | time: 58.870
+		epoch: 12 | time: 64.178
+		epoch: 13 | time: 69.944
+		epoch: 14 | time: 75.276
+		epoch: 15 | time: 80.580
+		epoch: 16 | time: 85.894
+		epoch: 17 | time: 91.187
+		epoch: 18 | time: 96.665
+		epoch: 19 | time: 101.973
+		epoch: 20 | time: 107.281
+		epoch: 21 | time: 112.599
+		epoch: 22 | time: 117.909
+		epoch: 23 | time: 123.227
+		epoch: 24 | time: 128.524
+		epoch: 25 | time: 133.818
+		epoch: 26 | time: 139.133
+		epoch: 27 | time: 144.446
+		epoch: 28 | time: 149.735
+		epoch: 29 | time: 155.038
+		epoch: 30 | time: 160.356
+	Accuracy of autoencoder stitch model is 9.734513274336283
+	Autoencoder stitch mean2 difference is 0.0035559615812813623
+	Vanilla stitch autoencoder mean2 difference is 0.0058040622335213884
+***
+	stitching 4->3 which is (3, 0)->(2, 0)
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 4.749
+		epoch: 2 | time: 9.470
+		epoch: 3 | time: 14.667
+		epoch: 4 | time: 19.649
+	Accuracy of vanilla stitch model is 0.9148230088495575
+	Vanilla stitch mean2 difference is 0.02107396670258962
+		epoch: 1 | time: 6.119
+		epoch: 2 | time: 12.274
+		epoch: 3 | time: 18.392
+		epoch: 4 | time: 24.514
+		epoch: 5 | time: 31.662
+		epoch: 6 | time: 37.895
+		epoch: 7 | time: 44.012
+		epoch: 8 | time: 50.147
+		epoch: 9 | time: 56.263
+		epoch: 10 | time: 62.391
+		epoch: 11 | time: 68.896
+		epoch: 12 | time: 75.037
+		epoch: 13 | time: 81.165
+		epoch: 14 | time: 87.294
+		epoch: 15 | time: 93.422
+		epoch: 16 | time: 99.551
+		epoch: 17 | time: 105.658
+		epoch: 18 | time: 111.765
+		epoch: 19 | time: 117.901
+		epoch: 20 | time: 124.017
+		epoch: 21 | time: 130.137
+		epoch: 22 | time: 136.251
+		epoch: 23 | time: 142.364
+		epoch: 24 | time: 148.474
+		epoch: 25 | time: 154.602
+		epoch: 26 | time: 160.707
+		epoch: 27 | time: 166.841
+		epoch: 28 | time: 172.956
+		epoch: 29 | time: 179.080
+		epoch: 30 | time: 185.200
+	Accuracy of autoencoder stitch model is 9.45796460176991
+	Autoencoder stitch mean2 difference is 0.011009817465375632
+	Vanilla stitch autoencoder mean2 difference is 0.0069259718251534
+***
+	stitching 4->4 which is (3, 0)->(3, 0)
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 4.138
+		epoch: 2 | time: 8.177
+		epoch: 3 | time: 12.183
+		epoch: 4 | time: 16.201
+	Accuracy of vanilla stitch model is 0.9231194690265486
+	Vanilla stitch mean2 difference is 0.022924656974963653
+		epoch: 1 | time: 6.368
+		epoch: 2 | time: 12.745
+		epoch: 3 | time: 19.125
+		epoch: 4 | time: 25.485
+		epoch: 5 | time: 31.850
+		epoch: 6 | time: 38.223
+		epoch: 7 | time: 44.597
+		epoch: 8 | time: 50.969
+		epoch: 9 | time: 57.347
+		epoch: 10 | time: 63.714
+		epoch: 11 | time: 70.084
+		epoch: 12 | time: 76.456
+		epoch: 13 | time: 82.840
+		epoch: 14 | time: 89.212
+		epoch: 15 | time: 95.567
+		epoch: 16 | time: 101.918
+		epoch: 17 | time: 108.277
+		epoch: 18 | time: 114.637
+		epoch: 19 | time: 121.012
+		epoch: 20 | time: 127.386
+		epoch: 21 | time: 133.756
+		epoch: 22 | time: 140.138
+		epoch: 23 | time: 146.510
+		epoch: 24 | time: 152.873
+		epoch: 25 | time: 159.238
+		epoch: 26 | time: 165.609
+		epoch: 27 | time: 171.987
+		epoch: 28 | time: 178.366
+		epoch: 29 | time: 184.753
+		epoch: 30 | time: 191.111
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 0.011001750134313718
+	Vanilla stitch autoencoder mean2 difference is 0.006329179017876203
+***
+	stitching 4->5 which is (3, 0)->(4, 0)
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 3.334
+		epoch: 2 | time: 6.665
+		epoch: 3 | time: 9.994
+		epoch: 4 | time: 13.320
+	Accuracy of vanilla stitch model is 0.9258849557522124
+	Vanilla stitch mean2 difference is 0.023987181656635725
+		epoch: 1 | time: 6.524
+		epoch: 2 | time: 13.056
+		epoch: 3 | time: 19.585
+		epoch: 4 | time: 26.105
+		epoch: 5 | time: 32.622
+		epoch: 6 | time: 39.146
+		epoch: 7 | time: 45.683
+		epoch: 8 | time: 52.213
+		epoch: 9 | time: 58.740
+		epoch: 10 | time: 65.253
+		epoch: 11 | time: 71.787
+		epoch: 12 | time: 78.314
+		epoch: 13 | time: 84.858
+		epoch: 14 | time: 91.403
+		epoch: 15 | time: 97.941
+		epoch: 16 | time: 104.468
+		epoch: 17 | time: 111.008
+		epoch: 18 | time: 117.540
+		epoch: 19 | time: 124.080
+		epoch: 20 | time: 130.614
+		epoch: 21 | time: 137.159
+		epoch: 22 | time: 143.698
+		epoch: 23 | time: 150.225
+		epoch: 24 | time: 156.749
+		epoch: 25 | time: 163.305
+		epoch: 26 | time: 169.844
+		epoch: 27 | time: 176.414
+		epoch: 28 | time: 182.919
+		epoch: 29 | time: 189.446
+		epoch: 30 | time: 195.977
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 0.013908971941623932
+	Vanilla stitch autoencoder mean2 difference is 0.0038243115139313232
+***
+	stitching 4->6 which is (3, 0)->fc
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 3.266
+		epoch: 2 | time: 6.228
+		epoch: 3 | time: 9.180
+		epoch: 4 | time: 12.131
+	Accuracy of vanilla stitch model is 0.9087389380530974
+	Vanilla stitch mean2 difference is 0.054327451686064406
+		epoch: 1 | time: 6.962
+		epoch: 2 | time: 13.932
+		epoch: 3 | time: 20.888
+		epoch: 4 | time: 27.866
+		epoch: 5 | time: 34.834
+		epoch: 6 | time: 41.806
+		epoch: 7 | time: 48.758
+		epoch: 8 | time: 55.739
+		epoch: 9 | time: 62.710
+		epoch: 10 | time: 69.676
+		epoch: 11 | time: 76.649
+		epoch: 12 | time: 83.608
+		epoch: 13 | time: 90.584
+		epoch: 14 | time: 97.546
+		epoch: 15 | time: 104.503
+		epoch: 16 | time: 111.472
+		epoch: 17 | time: 118.431
+		epoch: 18 | time: 125.394
+		epoch: 19 | time: 132.353
+		epoch: 20 | time: 139.319
+		epoch: 21 | time: 146.280
+		epoch: 22 | time: 153.250
+		epoch: 23 | time: 160.215
+		epoch: 24 | time: 167.187
+		epoch: 25 | time: 174.154
+		epoch: 26 | time: 181.126
+		epoch: 27 | time: 188.111
+		epoch: 28 | time: 195.075
+		epoch: 29 | time: 202.034
+		epoch: 30 | time: 208.996
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 0.00475551139515562
+	Vanilla stitch autoencoder mean2 difference is 0.03716046005869523
+***
+	stitching 5->1 which is (4, 0)->(1, 0)
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 6.785
+		epoch: 2 | time: 13.545
+		epoch: 3 | time: 20.314
+		epoch: 4 | time: 27.097
+	Accuracy of vanilla stitch model is 0.9280973451327433
+	Vanilla stitch mean2 difference is 0.07022575331039918
+		epoch: 1 | time: 5.097
+		epoch: 2 | time: 10.190
+		epoch: 3 | time: 15.298
+		epoch: 4 | time: 20.402
+		epoch: 5 | time: 25.514
+		epoch: 6 | time: 30.619
+		epoch: 7 | time: 35.711
+		epoch: 8 | time: 40.800
+		epoch: 9 | time: 45.894
+		epoch: 10 | time: 50.971
+		epoch: 11 | time: 56.074
+		epoch: 12 | time: 61.161
+		epoch: 13 | time: 66.286
+		epoch: 14 | time: 71.377
+		epoch: 15 | time: 76.474
+		epoch: 16 | time: 81.566
+		epoch: 17 | time: 86.666
+		epoch: 18 | time: 91.762
+		epoch: 19 | time: 96.918
+		epoch: 20 | time: 102.010
+		epoch: 21 | time: 107.107
+		epoch: 22 | time: 112.201
+		epoch: 23 | time: 117.286
+		epoch: 24 | time: 122.383
+		epoch: 25 | time: 127.477
+		epoch: 26 | time: 132.586
+		epoch: 27 | time: 137.679
+		epoch: 28 | time: 142.767
+		epoch: 29 | time: 147.862
+		epoch: 30 | time: 152.977
+	Accuracy of autoencoder stitch model is 10.619469026548673
+	Autoencoder stitch mean2 difference is 0.022962349089674462
+	Vanilla stitch autoencoder mean2 difference is 0.04724962619634775
+***
+	stitching 5->2 which is (4, 0)->(1, 1)
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 6.141
+		epoch: 2 | time: 12.263
+		epoch: 3 | time: 18.393
+		epoch: 4 | time: 24.534
+	Accuracy of vanilla stitch model is 0.933075221238938
+	Vanilla stitch mean2 difference is 0.054833678939403635
+		epoch: 1 | time: 6.104
+		epoch: 2 | time: 12.176
+		epoch: 3 | time: 18.272
+		epoch: 4 | time: 24.345
+		epoch: 5 | time: 30.427
+		epoch: 6 | time: 36.524
+		epoch: 7 | time: 42.605
+		epoch: 8 | time: 48.686
+		epoch: 9 | time: 54.759
+		epoch: 10 | time: 60.832
+		epoch: 11 | time: 66.907
+		epoch: 12 | time: 72.993
+		epoch: 13 | time: 79.069
+		epoch: 14 | time: 85.140
+		epoch: 15 | time: 91.221
+		epoch: 16 | time: 97.298
+		epoch: 17 | time: 103.376
+		epoch: 18 | time: 109.466
+		epoch: 19 | time: 115.546
+		epoch: 20 | time: 121.629
+		epoch: 21 | time: 127.710
+		epoch: 22 | time: 133.796
+		epoch: 23 | time: 139.872
+		epoch: 24 | time: 145.947
+		epoch: 25 | time: 152.028
+		epoch: 26 | time: 158.120
+		epoch: 27 | time: 164.200
+		epoch: 28 | time: 170.298
+		epoch: 29 | time: 176.387
+		epoch: 30 | time: 182.476
+	Accuracy of autoencoder stitch model is 16.205752212389378
+	Autoencoder stitch mean2 difference is 0.0009624708927451418
+	Vanilla stitch autoencoder mean2 difference is 0.053811773103781234
+***
+	stitching 5->3 which is (4, 0)->(2, 0)
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 5.459
+		epoch: 2 | time: 10.912
+		epoch: 3 | time: 16.358
+		epoch: 4 | time: 21.812
+	Accuracy of vanilla stitch model is 0.9341814159292035
+	Vanilla stitch mean2 difference is 0.0399220609321044
+		epoch: 1 | time: 6.896
+		epoch: 2 | time: 13.796
+		epoch: 3 | time: 20.720
+		epoch: 4 | time: 27.664
+		epoch: 5 | time: 34.568
+		epoch: 6 | time: 41.447
+		epoch: 7 | time: 48.338
+		epoch: 8 | time: 55.223
+		epoch: 9 | time: 62.108
+		epoch: 10 | time: 69.003
+		epoch: 11 | time: 75.905
+		epoch: 12 | time: 82.787
+		epoch: 13 | time: 89.683
+		epoch: 14 | time: 96.583
+		epoch: 15 | time: 103.471
+		epoch: 16 | time: 110.372
+		epoch: 17 | time: 117.272
+		epoch: 18 | time: 124.165
+		epoch: 19 | time: 131.053
+		epoch: 20 | time: 137.924
+		epoch: 21 | time: 144.799
+		epoch: 22 | time: 151.699
+		epoch: 23 | time: 158.582
+		epoch: 24 | time: 165.478
+		epoch: 25 | time: 172.389
+		epoch: 26 | time: 179.276
+		epoch: 27 | time: 186.157
+		epoch: 28 | time: 193.054
+		epoch: 29 | time: 199.942
+		epoch: 30 | time: 206.833
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 0.0009868308367470327
+	Vanilla stitch autoencoder mean2 difference is 0.0385792134090876
+***
+	stitching 5->4 which is (4, 0)->(3, 0)
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 4.416
+		epoch: 2 | time: 8.827
+		epoch: 3 | time: 13.300
+		epoch: 4 | time: 17.695
+	Accuracy of vanilla stitch model is 0.933075221238938
+	Vanilla stitch mean2 difference is 0.019931008886450375
+		epoch: 1 | time: 6.807
+		epoch: 2 | time: 13.604
+		epoch: 3 | time: 20.406
+		epoch: 4 | time: 27.205
+		epoch: 5 | time: 34.011
+		epoch: 6 | time: 40.802
+		epoch: 7 | time: 47.611
+		epoch: 8 | time: 54.427
+		epoch: 9 | time: 61.247
+		epoch: 10 | time: 68.044
+		epoch: 11 | time: 74.847
+		epoch: 12 | time: 81.643
+		epoch: 13 | time: 88.436
+		epoch: 14 | time: 95.233
+		epoch: 15 | time: 102.032
+		epoch: 16 | time: 108.824
+		epoch: 17 | time: 115.613
+		epoch: 18 | time: 122.425
+		epoch: 19 | time: 129.207
+		epoch: 20 | time: 136.011
+		epoch: 21 | time: 142.811
+		epoch: 22 | time: 149.602
+		epoch: 23 | time: 156.393
+		epoch: 24 | time: 163.204
+		epoch: 25 | time: 170.003
+		epoch: 26 | time: 176.819
+		epoch: 27 | time: 183.624
+		epoch: 28 | time: 190.412
+		epoch: 29 | time: 197.217
+		epoch: 30 | time: 204.032
+	Accuracy of autoencoder stitch model is 9.900442477876107
+	Autoencoder stitch mean2 difference is 4.030048838989714e-05
+	Vanilla stitch autoencoder mean2 difference is 0.019800696779902163
+***
+	stitching 5->5 which is (4, 0)->(4, 0)
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 3.825
+		epoch: 2 | time: 7.651
+		epoch: 3 | time: 11.453
+		epoch: 4 | time: 15.264
+	Accuracy of vanilla stitch model is 0.9363938053097346
+	Vanilla stitch mean2 difference is 0.014828479060759911
+		epoch: 1 | time: 7.047
+		epoch: 2 | time: 14.100
+		epoch: 3 | time: 21.158
+		epoch: 4 | time: 28.207
+		epoch: 5 | time: 35.268
+		epoch: 6 | time: 42.310
+		epoch: 7 | time: 49.344
+		epoch: 8 | time: 56.422
+		epoch: 9 | time: 63.481
+		epoch: 10 | time: 70.552
+		epoch: 11 | time: 77.618
+		epoch: 12 | time: 84.709
+		epoch: 13 | time: 91.772
+		epoch: 14 | time: 98.843
+		epoch: 15 | time: 105.903
+		epoch: 16 | time: 112.966
+		epoch: 17 | time: 120.033
+		epoch: 18 | time: 127.098
+		epoch: 19 | time: 134.158
+		epoch: 20 | time: 141.219
+		epoch: 21 | time: 148.265
+		epoch: 22 | time: 155.321
+		epoch: 23 | time: 162.384
+		epoch: 24 | time: 169.455
+		epoch: 25 | time: 176.513
+		epoch: 26 | time: 183.590
+		epoch: 27 | time: 190.660
+		epoch: 28 | time: 197.719
+		epoch: 29 | time: 204.771
+		epoch: 30 | time: 211.831
+	Accuracy of autoencoder stitch model is 9.900442477876107
+	Autoencoder stitch mean2 difference is 2.884845281443678e-05
+	Vanilla stitch autoencoder mean2 difference is 0.0146034398713173
+***
+	stitching 5->6 which is (4, 0)->fc
+	Original accuracies were 0.9397123893805309 and 0.9380530973451328
+		epoch: 1 | time: 3.387
+		epoch: 2 | time: 6.721
+		epoch: 3 | time: 10.067
+		epoch: 4 | time: 13.415
+	Accuracy of vanilla stitch model is 0.9424778761061947
+	Vanilla stitch mean2 difference is 0.10378434921686466
+		epoch: 1 | time: 7.387
+		epoch: 2 | time: 14.783
+		epoch: 3 | time: 22.197
+		epoch: 4 | time: 31.516
+		epoch: 5 | time: 38.900
+		epoch: 6 | time: 46.302
+		epoch: 7 | time: 53.721
+		epoch: 8 | time: 61.112
+		epoch: 9 | time: 68.495
+		epoch: 10 | time: 75.875
+		epoch: 11 | time: 83.266
+		epoch: 12 | time: 90.659
+		epoch: 13 | time: 98.032
+		epoch: 14 | time: 105.415
+		epoch: 15 | time: 112.807
+		epoch: 16 | time: 120.199
+		epoch: 17 | time: 127.592
+		epoch: 18 | time: 134.982
+		epoch: 19 | time: 142.369
+		epoch: 20 | time: 149.750
+		epoch: 21 | time: 157.120
+		epoch: 22 | time: 164.492
+		epoch: 23 | time: 171.875
+		epoch: 24 | time: 179.272
+		epoch: 25 | time: 186.655
+		epoch: 26 | time: 194.044
+		epoch: 27 | time: 201.424
+		epoch: 28 | time: 208.800
+		epoch: 29 | time: 216.204
+		epoch: 30 | time: 223.591
+	Accuracy of autoencoder stitch model is 9.900442477876107
+	Autoencoder stitch mean2 difference is 3.886170670739375e-05
+	Vanilla stitch autoencoder mean2 difference is 0.10349955971424396
+***
+Saving sims to sims_resnet_1211_resnet_2111/resnet_1211_resnet_2111_sims.pt
+Saving autoencoder sims to sims_resnet_1211_resnet_2111/resnet_1211_resnet_2111_autoencoder_sims.pt
+Saving vanilla autoencoder mean2 to sims_resnet_1211_resnet_2111/resnet_1211_resnet_2111_vanilla_autoencoder_mean2.pt
+Saving autoencoder rep mean2 to sims_resnet_1211_resnet_2111/resnet_1211_resnet_2111_autoencoder_rep_mean2.pt
+Saving vanilla rep mean2 to sims_resnet_1211_resnet_2111/resnet_1211_resnet_2111_vanilla_rep_mean2.pt
+Stitching resnet_1211_rand_resnet_2111
+	stitching 0->1 which is conv1->(1, 0)
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 3.463
+		epoch: 2 | time: 6.877
+		epoch: 3 | time: 10.291
+		epoch: 4 | time: 13.690
+	Accuracy of vanilla stitch model is 0.909845132743363
+	Vanilla stitch mean2 difference is 0.016711739221444498
+		epoch: 1 | time: 1.201
+		epoch: 2 | time: 2.396
+		epoch: 3 | time: 3.612
+		epoch: 4 | time: 4.826
+		epoch: 5 | time: 6.027
+		epoch: 6 | time: 7.239
+		epoch: 7 | time: 8.446
+		epoch: 8 | time: 9.671
+		epoch: 9 | time: 10.890
+		epoch: 10 | time: 12.108
+		epoch: 11 | time: 13.309
+		epoch: 12 | time: 14.514
+		epoch: 13 | time: 15.722
+		epoch: 14 | time: 16.931
+		epoch: 15 | time: 18.170
+		epoch: 16 | time: 19.384
+		epoch: 17 | time: 20.613
+		epoch: 18 | time: 21.845
+		epoch: 19 | time: 23.066
+		epoch: 20 | time: 24.286
+		epoch: 21 | time: 25.489
+		epoch: 22 | time: 26.712
+		epoch: 23 | time: 27.941
+		epoch: 24 | time: 29.162
+		epoch: 25 | time: 30.372
+		epoch: 26 | time: 31.578
+		epoch: 27 | time: 32.787
+		epoch: 28 | time: 33.994
+		epoch: 29 | time: 35.220
+		epoch: 30 | time: 36.450
+	Accuracy of autoencoder stitch model is 52.21238938053098
+	Autoencoder stitch mean2 difference is 0.004922674426761193
+	Vanilla stitch autoencoder mean2 difference is 0.00970972757308911
+***
+	stitching 0->2 which is conv1->(1, 1)
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 2.742
+		epoch: 2 | time: 5.489
+		epoch: 3 | time: 8.247
+		epoch: 4 | time: 11.013
+	Accuracy of vanilla stitch model is 0.7262168141592921
+	Vanilla stitch mean2 difference is 0.02376555856794883
+		epoch: 1 | time: 2.200
+		epoch: 2 | time: 4.398
+		epoch: 3 | time: 6.579
+		epoch: 4 | time: 8.762
+		epoch: 5 | time: 10.972
+		epoch: 6 | time: 13.163
+		epoch: 7 | time: 15.350
+		epoch: 8 | time: 17.549
+		epoch: 9 | time: 19.740
+		epoch: 10 | time: 21.934
+		epoch: 11 | time: 24.117
+		epoch: 12 | time: 26.314
+		epoch: 13 | time: 28.524
+		epoch: 14 | time: 30.721
+		epoch: 15 | time: 32.930
+		epoch: 16 | time: 35.137
+		epoch: 17 | time: 37.329
+		epoch: 18 | time: 39.519
+		epoch: 19 | time: 41.710
+		epoch: 20 | time: 43.904
+		epoch: 21 | time: 46.103
+		epoch: 22 | time: 48.302
+		epoch: 23 | time: 50.511
+		epoch: 24 | time: 52.702
+		epoch: 25 | time: 54.894
+		epoch: 26 | time: 57.106
+		epoch: 27 | time: 59.302
+		epoch: 28 | time: 61.507
+		epoch: 29 | time: 63.730
+		epoch: 30 | time: 65.940
+	Accuracy of autoencoder stitch model is 10.785398230088497
+	Autoencoder stitch mean2 difference is 0.0005275035285964035
+	Vanilla stitch autoencoder mean2 difference is 0.023637073458387302
+***
+	stitching 0->3 which is conv1->(2, 0)
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 2.128
+		epoch: 2 | time: 4.256
+		epoch: 3 | time: 6.345
+		epoch: 4 | time: 8.434
+	Accuracy of vanilla stitch model is 0.3694690265486726
+	Vanilla stitch mean2 difference is 0.05599775108007284
+		epoch: 1 | time: 3.009
+		epoch: 2 | time: 6.000
+		epoch: 3 | time: 9.019
+		epoch: 4 | time: 12.032
+		epoch: 5 | time: 15.036
+		epoch: 6 | time: 18.056
+		epoch: 7 | time: 21.065
+		epoch: 8 | time: 24.074
+		epoch: 9 | time: 27.075
+		epoch: 10 | time: 30.086
+		epoch: 11 | time: 33.100
+		epoch: 12 | time: 36.113
+		epoch: 13 | time: 39.131
+		epoch: 14 | time: 42.136
+		epoch: 15 | time: 45.121
+		epoch: 16 | time: 48.134
+		epoch: 17 | time: 51.140
+		epoch: 18 | time: 54.138
+		epoch: 19 | time: 57.151
+		epoch: 20 | time: 60.167
+		epoch: 21 | time: 63.186
+		epoch: 22 | time: 66.186
+		epoch: 23 | time: 69.198
+		epoch: 24 | time: 72.226
+		epoch: 25 | time: 75.236
+		epoch: 26 | time: 78.242
+		epoch: 27 | time: 81.259
+		epoch: 28 | time: 84.262
+		epoch: 29 | time: 87.272
+		epoch: 30 | time: 90.284
+	Accuracy of autoencoder stitch model is 9.29203539823009
+	Autoencoder stitch mean2 difference is 0.0005217158552020407
+	Vanilla stitch autoencoder mean2 difference is 0.05507757033293064
+***
+	stitching 0->4 which is conv1->(3, 0)
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 1.714
+		epoch: 2 | time: 3.373
+		epoch: 3 | time: 4.998
+		epoch: 4 | time: 6.650
+	Accuracy of vanilla stitch model is 0.31194690265486724
+	Vanilla stitch mean2 difference is 0.14234297359601045
+		epoch: 1 | time: 3.442
+		epoch: 2 | time: 6.883
+		epoch: 3 | time: 10.401
+		epoch: 4 | time: 13.954
+		epoch: 5 | time: 17.385
+		epoch: 6 | time: 20.829
+		epoch: 7 | time: 24.278
+		epoch: 8 | time: 27.744
+		epoch: 9 | time: 31.184
+		epoch: 10 | time: 34.621
+		epoch: 11 | time: 38.084
+		epoch: 12 | time: 41.517
+		epoch: 13 | time: 44.960
+		epoch: 14 | time: 48.415
+		epoch: 15 | time: 51.885
+		epoch: 16 | time: 55.347
+		epoch: 17 | time: 58.805
+		epoch: 18 | time: 62.274
+		epoch: 19 | time: 65.731
+		epoch: 20 | time: 69.208
+		epoch: 21 | time: 72.688
+		epoch: 22 | time: 76.145
+		epoch: 23 | time: 79.599
+		epoch: 24 | time: 83.065
+		epoch: 25 | time: 86.506
+		epoch: 26 | time: 89.955
+		epoch: 27 | time: 93.410
+		epoch: 28 | time: 96.883
+		epoch: 29 | time: 100.333
+		epoch: 30 | time: 103.789
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 6.527283037893283e-05
+	Vanilla stitch autoencoder mean2 difference is 0.1421658680989192
+***
+	stitching 0->5 which is conv1->(4, 0)
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 1.194
+		epoch: 2 | time: 2.379
+		epoch: 3 | time: 3.598
+		epoch: 4 | time: 4.800
+	Accuracy of vanilla stitch model is 0.2842920353982301
+	Vanilla stitch mean2 difference is 0.2381688172236467
+		epoch: 1 | time: 3.835
+		epoch: 2 | time: 7.702
+		epoch: 3 | time: 11.558
+		epoch: 4 | time: 15.398
+		epoch: 5 | time: 19.239
+		epoch: 6 | time: 23.080
+		epoch: 7 | time: 26.918
+		epoch: 8 | time: 30.769
+		epoch: 9 | time: 34.591
+		epoch: 10 | time: 38.426
+		epoch: 11 | time: 42.263
+		epoch: 12 | time: 46.129
+		epoch: 13 | time: 49.972
+		epoch: 14 | time: 53.826
+		epoch: 15 | time: 57.669
+		epoch: 16 | time: 61.548
+		epoch: 17 | time: 65.386
+		epoch: 18 | time: 69.237
+		epoch: 19 | time: 73.083
+		epoch: 20 | time: 76.927
+		epoch: 21 | time: 80.784
+		epoch: 22 | time: 84.641
+		epoch: 23 | time: 88.501
+		epoch: 24 | time: 92.357
+		epoch: 25 | time: 96.194
+		epoch: 26 | time: 100.046
+		epoch: 27 | time: 103.888
+		epoch: 28 | time: 107.753
+		epoch: 29 | time: 111.617
+		epoch: 30 | time: 115.465
+	Accuracy of autoencoder stitch model is 9.900442477876107
+	Autoencoder stitch mean2 difference is 0.0002234327668795744
+	Vanilla stitch autoencoder mean2 difference is 0.23763992213285887
+***
+	stitching 0->6 which is conv1->fc
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 1.175
+		epoch: 2 | time: 2.172
+		epoch: 3 | time: 3.174
+		epoch: 4 | time: 4.159
+	Accuracy of vanilla stitch model is 0.31581858407079644
+	Vanilla stitch mean2 difference is 0.09199363673344636
+		epoch: 1 | time: 4.519
+		epoch: 2 | time: 9.059
+		epoch: 3 | time: 13.809
+		epoch: 4 | time: 18.327
+		epoch: 5 | time: 22.842
+		epoch: 6 | time: 27.371
+		epoch: 7 | time: 31.892
+		epoch: 8 | time: 36.418
+		epoch: 9 | time: 40.930
+		epoch: 10 | time: 45.444
+		epoch: 11 | time: 49.966
+		epoch: 12 | time: 54.482
+		epoch: 13 | time: 59.012
+		epoch: 14 | time: 63.529
+		epoch: 15 | time: 68.049
+		epoch: 16 | time: 72.564
+		epoch: 17 | time: 77.079
+		epoch: 18 | time: 81.598
+		epoch: 19 | time: 86.123
+		epoch: 20 | time: 90.635
+		epoch: 21 | time: 95.148
+		epoch: 22 | time: 99.662
+		epoch: 23 | time: 104.175
+		epoch: 24 | time: 108.688
+		epoch: 25 | time: 113.202
+		epoch: 26 | time: 117.729
+		epoch: 27 | time: 122.255
+		epoch: 28 | time: 126.767
+		epoch: 29 | time: 131.295
+		epoch: 30 | time: 135.813
+	Accuracy of autoencoder stitch model is 8.960176991150442
+	Autoencoder stitch mean2 difference is 0.003238121298356698
+	Vanilla stitch autoencoder mean2 difference is 0.08727804674552037
+***
+	stitching 1->1 which is (1, 0)->(1, 0)
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 4.242
+		epoch: 2 | time: 8.426
+		epoch: 3 | time: 12.600
+		epoch: 4 | time: 16.784
+	Accuracy of vanilla stitch model is 0.7798672566371682
+	Vanilla stitch mean2 difference is 0.24429503266627972
+		epoch: 1 | time: 2.238
+		epoch: 2 | time: 4.459
+		epoch: 3 | time: 6.673
+		epoch: 4 | time: 8.883
+		epoch: 5 | time: 11.103
+		epoch: 6 | time: 13.325
+		epoch: 7 | time: 15.549
+		epoch: 8 | time: 17.772
+		epoch: 9 | time: 20.008
+		epoch: 10 | time: 22.228
+		epoch: 11 | time: 24.470
+		epoch: 12 | time: 26.698
+		epoch: 13 | time: 28.919
+		epoch: 14 | time: 31.139
+		epoch: 15 | time: 33.356
+		epoch: 16 | time: 35.580
+		epoch: 17 | time: 37.798
+		epoch: 18 | time: 40.029
+		epoch: 19 | time: 42.250
+		epoch: 20 | time: 44.471
+		epoch: 21 | time: 46.674
+		epoch: 22 | time: 48.886
+		epoch: 23 | time: 51.124
+		epoch: 24 | time: 53.360
+		epoch: 25 | time: 55.585
+		epoch: 26 | time: 57.795
+		epoch: 27 | time: 60.013
+		epoch: 28 | time: 62.245
+		epoch: 29 | time: 64.484
+		epoch: 30 | time: 66.716
+	Accuracy of autoencoder stitch model is 24.059734513274336
+	Autoencoder stitch mean2 difference is 0.0056271808627897345
+	Vanilla stitch autoencoder mean2 difference is 0.23961949325524845
+***
+	stitching 1->2 which is (1, 0)->(1, 1)
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 3.522
+		epoch: 2 | time: 7.030
+		epoch: 3 | time: 10.539
+		epoch: 4 | time: 14.061
+	Accuracy of vanilla stitch model is 0.6797566371681415
+	Vanilla stitch mean2 difference is 0.24409754742414524
+		epoch: 1 | time: 3.218
+		epoch: 2 | time: 6.416
+		epoch: 3 | time: 9.619
+		epoch: 4 | time: 12.846
+		epoch: 5 | time: 16.055
+		epoch: 6 | time: 19.250
+		epoch: 7 | time: 22.436
+		epoch: 8 | time: 25.649
+		epoch: 9 | time: 28.874
+		epoch: 10 | time: 32.092
+		epoch: 11 | time: 35.290
+		epoch: 12 | time: 38.494
+		epoch: 13 | time: 41.697
+		epoch: 14 | time: 44.894
+		epoch: 15 | time: 48.089
+		epoch: 16 | time: 51.313
+		epoch: 17 | time: 54.542
+		epoch: 18 | time: 57.756
+		epoch: 19 | time: 60.961
+		epoch: 20 | time: 64.152
+		epoch: 21 | time: 67.354
+		epoch: 22 | time: 70.562
+		epoch: 23 | time: 73.776
+		epoch: 24 | time: 76.988
+		epoch: 25 | time: 80.189
+		epoch: 26 | time: 83.414
+		epoch: 27 | time: 86.618
+		epoch: 28 | time: 89.822
+		epoch: 29 | time: 93.040
+		epoch: 30 | time: 96.248
+	Accuracy of autoencoder stitch model is 9.900442477876107
+	Autoencoder stitch mean2 difference is 0.0002554142247670545
+	Vanilla stitch autoencoder mean2 difference is 0.24402201618903724
+***
+	stitching 1->3 which is (1, 0)->(2, 0)
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 2.871
+		epoch: 2 | time: 5.728
+		epoch: 3 | time: 8.587
+		epoch: 4 | time: 11.453
+	Accuracy of vanilla stitch model is 0.514933628318584
+	Vanilla stitch mean2 difference is 0.34026055687513107
+		epoch: 1 | time: 4.007
+		epoch: 2 | time: 8.035
+		epoch: 3 | time: 12.055
+		epoch: 4 | time: 16.085
+		epoch: 5 | time: 20.101
+		epoch: 6 | time: 24.120
+		epoch: 7 | time: 28.126
+		epoch: 8 | time: 32.129
+		epoch: 9 | time: 36.149
+		epoch: 10 | time: 40.154
+		epoch: 11 | time: 44.168
+		epoch: 12 | time: 48.182
+		epoch: 13 | time: 52.195
+		epoch: 14 | time: 56.214
+		epoch: 15 | time: 60.242
+		epoch: 16 | time: 64.256
+		epoch: 17 | time: 68.283
+		epoch: 18 | time: 72.305
+		epoch: 19 | time: 76.307
+		epoch: 20 | time: 80.321
+		epoch: 21 | time: 84.332
+		epoch: 22 | time: 88.344
+		epoch: 23 | time: 92.349
+		epoch: 24 | time: 96.359
+		epoch: 25 | time: 100.377
+		epoch: 26 | time: 104.390
+		epoch: 27 | time: 108.391
+		epoch: 28 | time: 112.415
+		epoch: 29 | time: 116.429
+		epoch: 30 | time: 120.457
+	Accuracy of autoencoder stitch model is 9.623893805309734
+	Autoencoder stitch mean2 difference is 0.00025170202969979397
+	Vanilla stitch autoencoder mean2 difference is 0.34016809050853436
+***
+	stitching 1->4 which is (1, 0)->(3, 0)
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 2.344
+		epoch: 2 | time: 4.686
+		epoch: 3 | time: 7.030
+		epoch: 4 | time: 9.415
+	Accuracy of vanilla stitch model is 0.46626106194690264
+	Vanilla stitch mean2 difference is 0.5325606572322357
+		epoch: 1 | time: 4.461
+		epoch: 2 | time: 8.911
+		epoch: 3 | time: 13.361
+		epoch: 4 | time: 17.825
+		epoch: 5 | time: 22.282
+		epoch: 6 | time: 26.739
+		epoch: 7 | time: 31.191
+		epoch: 8 | time: 35.653
+		epoch: 9 | time: 40.138
+		epoch: 10 | time: 44.655
+		epoch: 11 | time: 49.123
+		epoch: 12 | time: 53.585
+		epoch: 13 | time: 58.054
+		epoch: 14 | time: 62.513
+		epoch: 15 | time: 66.981
+		epoch: 16 | time: 71.455
+		epoch: 17 | time: 75.927
+		epoch: 18 | time: 80.388
+		epoch: 19 | time: 84.853
+		epoch: 20 | time: 89.311
+		epoch: 21 | time: 93.763
+		epoch: 22 | time: 98.216
+		epoch: 23 | time: 102.688
+		epoch: 24 | time: 107.148
+		epoch: 25 | time: 111.604
+		epoch: 26 | time: 116.068
+		epoch: 27 | time: 120.520
+		epoch: 28 | time: 124.975
+		epoch: 29 | time: 129.442
+		epoch: 30 | time: 133.899
+	Accuracy of autoencoder stitch model is 9.236725663716815
+	Autoencoder stitch mean2 difference is 0.00014623315394438134
+	Vanilla stitch autoencoder mean2 difference is 0.5322209138136643
+***
+	stitching 1->5 which is (1, 0)->(4, 0)
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 1.886
+		epoch: 2 | time: 3.780
+		epoch: 3 | time: 5.679
+		epoch: 4 | time: 7.569
+	Accuracy of vanilla stitch model is 0.41095132743362833
+	Vanilla stitch mean2 difference is 0.8570673163120563
+		epoch: 1 | time: 4.841
+		epoch: 2 | time: 9.697
+		epoch: 3 | time: 14.541
+		epoch: 4 | time: 19.404
+		epoch: 5 | time: 24.258
+		epoch: 6 | time: 29.098
+		epoch: 7 | time: 33.938
+		epoch: 8 | time: 38.796
+		epoch: 9 | time: 43.645
+		epoch: 10 | time: 48.500
+		epoch: 11 | time: 53.354
+		epoch: 12 | time: 58.486
+		epoch: 13 | time: 63.334
+		epoch: 14 | time: 68.332
+		epoch: 15 | time: 73.222
+		epoch: 16 | time: 78.084
+		epoch: 17 | time: 82.925
+		epoch: 18 | time: 87.779
+		epoch: 19 | time: 92.634
+		epoch: 20 | time: 97.471
+		epoch: 21 | time: 102.320
+		epoch: 22 | time: 107.182
+		epoch: 23 | time: 112.039
+		epoch: 24 | time: 116.895
+		epoch: 25 | time: 121.760
+		epoch: 26 | time: 126.611
+		epoch: 27 | time: 131.468
+		epoch: 28 | time: 136.328
+		epoch: 29 | time: 141.179
+		epoch: 30 | time: 146.017
+	Accuracy of autoencoder stitch model is 9.29203539823009
+	Autoencoder stitch mean2 difference is 8.496820250561891e-05
+	Vanilla stitch autoencoder mean2 difference is 0.8569117322946206
+***
+	stitching 1->6 which is (1, 0)->fc
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 1.749
+		epoch: 2 | time: 3.496
+		epoch: 3 | time: 5.236
+		epoch: 4 | time: 6.978
+	Accuracy of vanilla stitch model is 0.3915929203539823
+	Vanilla stitch mean2 difference is 13.342696439302884
+		epoch: 1 | time: 5.512
+		epoch: 2 | time: 11.020
+		epoch: 3 | time: 16.534
+		epoch: 4 | time: 22.049
+		epoch: 5 | time: 27.558
+		epoch: 6 | time: 33.067
+		epoch: 7 | time: 38.569
+		epoch: 8 | time: 44.094
+		epoch: 9 | time: 49.589
+		epoch: 10 | time: 55.099
+		epoch: 11 | time: 60.614
+		epoch: 12 | time: 66.134
+		epoch: 13 | time: 71.641
+		epoch: 14 | time: 77.154
+		epoch: 15 | time: 82.670
+		epoch: 16 | time: 88.187
+		epoch: 17 | time: 93.694
+		epoch: 18 | time: 99.206
+		epoch: 19 | time: 104.720
+		epoch: 20 | time: 110.224
+		epoch: 21 | time: 115.731
+		epoch: 22 | time: 121.238
+		epoch: 23 | time: 126.738
+		epoch: 24 | time: 132.240
+		epoch: 25 | time: 137.747
+		epoch: 26 | time: 143.263
+		epoch: 27 | time: 148.780
+		epoch: 28 | time: 154.291
+		epoch: 29 | time: 159.800
+		epoch: 30 | time: 165.302
+	Accuracy of autoencoder stitch model is 9.29203539823009
+	Autoencoder stitch mean2 difference is 7.773304529016456e-05
+	Vanilla stitch autoencoder mean2 difference is 13.364313301673302
+***
+	stitching 2->1 which is (2, 0)->(1, 0)
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 4.965
+		epoch: 2 | time: 9.906
+		epoch: 3 | time: 14.851
+		epoch: 4 | time: 19.802
+	Accuracy of vanilla stitch model is 0.6133849557522124
+	Vanilla stitch mean2 difference is 0.30034434902362334
+		epoch: 1 | time: 3.088
+		epoch: 2 | time: 6.187
+		epoch: 3 | time: 9.289
+		epoch: 4 | time: 12.366
+		epoch: 5 | time: 15.439
+		epoch: 6 | time: 18.528
+		epoch: 7 | time: 21.615
+		epoch: 8 | time: 24.705
+		epoch: 9 | time: 27.801
+		epoch: 10 | time: 30.890
+		epoch: 11 | time: 33.971
+		epoch: 12 | time: 37.068
+		epoch: 13 | time: 40.172
+		epoch: 14 | time: 43.261
+		epoch: 15 | time: 46.363
+		epoch: 16 | time: 49.442
+		epoch: 17 | time: 52.527
+		epoch: 18 | time: 55.603
+		epoch: 19 | time: 58.704
+		epoch: 20 | time: 61.791
+		epoch: 21 | time: 64.889
+		epoch: 22 | time: 67.986
+		epoch: 23 | time: 71.097
+		epoch: 24 | time: 74.180
+		epoch: 25 | time: 77.264
+		epoch: 26 | time: 80.343
+		epoch: 27 | time: 83.420
+		epoch: 28 | time: 86.506
+		epoch: 29 | time: 89.590
+		epoch: 30 | time: 92.681
+	Accuracy of autoencoder stitch model is 9.955752212389381
+	Autoencoder stitch mean2 difference is 0.009923799192676178
+	Vanilla stitch autoencoder mean2 difference is 0.2908125693981464
+***
+	stitching 2->2 which is (2, 0)->(1, 1)
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 4.280
+		epoch: 2 | time: 8.579
+		epoch: 3 | time: 12.871
+		epoch: 4 | time: 17.148
+	Accuracy of vanilla stitch model is 0.5962389380530974
+	Vanilla stitch mean2 difference is 0.34756098771706606
+		epoch: 1 | time: 4.071
+		epoch: 2 | time: 8.154
+		epoch: 3 | time: 12.239
+		epoch: 4 | time: 16.315
+		epoch: 5 | time: 20.472
+		epoch: 6 | time: 24.588
+		epoch: 7 | time: 28.795
+		epoch: 8 | time: 33.247
+		epoch: 9 | time: 37.340
+		epoch: 10 | time: 41.702
+		epoch: 11 | time: 45.772
+		epoch: 12 | time: 49.850
+		epoch: 13 | time: 53.914
+		epoch: 14 | time: 57.976
+		epoch: 15 | time: 62.039
+		epoch: 16 | time: 66.104
+		epoch: 17 | time: 70.194
+		epoch: 18 | time: 74.340
+		epoch: 19 | time: 78.423
+		epoch: 20 | time: 82.493
+		epoch: 21 | time: 86.587
+		epoch: 22 | time: 90.673
+		epoch: 23 | time: 94.743
+		epoch: 24 | time: 98.808
+		epoch: 25 | time: 102.874
+		epoch: 26 | time: 106.946
+		epoch: 27 | time: 111.023
+		epoch: 28 | time: 115.101
+		epoch: 29 | time: 119.179
+		epoch: 30 | time: 123.240
+	Accuracy of autoencoder stitch model is 9.29203539823009
+	Autoencoder stitch mean2 difference is 0.00039180593374065864
+	Vanilla stitch autoencoder mean2 difference is 0.3475615003170111
+***
+	stitching 2->3 which is (2, 0)->(2, 0)
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 3.608
+		epoch: 2 | time: 7.701
+		epoch: 3 | time: 11.352
+		epoch: 4 | time: 14.991
+	Accuracy of vanilla stitch model is 0.521570796460177
+	Vanilla stitch mean2 difference is 0.35285421579312054
+		epoch: 1 | time: 4.874
+		epoch: 2 | time: 9.793
+		epoch: 3 | time: 15.039
+		epoch: 4 | time: 20.199
+		epoch: 5 | time: 25.487
+		epoch: 6 | time: 30.371
+		epoch: 7 | time: 35.286
+		epoch: 8 | time: 40.152
+		epoch: 9 | time: 45.041
+		epoch: 10 | time: 50.486
+		epoch: 11 | time: 55.575
+		epoch: 12 | time: 60.457
+		epoch: 13 | time: 65.331
+		epoch: 14 | time: 70.212
+		epoch: 15 | time: 75.115
+		epoch: 16 | time: 80.011
+		epoch: 17 | time: 84.899
+		epoch: 18 | time: 89.796
+		epoch: 19 | time: 94.679
+		epoch: 20 | time: 99.568
+		epoch: 21 | time: 104.442
+		epoch: 22 | time: 109.322
+		epoch: 23 | time: 114.202
+		epoch: 24 | time: 119.080
+		epoch: 25 | time: 123.977
+		epoch: 26 | time: 128.871
+		epoch: 27 | time: 133.781
+		epoch: 28 | time: 138.671
+		epoch: 29 | time: 143.566
+		epoch: 30 | time: 148.454
+	Accuracy of autoencoder stitch model is 9.734513274336283
+	Autoencoder stitch mean2 difference is 0.0003960769029501348
+	Vanilla stitch autoencoder mean2 difference is 0.3525814513365428
+***
+	stitching 2->4 which is (2, 0)->(3, 0)
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 2.815
+		epoch: 2 | time: 5.636
+		epoch: 3 | time: 8.480
+		epoch: 4 | time: 11.367
+	Accuracy of vanilla stitch model is 0.47123893805309736
+	Vanilla stitch mean2 difference is 0.32000748408146396
+		epoch: 1 | time: 5.070
+		epoch: 2 | time: 10.125
+		epoch: 3 | time: 15.181
+		epoch: 4 | time: 20.240
+		epoch: 5 | time: 25.277
+		epoch: 6 | time: 30.349
+		epoch: 7 | time: 35.399
+		epoch: 8 | time: 40.455
+		epoch: 9 | time: 45.496
+		epoch: 10 | time: 50.543
+		epoch: 11 | time: 55.606
+		epoch: 12 | time: 60.654
+		epoch: 13 | time: 65.705
+		epoch: 14 | time: 70.746
+		epoch: 15 | time: 75.796
+		epoch: 16 | time: 80.852
+		epoch: 17 | time: 85.891
+		epoch: 18 | time: 90.949
+		epoch: 19 | time: 95.997
+		epoch: 20 | time: 101.052
+		epoch: 21 | time: 106.100
+		epoch: 22 | time: 111.138
+		epoch: 23 | time: 116.197
+		epoch: 24 | time: 121.257
+		epoch: 25 | time: 126.320
+		epoch: 26 | time: 131.372
+		epoch: 27 | time: 136.445
+		epoch: 28 | time: 141.497
+		epoch: 29 | time: 146.576
+		epoch: 30 | time: 151.634
+	Accuracy of autoencoder stitch model is 9.623893805309734
+	Autoencoder stitch mean2 difference is 0.0001893140444269356
+	Vanilla stitch autoencoder mean2 difference is 0.31992978468919414
+***
+	stitching 2->5 which is (2, 0)->(4, 0)
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 2.400
+		epoch: 2 | time: 4.803
+		epoch: 3 | time: 7.214
+		epoch: 4 | time: 9.632
+	Accuracy of vanilla stitch model is 0.4391592920353983
+	Vanilla stitch mean2 difference is 0.39783043937805374
+		epoch: 1 | time: 5.473
+		epoch: 2 | time: 10.939
+		epoch: 3 | time: 16.398
+		epoch: 4 | time: 21.863
+		epoch: 5 | time: 27.314
+		epoch: 6 | time: 32.764
+		epoch: 7 | time: 38.230
+		epoch: 8 | time: 43.687
+		epoch: 9 | time: 49.136
+		epoch: 10 | time: 54.578
+		epoch: 11 | time: 60.043
+		epoch: 12 | time: 65.503
+		epoch: 13 | time: 70.960
+		epoch: 14 | time: 76.409
+		epoch: 15 | time: 81.887
+		epoch: 16 | time: 87.357
+		epoch: 17 | time: 92.826
+		epoch: 18 | time: 98.286
+		epoch: 19 | time: 103.756
+		epoch: 20 | time: 109.436
+		epoch: 21 | time: 114.888
+		epoch: 22 | time: 120.343
+		epoch: 23 | time: 125.796
+		epoch: 24 | time: 131.244
+		epoch: 25 | time: 136.708
+		epoch: 26 | time: 142.169
+		epoch: 27 | time: 147.615
+		epoch: 28 | time: 153.089
+		epoch: 29 | time: 158.544
+		epoch: 30 | time: 164.020
+	Accuracy of autoencoder stitch model is 9.623893805309734
+	Autoencoder stitch mean2 difference is 9.442813905666416e-05
+	Vanilla stitch autoencoder mean2 difference is 0.3976161122322083
+***
+	stitching 2->6 which is (2, 0)->fc
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 2.073
+		epoch: 2 | time: 4.154
+		epoch: 3 | time: 6.235
+		epoch: 4 | time: 8.311
+	Accuracy of vanilla stitch model is 0.4065265486725664
+	Vanilla stitch mean2 difference is 2.3288436009333684
+		epoch: 1 | time: 5.971
+		epoch: 2 | time: 11.927
+		epoch: 3 | time: 17.897
+		epoch: 4 | time: 23.857
+		epoch: 5 | time: 29.852
+		epoch: 6 | time: 35.827
+		epoch: 7 | time: 41.810
+		epoch: 8 | time: 47.773
+		epoch: 9 | time: 53.732
+		epoch: 10 | time: 59.693
+		epoch: 11 | time: 65.657
+		epoch: 12 | time: 71.622
+		epoch: 13 | time: 77.581
+		epoch: 14 | time: 83.536
+		epoch: 15 | time: 89.483
+		epoch: 16 | time: 95.451
+		epoch: 17 | time: 101.410
+		epoch: 18 | time: 107.362
+		epoch: 19 | time: 113.315
+		epoch: 20 | time: 119.257
+		epoch: 21 | time: 125.218
+		epoch: 22 | time: 131.186
+		epoch: 23 | time: 137.149
+		epoch: 24 | time: 143.101
+		epoch: 25 | time: 149.075
+		epoch: 26 | time: 155.050
+		epoch: 27 | time: 161.013
+		epoch: 28 | time: 166.978
+		epoch: 29 | time: 172.956
+		epoch: 30 | time: 178.935
+	Accuracy of autoencoder stitch model is 9.623893805309734
+	Autoencoder stitch mean2 difference is 0.00011618823721222818
+	Vanilla stitch autoencoder mean2 difference is 2.3292361662938044
+***
+	stitching 3->1 which is (2, 1)->(1, 0)
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 5.445
+		epoch: 2 | time: 10.897
+		epoch: 3 | time: 16.357
+		epoch: 4 | time: 21.823
+	Accuracy of vanilla stitch model is 0.5210176991150443
+	Vanilla stitch mean2 difference is 0.5418511962279295
+		epoch: 1 | time: 3.673
+		epoch: 2 | time: 7.343
+		epoch: 3 | time: 11.042
+		epoch: 4 | time: 14.723
+		epoch: 5 | time: 18.424
+		epoch: 6 | time: 22.100
+		epoch: 7 | time: 25.776
+		epoch: 8 | time: 29.456
+		epoch: 9 | time: 33.137
+		epoch: 10 | time: 36.824
+		epoch: 11 | time: 40.511
+		epoch: 12 | time: 44.209
+		epoch: 13 | time: 47.903
+		epoch: 14 | time: 51.602
+		epoch: 15 | time: 55.306
+		epoch: 16 | time: 58.990
+		epoch: 17 | time: 62.673
+		epoch: 18 | time: 66.369
+		epoch: 19 | time: 70.054
+		epoch: 20 | time: 73.749
+		epoch: 21 | time: 77.435
+		epoch: 22 | time: 81.120
+		epoch: 23 | time: 84.816
+		epoch: 24 | time: 88.514
+		epoch: 25 | time: 92.203
+		epoch: 26 | time: 95.877
+		epoch: 27 | time: 99.559
+		epoch: 28 | time: 103.234
+		epoch: 29 | time: 106.910
+		epoch: 30 | time: 110.597
+	Accuracy of autoencoder stitch model is 9.900442477876107
+	Autoencoder stitch mean2 difference is 0.010826097691479401
+	Vanilla stitch autoencoder mean2 difference is 0.5321661888024746
+***
+	stitching 3->2 which is (2, 1)->(1, 1)
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 4.793
+		epoch: 2 | time: 9.603
+		epoch: 3 | time: 14.400
+		epoch: 4 | time: 19.196
+	Accuracy of vanilla stitch model is 0.48783185840707965
+	Vanilla stitch mean2 difference is 0.727665504736778
+		epoch: 1 | time: 4.681
+		epoch: 2 | time: 9.387
+		epoch: 3 | time: 14.094
+		epoch: 4 | time: 18.753
+		epoch: 5 | time: 23.424
+		epoch: 6 | time: 28.093
+		epoch: 7 | time: 32.762
+		epoch: 8 | time: 37.428
+		epoch: 9 | time: 42.101
+		epoch: 10 | time: 46.765
+		epoch: 11 | time: 51.445
+		epoch: 12 | time: 56.100
+		epoch: 13 | time: 60.764
+		epoch: 14 | time: 65.441
+		epoch: 15 | time: 70.101
+		epoch: 16 | time: 74.794
+		epoch: 17 | time: 79.460
+		epoch: 18 | time: 84.132
+		epoch: 19 | time: 88.789
+		epoch: 20 | time: 93.453
+		epoch: 21 | time: 98.108
+		epoch: 22 | time: 102.767
+		epoch: 23 | time: 107.443
+		epoch: 24 | time: 112.099
+		epoch: 25 | time: 116.780
+		epoch: 26 | time: 121.463
+		epoch: 27 | time: 126.127
+		epoch: 28 | time: 130.798
+		epoch: 29 | time: 135.470
+		epoch: 30 | time: 140.153
+	Accuracy of autoencoder stitch model is 9.45796460176991
+	Autoencoder stitch mean2 difference is 0.0005117305158935965
+	Vanilla stitch autoencoder mean2 difference is 0.7272950609525045
+***
+	stitching 3->3 which is (2, 1)->(2, 0)
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 4.137
+		epoch: 2 | time: 8.273
+		epoch: 3 | time: 12.434
+		epoch: 4 | time: 16.559
+	Accuracy of vanilla stitch model is 0.478429203539823
+	Vanilla stitch mean2 difference is 0.5273683871978369
+		epoch: 1 | time: 5.472
+		epoch: 2 | time: 10.935
+		epoch: 3 | time: 16.419
+		epoch: 4 | time: 21.902
+		epoch: 5 | time: 27.365
+		epoch: 6 | time: 32.829
+		epoch: 7 | time: 38.316
+		epoch: 8 | time: 43.812
+		epoch: 9 | time: 49.287
+		epoch: 10 | time: 54.760
+		epoch: 11 | time: 60.242
+		epoch: 12 | time: 65.720
+		epoch: 13 | time: 71.203
+		epoch: 14 | time: 76.680
+		epoch: 15 | time: 82.158
+		epoch: 16 | time: 87.630
+		epoch: 17 | time: 93.101
+		epoch: 18 | time: 98.569
+		epoch: 19 | time: 104.052
+		epoch: 20 | time: 109.542
+		epoch: 21 | time: 115.015
+		epoch: 22 | time: 120.473
+		epoch: 23 | time: 125.946
+		epoch: 24 | time: 131.434
+		epoch: 25 | time: 136.930
+		epoch: 26 | time: 142.438
+		epoch: 27 | time: 147.911
+		epoch: 28 | time: 153.394
+		epoch: 29 | time: 158.886
+		epoch: 30 | time: 164.364
+	Accuracy of autoencoder stitch model is 9.734513274336283
+	Autoencoder stitch mean2 difference is 0.000523589981887012
+	Vanilla stitch autoencoder mean2 difference is 0.5267956605324379
+***
+	stitching 3->4 which is (2, 1)->(3, 0)
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 3.336
+		epoch: 2 | time: 6.677
+		epoch: 3 | time: 10.017
+		epoch: 4 | time: 13.369
+	Accuracy of vanilla stitch model is 0.4391592920353983
+	Vanilla stitch mean2 difference is 0.5076529738230583
+		epoch: 1 | time: 5.640
+		epoch: 2 | time: 11.465
+		epoch: 3 | time: 17.123
+		epoch: 4 | time: 22.767
+		epoch: 5 | time: 28.409
+		epoch: 6 | time: 34.049
+		epoch: 7 | time: 39.699
+		epoch: 8 | time: 45.321
+		epoch: 9 | time: 50.965
+		epoch: 10 | time: 56.599
+		epoch: 11 | time: 62.238
+		epoch: 12 | time: 67.865
+		epoch: 13 | time: 73.489
+		epoch: 14 | time: 79.168
+		epoch: 15 | time: 84.806
+		epoch: 16 | time: 90.439
+		epoch: 17 | time: 96.099
+		epoch: 18 | time: 101.725
+		epoch: 19 | time: 107.361
+		epoch: 20 | time: 113.003
+		epoch: 21 | time: 118.633
+		epoch: 22 | time: 124.271
+		epoch: 23 | time: 129.956
+		epoch: 24 | time: 135.594
+		epoch: 25 | time: 141.237
+		epoch: 26 | time: 146.868
+		epoch: 27 | time: 152.495
+		epoch: 28 | time: 158.126
+		epoch: 29 | time: 163.758
+		epoch: 30 | time: 169.389
+	Accuracy of autoencoder stitch model is 10.011061946902656
+	Autoencoder stitch mean2 difference is 0.00017442762006957753
+	Vanilla stitch autoencoder mean2 difference is 0.5074957277530279
+***
+	stitching 3->5 which is (2, 1)->(4, 0)
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 2.922
+		epoch: 2 | time: 5.833
+		epoch: 3 | time: 8.737
+		epoch: 4 | time: 11.645
+	Accuracy of vanilla stitch model is 0.44413716814159293
+	Vanilla stitch mean2 difference is 0.7214407269771282
+		epoch: 1 | time: 6.045
+		epoch: 2 | time: 12.095
+		epoch: 3 | time: 18.142
+		epoch: 4 | time: 24.195
+		epoch: 5 | time: 30.235
+		epoch: 6 | time: 36.295
+		epoch: 7 | time: 42.349
+		epoch: 8 | time: 48.395
+		epoch: 9 | time: 54.439
+		epoch: 10 | time: 60.508
+		epoch: 11 | time: 66.565
+		epoch: 12 | time: 72.636
+		epoch: 13 | time: 78.707
+		epoch: 14 | time: 84.755
+		epoch: 15 | time: 90.811
+		epoch: 16 | time: 96.877
+		epoch: 17 | time: 102.936
+		epoch: 18 | time: 108.998
+		epoch: 19 | time: 115.039
+		epoch: 20 | time: 121.110
+		epoch: 21 | time: 127.169
+		epoch: 22 | time: 133.232
+		epoch: 23 | time: 139.280
+		epoch: 24 | time: 145.323
+		epoch: 25 | time: 151.377
+		epoch: 26 | time: 157.425
+		epoch: 27 | time: 163.465
+		epoch: 28 | time: 169.527
+		epoch: 29 | time: 175.568
+		epoch: 30 | time: 181.610
+	Accuracy of autoencoder stitch model is 9.679203539823009
+	Autoencoder stitch mean2 difference is 8.004899569548284e-05
+	Vanilla stitch autoencoder mean2 difference is 0.7219151447980832
+***
+	stitching 3->6 which is (2, 1)->fc
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 2.592
+		epoch: 2 | time: 5.178
+		epoch: 3 | time: 7.794
+		epoch: 4 | time: 10.386
+	Accuracy of vanilla stitch model is 0.37887168141592925
+	Vanilla stitch mean2 difference is 78.89892046023638
+		epoch: 1 | time: 6.566
+		epoch: 2 | time: 13.125
+		epoch: 3 | time: 19.681
+		epoch: 4 | time: 26.386
+		epoch: 5 | time: 32.930
+		epoch: 6 | time: 39.484
+		epoch: 7 | time: 46.037
+		epoch: 8 | time: 52.609
+		epoch: 9 | time: 59.159
+		epoch: 10 | time: 65.709
+		epoch: 11 | time: 72.287
+		epoch: 12 | time: 78.859
+		epoch: 13 | time: 85.411
+		epoch: 14 | time: 91.951
+		epoch: 15 | time: 98.515
+		epoch: 16 | time: 105.064
+		epoch: 17 | time: 111.620
+		epoch: 18 | time: 118.173
+		epoch: 19 | time: 124.730
+		epoch: 20 | time: 131.281
+		epoch: 21 | time: 137.831
+		epoch: 22 | time: 144.377
+		epoch: 23 | time: 150.926
+		epoch: 24 | time: 157.477
+		epoch: 25 | time: 164.041
+		epoch: 26 | time: 170.604
+		epoch: 27 | time: 177.157
+		epoch: 28 | time: 183.713
+		epoch: 29 | time: 190.284
+		epoch: 30 | time: 196.839
+	Accuracy of autoencoder stitch model is 9.623893805309734
+	Autoencoder stitch mean2 difference is 0.0001149561305049783
+	Vanilla stitch autoencoder mean2 difference is 78.89726014748598
+***
+	stitching 4->1 which is (3, 0)->(1, 0)
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 6.036
+		epoch: 2 | time: 12.076
+		epoch: 3 | time: 18.108
+		epoch: 4 | time: 24.168
+	Accuracy of vanilla stitch model is 0.39325221238938046
+	Vanilla stitch mean2 difference is 0.5611750786121075
+		epoch: 1 | time: 4.316
+		epoch: 2 | time: 8.639
+		epoch: 3 | time: 12.955
+		epoch: 4 | time: 17.277
+		epoch: 5 | time: 21.588
+		epoch: 6 | time: 25.933
+		epoch: 7 | time: 30.252
+		epoch: 8 | time: 34.573
+		epoch: 9 | time: 38.900
+		epoch: 10 | time: 43.228
+		epoch: 11 | time: 47.531
+		epoch: 12 | time: 51.859
+		epoch: 13 | time: 56.177
+		epoch: 14 | time: 60.488
+		epoch: 15 | time: 64.808
+		epoch: 16 | time: 69.145
+		epoch: 17 | time: 73.464
+		epoch: 18 | time: 77.780
+		epoch: 19 | time: 82.090
+		epoch: 20 | time: 86.405
+		epoch: 21 | time: 90.734
+		epoch: 22 | time: 95.658
+		epoch: 23 | time: 99.965
+		epoch: 24 | time: 104.271
+		epoch: 25 | time: 108.572
+		epoch: 26 | time: 112.897
+		epoch: 27 | time: 117.216
+		epoch: 28 | time: 121.529
+		epoch: 29 | time: 125.912
+		epoch: 30 | time: 130.240
+	Accuracy of autoencoder stitch model is 10.398230088495575
+	Autoencoder stitch mean2 difference is 0.013768986875239092
+	Vanilla stitch autoencoder mean2 difference is 0.5469673713048299
+***
+	stitching 4->2 which is (3, 0)->(1, 1)
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 5.436
+		epoch: 2 | time: 10.814
+		epoch: 3 | time: 16.223
+		epoch: 4 | time: 21.608
+	Accuracy of vanilla stitch model is 0.4081858407079646
+	Vanilla stitch mean2 difference is 0.6000601423092378
+		epoch: 1 | time: 5.319
+		epoch: 2 | time: 10.626
+		epoch: 3 | time: 15.929
+		epoch: 4 | time: 21.221
+		epoch: 5 | time: 26.522
+		epoch: 6 | time: 31.838
+		epoch: 7 | time: 37.138
+		epoch: 8 | time: 42.442
+		epoch: 9 | time: 47.753
+		epoch: 10 | time: 53.052
+		epoch: 11 | time: 58.371
+		epoch: 12 | time: 63.678
+		epoch: 13 | time: 68.976
+		epoch: 14 | time: 74.268
+		epoch: 15 | time: 79.575
+		epoch: 16 | time: 84.894
+		epoch: 17 | time: 90.195
+		epoch: 18 | time: 95.508
+		epoch: 19 | time: 100.795
+		epoch: 20 | time: 106.084
+		epoch: 21 | time: 111.383
+		epoch: 22 | time: 116.683
+		epoch: 23 | time: 122.018
+		epoch: 24 | time: 127.319
+		epoch: 25 | time: 132.618
+		epoch: 26 | time: 137.938
+		epoch: 27 | time: 143.234
+		epoch: 28 | time: 148.550
+		epoch: 29 | time: 153.858
+		epoch: 30 | time: 159.169
+	Accuracy of autoencoder stitch model is 9.623893805309734
+	Autoencoder stitch mean2 difference is 0.0005228739790021418
+	Vanilla stitch autoencoder mean2 difference is 0.5994710601293124
+***
+	stitching 4->3 which is (3, 0)->(2, 0)
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 4.728
+		epoch: 2 | time: 9.440
+		epoch: 3 | time: 14.159
+		epoch: 4 | time: 18.872
+	Accuracy of vanilla stitch model is 0.4004424778761062
+	Vanilla stitch mean2 difference is 0.4091831928644425
+		epoch: 1 | time: 6.095
+		epoch: 2 | time: 12.213
+		epoch: 3 | time: 18.321
+		epoch: 4 | time: 24.447
+		epoch: 5 | time: 30.539
+		epoch: 6 | time: 36.638
+		epoch: 7 | time: 42.741
+		epoch: 8 | time: 48.911
+		epoch: 9 | time: 55.028
+		epoch: 10 | time: 61.135
+		epoch: 11 | time: 67.259
+		epoch: 12 | time: 73.357
+		epoch: 13 | time: 79.456
+		epoch: 14 | time: 85.570
+		epoch: 15 | time: 91.685
+		epoch: 16 | time: 97.813
+		epoch: 17 | time: 103.931
+		epoch: 18 | time: 110.046
+		epoch: 19 | time: 116.166
+		epoch: 20 | time: 122.284
+		epoch: 21 | time: 128.390
+		epoch: 22 | time: 134.487
+		epoch: 23 | time: 140.607
+		epoch: 24 | time: 146.737
+		epoch: 25 | time: 152.862
+		epoch: 26 | time: 158.961
+		epoch: 27 | time: 165.067
+		epoch: 28 | time: 171.175
+		epoch: 29 | time: 177.293
+		epoch: 30 | time: 183.401
+	Accuracy of autoencoder stitch model is 9.623893805309734
+	Autoencoder stitch mean2 difference is 0.00049034982922678
+	Vanilla stitch autoencoder mean2 difference is 0.40838665121640916
+***
+	stitching 4->4 which is (3, 0)->(3, 0)
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 4.011
+		epoch: 2 | time: 8.020
+		epoch: 3 | time: 12.037
+		epoch: 4 | time: 16.068
+	Accuracy of vanilla stitch model is 0.4092920353982301
+	Vanilla stitch mean2 difference is 0.3606217492849399
+		epoch: 1 | time: 6.353
+		epoch: 2 | time: 12.706
+		epoch: 3 | time: 19.065
+		epoch: 4 | time: 25.423
+		epoch: 5 | time: 31.790
+		epoch: 6 | time: 38.159
+		epoch: 7 | time: 44.524
+		epoch: 8 | time: 50.878
+		epoch: 9 | time: 57.232
+		epoch: 10 | time: 63.580
+		epoch: 11 | time: 69.938
+		epoch: 12 | time: 76.309
+		epoch: 13 | time: 82.665
+		epoch: 14 | time: 89.032
+		epoch: 15 | time: 95.401
+		epoch: 16 | time: 101.758
+		epoch: 17 | time: 108.142
+		epoch: 18 | time: 114.488
+		epoch: 19 | time: 120.846
+		epoch: 20 | time: 127.220
+		epoch: 21 | time: 133.599
+		epoch: 22 | time: 139.955
+		epoch: 23 | time: 146.321
+		epoch: 24 | time: 152.676
+		epoch: 25 | time: 159.056
+		epoch: 26 | time: 165.417
+		epoch: 27 | time: 171.770
+		epoch: 28 | time: 178.150
+		epoch: 29 | time: 184.516
+		epoch: 30 | time: 190.873
+	Accuracy of autoencoder stitch model is 9.45796460176991
+	Autoencoder stitch mean2 difference is 3.0934858016105585e-05
+	Vanilla stitch autoencoder mean2 difference is 0.3606243960368328
+***
+	stitching 4->5 which is (3, 0)->(4, 0)
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 3.324
+		epoch: 2 | time: 6.637
+		epoch: 3 | time: 9.964
+		epoch: 4 | time: 13.295
+	Accuracy of vanilla stitch model is 0.3755530973451327
+	Vanilla stitch mean2 difference is 0.32470879554748533
+		epoch: 1 | time: 6.526
+		epoch: 2 | time: 13.065
+		epoch: 3 | time: 19.595
+		epoch: 4 | time: 26.123
+		epoch: 5 | time: 32.654
+		epoch: 6 | time: 39.185
+		epoch: 7 | time: 45.712
+		epoch: 8 | time: 52.253
+		epoch: 9 | time: 58.793
+		epoch: 10 | time: 65.336
+		epoch: 11 | time: 71.877
+		epoch: 12 | time: 78.391
+		epoch: 13 | time: 84.908
+		epoch: 14 | time: 91.433
+		epoch: 15 | time: 97.958
+		epoch: 16 | time: 104.485
+		epoch: 17 | time: 111.021
+		epoch: 18 | time: 117.530
+		epoch: 19 | time: 124.047
+		epoch: 20 | time: 130.565
+		epoch: 21 | time: 137.106
+		epoch: 22 | time: 143.639
+		epoch: 23 | time: 150.176
+		epoch: 24 | time: 156.692
+		epoch: 25 | time: 163.209
+		epoch: 26 | time: 169.728
+		epoch: 27 | time: 176.257
+		epoch: 28 | time: 182.774
+		epoch: 29 | time: 189.299
+		epoch: 30 | time: 195.842
+	Accuracy of autoencoder stitch model is 9.45796460176991
+	Autoencoder stitch mean2 difference is 8.797485732849544e-05
+	Vanilla stitch autoencoder mean2 difference is 0.3245964678434225
+***
+	stitching 4->6 which is (3, 0)->fc
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 3.529
+		epoch: 2 | time: 6.496
+		epoch: 3 | time: 9.459
+		epoch: 4 | time: 12.431
+	Accuracy of vanilla stitch model is 0.3877212389380531
+	Vanilla stitch mean2 difference is 0.7723702974808522
+		epoch: 1 | time: 6.972
+		epoch: 2 | time: 13.939
+		epoch: 3 | time: 20.891
+		epoch: 4 | time: 27.878
+		epoch: 5 | time: 34.855
+		epoch: 6 | time: 41.846
+		epoch: 7 | time: 48.855
+		epoch: 8 | time: 55.833
+		epoch: 9 | time: 62.817
+		epoch: 10 | time: 69.804
+		epoch: 11 | time: 76.771
+		epoch: 12 | time: 83.742
+		epoch: 13 | time: 90.717
+		epoch: 14 | time: 97.684
+		epoch: 15 | time: 104.647
+		epoch: 16 | time: 111.628
+		epoch: 17 | time: 118.613
+		epoch: 18 | time: 125.598
+		epoch: 19 | time: 132.574
+		epoch: 20 | time: 139.539
+		epoch: 21 | time: 146.501
+		epoch: 22 | time: 153.473
+		epoch: 23 | time: 160.461
+		epoch: 24 | time: 167.514
+		epoch: 25 | time: 174.517
+		epoch: 26 | time: 181.499
+		epoch: 27 | time: 188.474
+		epoch: 28 | time: 195.425
+		epoch: 29 | time: 202.395
+		epoch: 30 | time: 209.364
+	Accuracy of autoencoder stitch model is 9.45796460176991
+	Autoencoder stitch mean2 difference is 0.00013520124141508952
+	Vanilla stitch autoencoder mean2 difference is 0.7737530806125739
+***
+	stitching 5->1 which is (4, 0)->(1, 0)
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 6.789
+		epoch: 2 | time: 13.551
+		epoch: 3 | time: 20.322
+		epoch: 4 | time: 27.083
+	Accuracy of vanilla stitch model is 0.3379424778761062
+	Vanilla stitch mean2 difference is 1.1084349870681762
+		epoch: 1 | time: 5.090
+		epoch: 2 | time: 10.177
+		epoch: 3 | time: 15.255
+		epoch: 4 | time: 20.337
+		epoch: 5 | time: 25.437
+		epoch: 6 | time: 30.537
+		epoch: 7 | time: 35.632
+		epoch: 8 | time: 40.729
+		epoch: 9 | time: 45.803
+		epoch: 10 | time: 50.881
+		epoch: 11 | time: 55.955
+		epoch: 12 | time: 61.061
+		epoch: 13 | time: 66.149
+		epoch: 14 | time: 71.242
+		epoch: 15 | time: 76.343
+		epoch: 16 | time: 81.436
+		epoch: 17 | time: 86.545
+		epoch: 18 | time: 91.657
+		epoch: 19 | time: 96.760
+		epoch: 20 | time: 101.855
+		epoch: 21 | time: 106.938
+		epoch: 22 | time: 112.035
+		epoch: 23 | time: 117.112
+		epoch: 24 | time: 122.203
+		epoch: 25 | time: 127.280
+		epoch: 26 | time: 132.374
+		epoch: 27 | time: 137.461
+		epoch: 28 | time: 142.545
+		epoch: 29 | time: 147.632
+		epoch: 30 | time: 152.743
+	Accuracy of autoencoder stitch model is 9.347345132743364
+	Autoencoder stitch mean2 difference is 0.015715568617750437
+	Vanilla stitch autoencoder mean2 difference is 1.0915760303154969
+***
+	stitching 5->2 which is (4, 0)->(1, 1)
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 6.133
+		epoch: 2 | time: 12.235
+		epoch: 3 | time: 18.355
+		epoch: 4 | time: 24.464
+	Accuracy of vanilla stitch model is 0.3407079646017699
+	Vanilla stitch mean2 difference is 0.9337150081610068
+		epoch: 1 | time: 6.077
+		epoch: 2 | time: 12.154
+		epoch: 3 | time: 18.249
+		epoch: 4 | time: 24.345
+		epoch: 5 | time: 30.424
+		epoch: 6 | time: 36.501
+		epoch: 7 | time: 42.582
+		epoch: 8 | time: 48.661
+		epoch: 9 | time: 54.740
+		epoch: 10 | time: 60.843
+		epoch: 11 | time: 66.930
+		epoch: 12 | time: 73.029
+		epoch: 13 | time: 79.148
+		epoch: 14 | time: 85.234
+		epoch: 15 | time: 91.313
+		epoch: 16 | time: 97.396
+		epoch: 17 | time: 103.471
+		epoch: 18 | time: 109.546
+		epoch: 19 | time: 115.629
+		epoch: 20 | time: 121.697
+		epoch: 21 | time: 127.789
+		epoch: 22 | time: 133.876
+		epoch: 23 | time: 139.961
+		epoch: 24 | time: 146.048
+		epoch: 25 | time: 152.113
+		epoch: 26 | time: 158.192
+		epoch: 27 | time: 164.261
+		epoch: 28 | time: 170.342
+		epoch: 29 | time: 176.424
+		epoch: 30 | time: 182.497
+	Accuracy of autoencoder stitch model is 9.734513274336283
+	Autoencoder stitch mean2 difference is 0.0002988997230437608
+	Vanilla stitch autoencoder mean2 difference is 0.9322255849838257
+***
+	stitching 5->3 which is (4, 0)->(2, 0)
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 5.455
+		epoch: 2 | time: 10.926
+		epoch: 3 | time: 16.379
+		epoch: 4 | time: 21.824
+	Accuracy of vanilla stitch model is 0.34623893805309736
+	Vanilla stitch mean2 difference is 0.6193337911214584
+		epoch: 1 | time: 6.881
+		epoch: 2 | time: 13.781
+		epoch: 3 | time: 20.684
+		epoch: 4 | time: 27.582
+		epoch: 5 | time: 34.458
+		epoch: 6 | time: 41.354
+		epoch: 7 | time: 48.252
+		epoch: 8 | time: 55.138
+		epoch: 9 | time: 62.022
+		epoch: 10 | time: 68.909
+		epoch: 11 | time: 75.807
+		epoch: 12 | time: 82.694
+		epoch: 13 | time: 89.562
+		epoch: 14 | time: 96.453
+		epoch: 15 | time: 103.346
+		epoch: 16 | time: 110.244
+		epoch: 17 | time: 117.138
+		epoch: 18 | time: 124.026
+		epoch: 19 | time: 130.918
+		epoch: 20 | time: 137.813
+		epoch: 21 | time: 144.706
+		epoch: 22 | time: 151.605
+		epoch: 23 | time: 158.489
+		epoch: 24 | time: 165.376
+		epoch: 25 | time: 172.267
+		epoch: 26 | time: 179.153
+		epoch: 27 | time: 186.039
+		epoch: 28 | time: 192.936
+		epoch: 29 | time: 199.837
+		epoch: 30 | time: 206.728
+	Accuracy of autoencoder stitch model is 10.508849557522124
+	Autoencoder stitch mean2 difference is 0.00024827686295164034
+	Vanilla stitch autoencoder mean2 difference is 0.6189552038143843
+***
+	stitching 5->4 which is (4, 0)->(3, 0)
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 4.423
+		epoch: 2 | time: 8.822
+		epoch: 3 | time: 13.225
+		epoch: 4 | time: 17.634
+	Accuracy of vanilla stitch model is 0.3821902654867257
+	Vanilla stitch mean2 difference is 0.45669535505465975
+		epoch: 1 | time: 6.806
+		epoch: 2 | time: 13.611
+		epoch: 3 | time: 20.415
+		epoch: 4 | time: 27.232
+		epoch: 5 | time: 34.050
+		epoch: 6 | time: 40.864
+		epoch: 7 | time: 47.672
+		epoch: 8 | time: 54.461
+		epoch: 9 | time: 61.258
+		epoch: 10 | time: 68.058
+		epoch: 11 | time: 74.860
+		epoch: 12 | time: 81.643
+		epoch: 13 | time: 88.463
+		epoch: 14 | time: 95.266
+		epoch: 15 | time: 102.056
+		epoch: 16 | time: 108.839
+		epoch: 17 | time: 115.646
+		epoch: 18 | time: 122.435
+		epoch: 19 | time: 129.231
+		epoch: 20 | time: 136.022
+		epoch: 21 | time: 142.819
+		epoch: 22 | time: 149.624
+		epoch: 23 | time: 156.430
+		epoch: 24 | time: 163.624
+		epoch: 25 | time: 170.687
+		epoch: 26 | time: 177.494
+		epoch: 27 | time: 184.307
+		epoch: 28 | time: 191.108
+		epoch: 29 | time: 197.904
+		epoch: 30 | time: 204.714
+	Accuracy of autoencoder stitch model is 10.508849557522124
+	Autoencoder stitch mean2 difference is 1.8524911613964764e-05
+	Vanilla stitch autoencoder mean2 difference is 0.4570544571448595
+***
+	stitching 5->5 which is (4, 0)->(4, 0)
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 3.823
+		epoch: 2 | time: 7.648
+		epoch: 3 | time: 11.481
+		epoch: 4 | time: 15.300
+	Accuracy of vanilla stitch model is 0.35674778761061954
+	Vanilla stitch mean2 difference is 0.3657076916633508
+		epoch: 1 | time: 7.081
+		epoch: 2 | time: 14.156
+		epoch: 3 | time: 21.213
+		epoch: 4 | time: 28.275
+		epoch: 5 | time: 35.325
+		epoch: 6 | time: 42.819
+		epoch: 7 | time: 50.087
+		epoch: 8 | time: 57.145
+		epoch: 9 | time: 64.192
+		epoch: 10 | time: 73.649
+		epoch: 11 | time: 81.007
+		epoch: 12 | time: 88.050
+		epoch: 13 | time: 95.105
+		epoch: 14 | time: 102.812
+		epoch: 15 | time: 110.000
+		epoch: 16 | time: 117.059
+		epoch: 17 | time: 125.740
+		epoch: 18 | time: 132.796
+		epoch: 19 | time: 139.855
+		epoch: 20 | time: 146.914
+		epoch: 21 | time: 153.986
+		epoch: 22 | time: 161.036
+		epoch: 23 | time: 168.097
+		epoch: 24 | time: 175.174
+		epoch: 25 | time: 182.219
+		epoch: 26 | time: 189.302
+		epoch: 27 | time: 196.366
+		epoch: 28 | time: 203.421
+		epoch: 29 | time: 210.476
+		epoch: 30 | time: 217.537
+	Accuracy of autoencoder stitch model is 9.29203539823009
+	Autoencoder stitch mean2 difference is 5.5244558778866075e-05
+	Vanilla stitch autoencoder mean2 difference is 0.3656524303631905
+***
+	stitching 5->6 which is (4, 0)->fc
+	Original accuracies were 0.10121681415929204 and 0.9380530973451328
+		epoch: 1 | time: 3.490
+		epoch: 2 | time: 6.833
+		epoch: 3 | time: 10.161
+		epoch: 4 | time: 13.490
+	Accuracy of vanilla stitch model is 0.3639380530973451
+	Vanilla stitch mean2 difference is 0.6548122827823345
+		epoch: 1 | time: 7.576
+		epoch: 2 | time: 14.966
+		epoch: 3 | time: 22.351
+		epoch: 4 | time: 29.727
+		epoch: 5 | time: 37.122
+		epoch: 6 | time: 44.511
+		epoch: 7 | time: 51.900
+		epoch: 8 | time: 59.267
+		epoch: 9 | time: 66.662
+		epoch: 10 | time: 74.053
+		epoch: 11 | time: 81.435
+		epoch: 12 | time: 88.817
+		epoch: 13 | time: 96.188
+		epoch: 14 | time: 103.563
+		epoch: 15 | time: 110.965
+		epoch: 16 | time: 118.349
+		epoch: 17 | time: 125.747
+		epoch: 18 | time: 133.124
+		epoch: 19 | time: 140.499
+		epoch: 20 | time: 147.887
+		epoch: 21 | time: 155.278
+		epoch: 22 | time: 162.661
+		epoch: 23 | time: 170.041
+		epoch: 24 | time: 177.428
+		epoch: 25 | time: 184.834
+		epoch: 26 | time: 192.230
+		epoch: 27 | time: 199.604
+		epoch: 28 | time: 206.977
+		epoch: 29 | time: 214.380
+		epoch: 30 | time: 221.752
+	Accuracy of autoencoder stitch model is 9.29203539823009
+	Autoencoder stitch mean2 difference is 0.0001652384332817
+	Vanilla stitch autoencoder mean2 difference is 0.6550019459846692
+***
+Saving sims to sims_resnet_1211_resnet_2111/resnet_1211_rand_resnet_2111_sims.pt
+Saving autoencoder sims to sims_resnet_1211_resnet_2111/resnet_1211_rand_resnet_2111_autoencoder_sims.pt
+Saving vanilla autoencoder mean2 to sims_resnet_1211_resnet_2111/resnet_1211_rand_resnet_2111_vanilla_autoencoder_mean2.pt
+Saving autoencoder rep mean2 to sims_resnet_1211_resnet_2111/resnet_1211_rand_resnet_2111_autoencoder_rep_mean2.pt
+Saving vanilla rep mean2 to sims_resnet_1211_resnet_2111/resnet_1211_rand_resnet_2111_vanilla_rep_mean2.pt
+Stitching resnet_1211_resnet_2111_rand
+	stitching 0->1 which is conv1->(1, 0)
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 3.407
+		epoch: 2 | time: 6.825
+		epoch: 3 | time: 10.229
+		epoch: 4 | time: 13.641
+	Accuracy of vanilla stitch model is 0.12555309734513273
+	Vanilla stitch mean2 difference is 0.14274130639357444
+		epoch: 1 | time: 1.216
+		epoch: 2 | time: 2.438
+		epoch: 3 | time: 3.652
+		epoch: 4 | time: 4.872
+		epoch: 5 | time: 6.094
+		epoch: 6 | time: 7.309
+		epoch: 7 | time: 8.523
+		epoch: 8 | time: 9.736
+		epoch: 9 | time: 10.955
+		epoch: 10 | time: 12.197
+		epoch: 11 | time: 13.421
+		epoch: 12 | time: 14.631
+		epoch: 13 | time: 15.866
+		epoch: 14 | time: 17.092
+		epoch: 15 | time: 18.308
+		epoch: 16 | time: 19.520
+		epoch: 17 | time: 20.741
+		epoch: 18 | time: 21.972
+		epoch: 19 | time: 23.188
+		epoch: 20 | time: 24.400
+		epoch: 21 | time: 25.617
+		epoch: 22 | time: 26.846
+		epoch: 23 | time: 28.061
+		epoch: 24 | time: 29.293
+		epoch: 25 | time: 30.504
+		epoch: 26 | time: 31.716
+		epoch: 27 | time: 32.970
+		epoch: 28 | time: 34.198
+		epoch: 29 | time: 35.416
+		epoch: 30 | time: 36.623
+	Accuracy of autoencoder stitch model is 11.172566371681416
+	Autoencoder stitch mean2 difference is 0.060090414396463294
+	Vanilla stitch autoencoder mean2 difference is 0.027097578891194785
+***
+	stitching 0->2 which is conv1->(1, 1)
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 2.789
+		epoch: 2 | time: 5.572
+		epoch: 3 | time: 8.362
+		epoch: 4 | time: 11.144
+	Accuracy of vanilla stitch model is 0.1504424778761062
+	Vanilla stitch mean2 difference is 9.071883245614858
+		epoch: 1 | time: 2.193
+		epoch: 2 | time: 4.379
+		epoch: 3 | time: 6.578
+		epoch: 4 | time: 8.778
+		epoch: 5 | time: 10.988
+		epoch: 6 | time: 13.200
+		epoch: 7 | time: 15.403
+		epoch: 8 | time: 17.601
+		epoch: 9 | time: 19.813
+		epoch: 10 | time: 22.230
+		epoch: 11 | time: 24.468
+		epoch: 12 | time: 26.662
+		epoch: 13 | time: 28.858
+		epoch: 14 | time: 31.076
+		epoch: 15 | time: 33.274
+		epoch: 16 | time: 35.474
+		epoch: 17 | time: 37.660
+		epoch: 18 | time: 39.853
+		epoch: 19 | time: 42.043
+		epoch: 20 | time: 44.235
+		epoch: 21 | time: 46.413
+		epoch: 22 | time: 48.600
+		epoch: 23 | time: 50.797
+		epoch: 24 | time: 53.022
+		epoch: 25 | time: 55.215
+		epoch: 26 | time: 57.408
+		epoch: 27 | time: 59.595
+		epoch: 28 | time: 61.778
+		epoch: 29 | time: 63.958
+		epoch: 30 | time: 66.154
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 3.900896104176839
+	Vanilla stitch autoencoder mean2 difference is 2.7673632964109762
+***
+	stitching 0->3 which is conv1->(2, 0)
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 2.082
+		epoch: 2 | time: 4.170
+		epoch: 3 | time: 6.258
+		epoch: 4 | time: 8.382
+	Accuracy of vanilla stitch model is 0.1913716814159292
+	Vanilla stitch mean2 difference is 1378.058015950521
+		epoch: 1 | time: 3.015
+		epoch: 2 | time: 6.017
+		epoch: 3 | time: 9.047
+		epoch: 4 | time: 12.043
+		epoch: 5 | time: 15.057
+		epoch: 6 | time: 18.099
+		epoch: 7 | time: 21.093
+		epoch: 8 | time: 24.108
+		epoch: 9 | time: 27.116
+		epoch: 10 | time: 30.131
+		epoch: 11 | time: 33.145
+		epoch: 12 | time: 36.152
+		epoch: 13 | time: 39.172
+		epoch: 14 | time: 42.190
+		epoch: 15 | time: 45.198
+		epoch: 16 | time: 48.202
+		epoch: 17 | time: 51.229
+		epoch: 18 | time: 54.249
+		epoch: 19 | time: 57.260
+		epoch: 20 | time: 60.269
+		epoch: 21 | time: 63.290
+		epoch: 22 | time: 66.315
+		epoch: 23 | time: 69.323
+		epoch: 24 | time: 72.349
+		epoch: 25 | time: 75.390
+		epoch: 26 | time: 78.417
+		epoch: 27 | time: 81.447
+		epoch: 28 | time: 84.465
+		epoch: 29 | time: 87.484
+		epoch: 30 | time: 90.491
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 522.8403526893029
+	Vanilla stitch autoencoder mean2 difference is 492.5529004219251
+***
+	stitching 0->4 which is conv1->(3, 0)
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 1.621
+		epoch: 2 | time: 3.248
+		epoch: 3 | time: 4.859
+		epoch: 4 | time: 6.494
+	Accuracy of vanilla stitch model is 0.26382743362831856
+	Vanilla stitch mean2 difference is 293652.9237179487
+		epoch: 1 | time: 3.434
+		epoch: 2 | time: 6.889
+		epoch: 3 | time: 10.334
+		epoch: 4 | time: 13.769
+		epoch: 5 | time: 17.214
+		epoch: 6 | time: 20.652
+		epoch: 7 | time: 24.088
+		epoch: 8 | time: 27.523
+		epoch: 9 | time: 30.965
+		epoch: 10 | time: 34.397
+		epoch: 11 | time: 37.834
+		epoch: 12 | time: 41.273
+		epoch: 13 | time: 44.726
+		epoch: 14 | time: 48.187
+		epoch: 15 | time: 51.662
+		epoch: 16 | time: 55.129
+		epoch: 17 | time: 58.574
+		epoch: 18 | time: 62.048
+		epoch: 19 | time: 65.502
+		epoch: 20 | time: 68.949
+		epoch: 21 | time: 72.399
+		epoch: 22 | time: 75.865
+		epoch: 23 | time: 79.310
+		epoch: 24 | time: 82.765
+		epoch: 25 | time: 86.202
+		epoch: 26 | time: 89.658
+		epoch: 27 | time: 93.099
+		epoch: 28 | time: 96.538
+		epoch: 29 | time: 99.980
+		epoch: 30 | time: 103.435
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 120496.41466346153
+	Vanilla stitch autoencoder mean2 difference is 74608.74979967948
+***
+	stitching 0->5 which is conv1->(4, 0)
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 1.173
+		epoch: 2 | time: 2.397
+		epoch: 3 | time: 3.596
+		epoch: 4 | time: 4.775
+	Accuracy of vanilla stitch model is 0.3235619469026549
+	Vanilla stitch mean2 difference is inf
+		epoch: 1 | time: 3.813
+		epoch: 2 | time: 7.629
+		epoch: 3 | time: 11.455
+		epoch: 4 | time: 15.280
+		epoch: 5 | time: 19.105
+		epoch: 6 | time: 22.928
+		epoch: 7 | time: 26.736
+		epoch: 8 | time: 30.563
+		epoch: 9 | time: 34.383
+		epoch: 10 | time: 38.184
+		epoch: 11 | time: 42.000
+		epoch: 12 | time: 45.836
+		epoch: 13 | time: 49.641
+		epoch: 14 | time: 53.456
+		epoch: 15 | time: 57.267
+		epoch: 16 | time: 61.097
+		epoch: 17 | time: 64.924
+		epoch: 18 | time: 68.743
+		epoch: 19 | time: 72.546
+		epoch: 20 | time: 76.358
+		epoch: 21 | time: 80.167
+		epoch: 22 | time: 83.977
+		epoch: 23 | time: 87.791
+		epoch: 24 | time: 91.620
+		epoch: 25 | time: 95.437
+		epoch: 26 | time: 99.251
+		epoch: 27 | time: 103.082
+		epoch: 28 | time: 106.900
+		epoch: 29 | time: 110.729
+		epoch: 30 | time: 114.566
+	Accuracy of autoencoder stitch model is 10.287610619469026
+	Autoencoder stitch mean2 difference is inf
+	Vanilla stitch autoencoder mean2 difference is 0.017541413009166718
+***
+	stitching 0->6 which is conv1->fc
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 1.215
+		epoch: 2 | time: 2.214
+		epoch: 3 | time: 3.213
+		epoch: 4 | time: 4.202
+	Accuracy of vanilla stitch model is 0.37887168141592925
+	Vanilla stitch mean2 difference is nan
+		epoch: 1 | time: 4.758
+		epoch: 2 | time: 9.511
+		epoch: 3 | time: 14.263
+		epoch: 4 | time: 19.005
+		epoch: 5 | time: 23.760
+		epoch: 6 | time: 28.515
+		epoch: 7 | time: 33.250
+		epoch: 8 | time: 38.001
+		epoch: 9 | time: 42.750
+		epoch: 10 | time: 47.493
+		epoch: 11 | time: 52.242
+		epoch: 12 | time: 56.993
+		epoch: 13 | time: 61.755
+		epoch: 14 | time: 66.503
+		epoch: 15 | time: 71.234
+		epoch: 16 | time: 76.001
+		epoch: 17 | time: 80.748
+		epoch: 18 | time: 85.499
+		epoch: 19 | time: 90.245
+		epoch: 20 | time: 95.001
+		epoch: 21 | time: 99.748
+		epoch: 22 | time: 104.481
+		epoch: 23 | time: 109.209
+		epoch: 24 | time: 113.951
+		epoch: 25 | time: 118.705
+		epoch: 26 | time: 123.445
+		epoch: 27 | time: 128.199
+		epoch: 28 | time: 132.960
+		epoch: 29 | time: 137.701
+		epoch: 30 | time: 142.458
+	Accuracy of autoencoder stitch model is 9.955752212389381
+	Autoencoder stitch mean2 difference is nan
+	Vanilla stitch autoencoder mean2 difference is 0.08779698449831742
+***
+	stitching 1->1 which is (1, 0)->(1, 0)
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 4.181
+		epoch: 2 | time: 8.367
+		epoch: 3 | time: 12.546
+		epoch: 4 | time: 16.748
+	Accuracy of vanilla stitch model is 0.14601769911504425
+	Vanilla stitch mean2 difference is 0.14243514369695615
+		epoch: 1 | time: 2.201
+		epoch: 2 | time: 4.413
+		epoch: 3 | time: 6.639
+		epoch: 4 | time: 8.856
+		epoch: 5 | time: 11.071
+		epoch: 6 | time: 13.283
+		epoch: 7 | time: 15.521
+		epoch: 8 | time: 17.747
+		epoch: 9 | time: 19.963
+		epoch: 10 | time: 22.193
+		epoch: 11 | time: 24.419
+		epoch: 12 | time: 26.649
+		epoch: 13 | time: 28.854
+		epoch: 14 | time: 31.090
+		epoch: 15 | time: 33.311
+		epoch: 16 | time: 35.512
+		epoch: 17 | time: 37.749
+		epoch: 18 | time: 39.978
+		epoch: 19 | time: 42.172
+		epoch: 20 | time: 44.394
+		epoch: 21 | time: 46.586
+		epoch: 22 | time: 48.785
+		epoch: 23 | time: 50.995
+		epoch: 24 | time: 53.231
+		epoch: 25 | time: 55.453
+		epoch: 26 | time: 57.658
+		epoch: 27 | time: 59.883
+		epoch: 28 | time: 62.111
+		epoch: 29 | time: 64.321
+		epoch: 30 | time: 66.527
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 0.13364501935549272
+	Vanilla stitch autoencoder mean2 difference is 0.007035569767825879
+***
+	stitching 1->2 which is (1, 0)->(1, 1)
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 3.518
+		epoch: 2 | time: 7.027
+		epoch: 3 | time: 10.555
+		epoch: 4 | time: 14.080
+	Accuracy of vanilla stitch model is 0.13053097345132744
+	Vanilla stitch mean2 difference is 84.55528204502204
+		epoch: 1 | time: 3.193
+		epoch: 2 | time: 6.397
+		epoch: 3 | time: 9.589
+		epoch: 4 | time: 12.792
+		epoch: 5 | time: 15.980
+		epoch: 6 | time: 19.169
+		epoch: 7 | time: 22.363
+		epoch: 8 | time: 25.574
+		epoch: 9 | time: 28.793
+		epoch: 10 | time: 31.989
+		epoch: 11 | time: 35.206
+		epoch: 12 | time: 38.413
+		epoch: 13 | time: 41.612
+		epoch: 14 | time: 44.846
+		epoch: 15 | time: 48.052
+		epoch: 16 | time: 51.241
+		epoch: 17 | time: 54.448
+		epoch: 18 | time: 57.648
+		epoch: 19 | time: 60.867
+		epoch: 20 | time: 64.069
+		epoch: 21 | time: 67.262
+		epoch: 22 | time: 70.461
+		epoch: 23 | time: 73.681
+		epoch: 24 | time: 76.890
+		epoch: 25 | time: 80.077
+		epoch: 26 | time: 83.279
+		epoch: 27 | time: 86.476
+		epoch: 28 | time: 89.668
+		epoch: 29 | time: 92.868
+		epoch: 30 | time: 96.086
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 40.643585850642275
+	Vanilla stitch autoencoder mean2 difference is 27.171866333790316
+***
+	stitching 1->3 which is (1, 0)->(2, 0)
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 2.875
+		epoch: 2 | time: 5.752
+		epoch: 3 | time: 8.623
+		epoch: 4 | time: 11.486
+	Accuracy of vanilla stitch model is 0.21681415929203537
+	Vanilla stitch mean2 difference is 95564.37367788462
+		epoch: 1 | time: 4.019
+		epoch: 2 | time: 8.021
+		epoch: 3 | time: 12.050
+		epoch: 4 | time: 16.067
+		epoch: 5 | time: 20.078
+		epoch: 6 | time: 24.094
+		epoch: 7 | time: 28.108
+		epoch: 8 | time: 32.134
+		epoch: 9 | time: 36.129
+		epoch: 10 | time: 40.180
+		epoch: 11 | time: 44.234
+		epoch: 12 | time: 48.262
+		epoch: 13 | time: 52.298
+		epoch: 14 | time: 56.304
+		epoch: 15 | time: 60.316
+		epoch: 16 | time: 64.331
+		epoch: 17 | time: 68.342
+		epoch: 18 | time: 72.417
+		epoch: 19 | time: 76.437
+		epoch: 20 | time: 80.450
+		epoch: 21 | time: 84.447
+		epoch: 22 | time: 88.465
+		epoch: 23 | time: 92.478
+		epoch: 24 | time: 96.492
+		epoch: 25 | time: 100.496
+		epoch: 26 | time: 104.499
+		epoch: 27 | time: 109.044
+		epoch: 28 | time: 113.064
+		epoch: 29 | time: 117.073
+		epoch: 30 | time: 121.083
+	Accuracy of autoencoder stitch model is 10.121681415929205
+	Autoencoder stitch mean2 difference is 42659.247475961536
+	Vanilla stitch autoencoder mean2 difference is 32843.60949519231
+***
+	stitching 1->4 which is (1, 0)->(3, 0)
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 2.506
+		epoch: 2 | time: 4.840
+		epoch: 3 | time: 7.191
+		epoch: 4 | time: 9.539
+	Accuracy of vanilla stitch model is 0.35011061946902655
+	Vanilla stitch mean2 difference is nan
+		epoch: 1 | time: 4.428
+		epoch: 2 | time: 8.855
+		epoch: 3 | time: 13.281
+		epoch: 4 | time: 17.709
+		epoch: 5 | time: 22.136
+		epoch: 6 | time: 26.560
+		epoch: 7 | time: 30.988
+		epoch: 8 | time: 35.420
+		epoch: 9 | time: 39.892
+		epoch: 10 | time: 44.316
+		epoch: 11 | time: 48.766
+		epoch: 12 | time: 53.210
+		epoch: 13 | time: 57.665
+		epoch: 14 | time: 62.103
+		epoch: 15 | time: 66.522
+		epoch: 16 | time: 70.951
+		epoch: 17 | time: 75.393
+		epoch: 18 | time: 79.828
+		epoch: 19 | time: 84.266
+		epoch: 20 | time: 88.682
+		epoch: 21 | time: 93.110
+		epoch: 22 | time: 97.529
+		epoch: 23 | time: 101.952
+		epoch: 24 | time: 106.372
+		epoch: 25 | time: 110.820
+		epoch: 26 | time: 115.244
+		epoch: 27 | time: 119.670
+		epoch: 28 | time: 124.110
+		epoch: 29 | time: 128.581
+		epoch: 30 | time: 133.016
+	Accuracy of autoencoder stitch model is 10.176991150442479
+	Autoencoder stitch mean2 difference is nan
+	Vanilla stitch autoencoder mean2 difference is 0.005253657954147993
+***
+	stitching 1->5 which is (1, 0)->(4, 0)
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 1.890
+		epoch: 2 | time: 3.787
+		epoch: 3 | time: 5.677
+		epoch: 4 | time: 7.545
+	Accuracy of vanilla stitch model is 0.4723451327433628
+	Vanilla stitch mean2 difference is nan
+		epoch: 1 | time: 4.817
+		epoch: 2 | time: 9.642
+		epoch: 3 | time: 14.469
+		epoch: 4 | time: 19.311
+		epoch: 5 | time: 24.142
+		epoch: 6 | time: 28.966
+		epoch: 7 | time: 33.790
+		epoch: 8 | time: 38.632
+		epoch: 9 | time: 43.476
+		epoch: 10 | time: 48.292
+		epoch: 11 | time: 53.134
+		epoch: 12 | time: 57.961
+		epoch: 13 | time: 62.791
+		epoch: 14 | time: 67.616
+		epoch: 15 | time: 72.515
+		epoch: 16 | time: 77.339
+		epoch: 17 | time: 82.159
+		epoch: 18 | time: 86.982
+		epoch: 19 | time: 91.821
+		epoch: 20 | time: 96.646
+		epoch: 21 | time: 101.460
+		epoch: 22 | time: 106.280
+		epoch: 23 | time: 111.084
+		epoch: 24 | time: 115.916
+		epoch: 25 | time: 120.750
+		epoch: 26 | time: 125.581
+		epoch: 27 | time: 130.402
+		epoch: 28 | time: 135.229
+		epoch: 29 | time: 140.064
+		epoch: 30 | time: 144.910
+	Accuracy of autoencoder stitch model is 9.29203539823009
+	Autoencoder stitch mean2 difference is nan
+	Vanilla stitch autoencoder mean2 difference is 0.0035432359920098233
+***
+	stitching 1->6 which is (1, 0)->fc
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 1.748
+		epoch: 2 | time: 3.491
+		epoch: 3 | time: 5.235
+		epoch: 4 | time: 6.980
+	Accuracy of vanilla stitch model is 0.5060840707964602
+	Vanilla stitch mean2 difference is nan
+		epoch: 1 | time: 5.663
+		epoch: 2 | time: 11.336
+		epoch: 3 | time: 17.007
+		epoch: 4 | time: 22.663
+		epoch: 5 | time: 28.322
+		epoch: 6 | time: 34.002
+		epoch: 7 | time: 39.663
+		epoch: 8 | time: 45.327
+		epoch: 9 | time: 50.992
+		epoch: 10 | time: 56.656
+		epoch: 11 | time: 62.326
+		epoch: 12 | time: 68.003
+		epoch: 13 | time: 73.667
+		epoch: 14 | time: 79.337
+		epoch: 15 | time: 85.005
+		epoch: 16 | time: 90.659
+		epoch: 17 | time: 96.343
+		epoch: 18 | time: 102.024
+		epoch: 19 | time: 107.711
+		epoch: 20 | time: 113.373
+		epoch: 21 | time: 119.035
+		epoch: 22 | time: 124.701
+		epoch: 23 | time: 130.368
+		epoch: 24 | time: 136.057
+		epoch: 25 | time: 141.740
+		epoch: 26 | time: 147.400
+		epoch: 27 | time: 153.078
+		epoch: 28 | time: 158.761
+		epoch: 29 | time: 164.432
+		epoch: 30 | time: 170.094
+	Accuracy of autoencoder stitch model is 13.219026548672566
+	Autoencoder stitch mean2 difference is nan
+	Vanilla stitch autoencoder mean2 difference is 0.019928328473216447
+***
+	stitching 2->1 which is (2, 0)->(1, 0)
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 4.946
+		epoch: 2 | time: 9.889
+		epoch: 3 | time: 14.818
+		epoch: 4 | time: 19.760
+	Accuracy of vanilla stitch model is 0.17975663716814158
+	Vanilla stitch mean2 difference is 0.1416042270568701
+		epoch: 1 | time: 3.083
+		epoch: 2 | time: 6.175
+		epoch: 3 | time: 9.253
+		epoch: 4 | time: 12.336
+		epoch: 5 | time: 15.410
+		epoch: 6 | time: 18.487
+		epoch: 7 | time: 21.562
+		epoch: 8 | time: 24.656
+		epoch: 9 | time: 27.758
+		epoch: 10 | time: 30.852
+		epoch: 11 | time: 33.953
+		epoch: 12 | time: 37.043
+		epoch: 13 | time: 40.138
+		epoch: 14 | time: 43.219
+		epoch: 15 | time: 46.302
+		epoch: 16 | time: 49.399
+		epoch: 17 | time: 52.551
+		epoch: 18 | time: 55.633
+		epoch: 19 | time: 58.715
+		epoch: 20 | time: 61.814
+		epoch: 21 | time: 64.911
+		epoch: 22 | time: 68.016
+		epoch: 23 | time: 71.113
+		epoch: 24 | time: 74.215
+		epoch: 25 | time: 77.320
+		epoch: 26 | time: 80.430
+		epoch: 27 | time: 83.514
+		epoch: 28 | time: 86.607
+		epoch: 29 | time: 89.696
+		epoch: 30 | time: 92.778
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 0.1351821114619573
+	Vanilla stitch autoencoder mean2 difference is 0.006049739266148745
+***
+	stitching 2->2 which is (2, 0)->(1, 1)
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 4.281
+		epoch: 2 | time: 8.573
+		epoch: 3 | time: 12.866
+		epoch: 4 | time: 17.154
+	Accuracy of vanilla stitch model is 0.18252212389380532
+	Vanilla stitch mean2 difference is 166.04255073742988
+		epoch: 1 | time: 4.079
+		epoch: 2 | time: 8.160
+		epoch: 3 | time: 12.234
+		epoch: 4 | time: 16.308
+		epoch: 5 | time: 20.381
+		epoch: 6 | time: 24.493
+		epoch: 7 | time: 28.576
+		epoch: 8 | time: 32.663
+		epoch: 9 | time: 36.735
+		epoch: 10 | time: 40.817
+		epoch: 11 | time: 44.921
+		epoch: 12 | time: 49.002
+		epoch: 13 | time: 53.097
+		epoch: 14 | time: 57.173
+		epoch: 15 | time: 61.253
+		epoch: 16 | time: 65.315
+		epoch: 17 | time: 69.374
+		epoch: 18 | time: 73.466
+		epoch: 19 | time: 77.540
+		epoch: 20 | time: 81.633
+		epoch: 21 | time: 85.718
+		epoch: 22 | time: 89.790
+		epoch: 23 | time: 93.874
+		epoch: 24 | time: 97.960
+		epoch: 25 | time: 102.031
+		epoch: 26 | time: 106.117
+		epoch: 27 | time: 110.208
+		epoch: 28 | time: 114.294
+		epoch: 29 | time: 118.369
+		epoch: 30 | time: 122.447
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 79.75926963610527
+	Vanilla stitch autoencoder mean2 difference is 52.82329811683068
+***
+	stitching 2->3 which is (2, 0)->(2, 0)
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 3.612
+		epoch: 2 | time: 7.248
+		epoch: 3 | time: 10.877
+		epoch: 4 | time: 14.551
+	Accuracy of vanilla stitch model is 0.3108407079646018
+	Vanilla stitch mean2 difference is 322484.1407051282
+		epoch: 1 | time: 4.890
+		epoch: 2 | time: 9.777
+		epoch: 3 | time: 14.672
+		epoch: 4 | time: 19.575
+		epoch: 5 | time: 24.456
+		epoch: 6 | time: 29.340
+		epoch: 7 | time: 34.232
+		epoch: 8 | time: 39.118
+		epoch: 9 | time: 44.054
+		epoch: 10 | time: 48.940
+		epoch: 11 | time: 53.849
+		epoch: 12 | time: 58.744
+		epoch: 13 | time: 63.630
+		epoch: 14 | time: 68.518
+		epoch: 15 | time: 73.433
+		epoch: 16 | time: 78.328
+		epoch: 17 | time: 83.223
+		epoch: 18 | time: 88.109
+		epoch: 19 | time: 93.012
+		epoch: 20 | time: 97.898
+		epoch: 21 | time: 102.796
+		epoch: 22 | time: 107.691
+		epoch: 23 | time: 112.587
+		epoch: 24 | time: 117.482
+		epoch: 25 | time: 122.371
+		epoch: 26 | time: 127.264
+		epoch: 27 | time: 132.162
+		epoch: 28 | time: 137.041
+		epoch: 29 | time: 141.931
+		epoch: 30 | time: 146.819
+	Accuracy of autoencoder stitch model is 10.398230088495575
+	Autoencoder stitch mean2 difference is 142268.2892628205
+	Vanilla stitch autoencoder mean2 difference is 110250.52872596154
+***
+	stitching 2->4 which is (2, 0)->(3, 0)
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 2.841
+		epoch: 2 | time: 5.661
+		epoch: 3 | time: 8.494
+		epoch: 4 | time: 11.333
+	Accuracy of vanilla stitch model is 0.3606194690265487
+	Vanilla stitch mean2 difference is nan
+		epoch: 1 | time: 5.040
+		epoch: 2 | time: 10.060
+		epoch: 3 | time: 15.084
+		epoch: 4 | time: 20.099
+		epoch: 5 | time: 25.136
+		epoch: 6 | time: 30.152
+		epoch: 7 | time: 35.168
+		epoch: 8 | time: 40.193
+		epoch: 9 | time: 45.210
+		epoch: 10 | time: 50.235
+		epoch: 11 | time: 55.261
+		epoch: 12 | time: 60.277
+		epoch: 13 | time: 65.310
+		epoch: 14 | time: 70.331
+		epoch: 15 | time: 75.363
+		epoch: 16 | time: 80.393
+		epoch: 17 | time: 85.401
+		epoch: 18 | time: 90.408
+		epoch: 19 | time: 95.438
+		epoch: 20 | time: 100.465
+		epoch: 21 | time: 105.501
+		epoch: 22 | time: 110.544
+		epoch: 23 | time: 115.571
+		epoch: 24 | time: 120.590
+		epoch: 25 | time: 125.633
+		epoch: 26 | time: 130.661
+		epoch: 27 | time: 135.693
+		epoch: 28 | time: 140.725
+		epoch: 29 | time: 145.742
+		epoch: 30 | time: 151.229
+	Accuracy of autoencoder stitch model is 11.006637168141593
+	Autoencoder stitch mean2 difference is nan
+	Vanilla stitch autoencoder mean2 difference is 0.006144136608315584
+***
+	stitching 2->5 which is (2, 0)->(4, 0)
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 2.414
+		epoch: 2 | time: 4.800
+		epoch: 3 | time: 7.201
+		epoch: 4 | time: 9.622
+	Accuracy of vanilla stitch model is 0.5641592920353983
+	Vanilla stitch mean2 difference is nan
+		epoch: 1 | time: 5.435
+		epoch: 2 | time: 10.887
+		epoch: 3 | time: 16.321
+		epoch: 4 | time: 21.782
+		epoch: 5 | time: 27.241
+		epoch: 6 | time: 32.683
+		epoch: 7 | time: 38.119
+		epoch: 8 | time: 43.575
+		epoch: 9 | time: 49.014
+		epoch: 10 | time: 54.444
+		epoch: 11 | time: 59.898
+		epoch: 12 | time: 65.358
+		epoch: 13 | time: 70.823
+		epoch: 14 | time: 76.275
+		epoch: 15 | time: 81.725
+		epoch: 16 | time: 87.181
+		epoch: 17 | time: 92.625
+		epoch: 18 | time: 98.074
+		epoch: 19 | time: 103.522
+		epoch: 20 | time: 108.996
+		epoch: 21 | time: 114.440
+		epoch: 22 | time: 119.881
+		epoch: 23 | time: 125.326
+		epoch: 24 | time: 130.767
+		epoch: 25 | time: 136.235
+		epoch: 26 | time: 141.696
+		epoch: 27 | time: 147.138
+		epoch: 28 | time: 152.587
+		epoch: 29 | time: 158.032
+		epoch: 30 | time: 163.481
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is nan
+	Vanilla stitch autoencoder mean2 difference is 0.0020816434676257465
+***
+	stitching 2->6 which is (2, 0)->fc
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 2.075
+		epoch: 2 | time: 4.150
+		epoch: 3 | time: 6.226
+		epoch: 4 | time: 8.299
+	Accuracy of vanilla stitch model is 0.5613938053097345
+	Vanilla stitch mean2 difference is nan
+		epoch: 1 | time: 6.060
+		epoch: 2 | time: 12.139
+		epoch: 3 | time: 18.200
+		epoch: 4 | time: 24.261
+		epoch: 5 | time: 30.331
+		epoch: 6 | time: 36.393
+		epoch: 7 | time: 42.470
+		epoch: 8 | time: 48.589
+		epoch: 9 | time: 54.655
+		epoch: 10 | time: 60.744
+		epoch: 11 | time: 66.806
+		epoch: 12 | time: 72.872
+		epoch: 13 | time: 78.957
+		epoch: 14 | time: 85.016
+		epoch: 15 | time: 91.072
+		epoch: 16 | time: 97.129
+		epoch: 17 | time: 103.184
+		epoch: 18 | time: 109.255
+		epoch: 19 | time: 115.310
+		epoch: 20 | time: 121.366
+		epoch: 21 | time: 127.637
+		epoch: 22 | time: 133.688
+		epoch: 23 | time: 139.743
+		epoch: 24 | time: 145.803
+		epoch: 25 | time: 151.861
+		epoch: 26 | time: 157.912
+		epoch: 27 | time: 163.967
+		epoch: 28 | time: 170.028
+		epoch: 29 | time: 176.085
+		epoch: 30 | time: 182.148
+	Accuracy of autoencoder stitch model is 10.287610619469026
+	Autoencoder stitch mean2 difference is nan
+	Vanilla stitch autoencoder mean2 difference is 0.0011587010553249946
+***
+	stitching 3->1 which is (2, 1)->(1, 0)
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 5.475
+		epoch: 2 | time: 10.940
+		epoch: 3 | time: 16.406
+		epoch: 4 | time: 21.877
+	Accuracy of vanilla stitch model is 0.2295353982300885
+	Vanilla stitch mean2 difference is 0.14159644467708393
+		epoch: 1 | time: 3.674
+		epoch: 2 | time: 7.355
+		epoch: 3 | time: 11.047
+		epoch: 4 | time: 14.723
+		epoch: 5 | time: 18.405
+		epoch: 6 | time: 22.097
+		epoch: 7 | time: 25.784
+		epoch: 8 | time: 29.465
+		epoch: 9 | time: 33.149
+		epoch: 10 | time: 36.835
+		epoch: 11 | time: 40.536
+		epoch: 12 | time: 44.215
+		epoch: 13 | time: 47.900
+		epoch: 14 | time: 51.579
+		epoch: 15 | time: 55.256
+		epoch: 16 | time: 58.939
+		epoch: 17 | time: 62.654
+		epoch: 18 | time: 66.337
+		epoch: 19 | time: 70.009
+		epoch: 20 | time: 73.681
+		epoch: 21 | time: 77.357
+		epoch: 22 | time: 81.065
+		epoch: 23 | time: 84.738
+		epoch: 24 | time: 88.435
+		epoch: 25 | time: 92.115
+		epoch: 26 | time: 95.805
+		epoch: 27 | time: 99.491
+		epoch: 28 | time: 103.173
+		epoch: 29 | time: 106.841
+		epoch: 30 | time: 110.517
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 0.13508636389787382
+	Vanilla stitch autoencoder mean2 difference is 0.005996074742422654
+***
+	stitching 3->2 which is (2, 1)->(1, 1)
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 4.812
+		epoch: 2 | time: 9.627
+		epoch: 3 | time: 14.445
+		epoch: 4 | time: 19.248
+	Accuracy of vanilla stitch model is 0.29922566371681414
+	Vanilla stitch mean2 difference is 106.13104870135967
+		epoch: 1 | time: 4.676
+		epoch: 2 | time: 9.358
+		epoch: 3 | time: 14.018
+		epoch: 4 | time: 18.697
+		epoch: 5 | time: 23.368
+		epoch: 6 | time: 28.032
+		epoch: 7 | time: 32.704
+		epoch: 8 | time: 37.360
+		epoch: 9 | time: 42.025
+		epoch: 10 | time: 46.692
+		epoch: 11 | time: 51.351
+		epoch: 12 | time: 56.034
+		epoch: 13 | time: 60.699
+		epoch: 14 | time: 65.372
+		epoch: 15 | time: 70.044
+		epoch: 16 | time: 74.710
+		epoch: 17 | time: 79.370
+		epoch: 18 | time: 84.020
+		epoch: 19 | time: 88.704
+		epoch: 20 | time: 93.372
+		epoch: 21 | time: 98.054
+		epoch: 22 | time: 102.723
+		epoch: 23 | time: 107.393
+		epoch: 24 | time: 112.064
+		epoch: 25 | time: 116.725
+		epoch: 26 | time: 121.393
+		epoch: 27 | time: 126.088
+		epoch: 28 | time: 130.737
+		epoch: 29 | time: 135.415
+		epoch: 30 | time: 140.067
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 54.17275586250501
+	Vanilla stitch autoencoder mean2 difference is 31.985393279638046
+***
+	stitching 3->3 which is (2, 1)->(2, 0)
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 4.149
+		epoch: 2 | time: 8.298
+		epoch: 3 | time: 12.452
+		epoch: 4 | time: 16.611
+	Accuracy of vanilla stitch model is 0.44745575221238937
+	Vanilla stitch mean2 difference is 143610.90192307692
+		epoch: 1 | time: 5.489
+		epoch: 2 | time: 10.979
+		epoch: 3 | time: 16.446
+		epoch: 4 | time: 21.945
+		epoch: 5 | time: 27.441
+		epoch: 6 | time: 32.961
+		epoch: 7 | time: 38.447
+		epoch: 8 | time: 43.925
+		epoch: 9 | time: 49.420
+		epoch: 10 | time: 54.910
+		epoch: 11 | time: 60.387
+		epoch: 12 | time: 65.878
+		epoch: 13 | time: 71.360
+		epoch: 14 | time: 76.839
+		epoch: 15 | time: 82.319
+		epoch: 16 | time: 87.789
+		epoch: 17 | time: 93.256
+		epoch: 18 | time: 98.742
+		epoch: 19 | time: 104.235
+		epoch: 20 | time: 109.705
+		epoch: 21 | time: 115.210
+		epoch: 22 | time: 120.690
+		epoch: 23 | time: 126.165
+		epoch: 24 | time: 131.640
+		epoch: 25 | time: 137.124
+		epoch: 26 | time: 142.612
+		epoch: 27 | time: 148.084
+		epoch: 28 | time: 153.558
+		epoch: 29 | time: 159.049
+		epoch: 30 | time: 164.514
+	Accuracy of autoencoder stitch model is 9.734513274336283
+	Autoencoder stitch mean2 difference is 69711.7515625
+	Vanilla stitch autoencoder mean2 difference is 45568.531670673074
+***
+	stitching 3->4 which is (2, 1)->(3, 0)
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 3.353
+		epoch: 2 | time: 6.691
+		epoch: 3 | time: 10.043
+		epoch: 4 | time: 13.399
+	Accuracy of vanilla stitch model is 0.610066371681416
+	Vanilla stitch mean2 difference is nan
+		epoch: 1 | time: 5.622
+		epoch: 2 | time: 11.248
+		epoch: 3 | time: 16.869
+		epoch: 4 | time: 22.483
+		epoch: 5 | time: 28.095
+		epoch: 6 | time: 33.709
+		epoch: 7 | time: 39.301
+		epoch: 8 | time: 44.919
+		epoch: 9 | time: 50.534
+		epoch: 10 | time: 56.142
+		epoch: 11 | time: 61.745
+		epoch: 12 | time: 67.362
+		epoch: 13 | time: 72.982
+		epoch: 14 | time: 78.591
+		epoch: 15 | time: 84.195
+		epoch: 16 | time: 89.814
+		epoch: 17 | time: 95.429
+		epoch: 18 | time: 101.054
+		epoch: 19 | time: 106.660
+		epoch: 20 | time: 112.270
+		epoch: 21 | time: 117.889
+		epoch: 22 | time: 123.519
+		epoch: 23 | time: 129.149
+		epoch: 24 | time: 134.767
+		epoch: 25 | time: 140.378
+		epoch: 26 | time: 146.012
+		epoch: 27 | time: 151.645
+		epoch: 28 | time: 157.264
+		epoch: 29 | time: 162.897
+		epoch: 30 | time: 168.520
+	Accuracy of autoencoder stitch model is 9.789823008849558
+	Autoencoder stitch mean2 difference is nan
+	Vanilla stitch autoencoder mean2 difference is 0.00590475134503765
+***
+	stitching 3->5 which is (2, 1)->(4, 0)
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 2.927
+		epoch: 2 | time: 5.852
+		epoch: 3 | time: 8.755
+		epoch: 4 | time: 11.656
+	Accuracy of vanilla stitch model is 0.7411504424778761
+	Vanilla stitch mean2 difference is nan
+		epoch: 1 | time: 6.030
+		epoch: 2 | time: 12.053
+		epoch: 3 | time: 18.081
+		epoch: 4 | time: 24.126
+		epoch: 5 | time: 30.151
+		epoch: 6 | time: 36.185
+		epoch: 7 | time: 42.213
+		epoch: 8 | time: 48.250
+		epoch: 9 | time: 54.289
+		epoch: 10 | time: 60.341
+		epoch: 11 | time: 66.378
+		epoch: 12 | time: 72.413
+		epoch: 13 | time: 78.443
+		epoch: 14 | time: 84.489
+		epoch: 15 | time: 90.521
+		epoch: 16 | time: 96.550
+		epoch: 17 | time: 102.594
+		epoch: 18 | time: 108.633
+		epoch: 19 | time: 114.669
+		epoch: 20 | time: 120.683
+		epoch: 21 | time: 126.709
+		epoch: 22 | time: 132.747
+		epoch: 23 | time: 138.784
+		epoch: 24 | time: 144.814
+		epoch: 25 | time: 150.854
+		epoch: 26 | time: 156.891
+		epoch: 27 | time: 162.922
+		epoch: 28 | time: 168.951
+		epoch: 29 | time: 174.983
+		epoch: 30 | time: 181.027
+	Accuracy of autoencoder stitch model is 9.623893805309734
+	Autoencoder stitch mean2 difference is nan
+	Vanilla stitch autoencoder mean2 difference is 0.0025295658323627253
+***
+	stitching 3->6 which is (2, 1)->fc
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 2.598
+		epoch: 2 | time: 5.208
+		epoch: 3 | time: 7.824
+		epoch: 4 | time: 10.439
+	Accuracy of vanilla stitch model is 0.7123893805309734
+	Vanilla stitch mean2 difference is nan
+		epoch: 1 | time: 6.642
+		epoch: 2 | time: 13.311
+		epoch: 3 | time: 19.961
+		epoch: 4 | time: 26.611
+		epoch: 5 | time: 33.280
+		epoch: 6 | time: 39.950
+		epoch: 7 | time: 46.609
+		epoch: 8 | time: 53.272
+		epoch: 9 | time: 59.934
+		epoch: 10 | time: 66.587
+		epoch: 11 | time: 73.267
+		epoch: 12 | time: 79.936
+		epoch: 13 | time: 86.594
+		epoch: 14 | time: 93.747
+		epoch: 15 | time: 100.510
+		epoch: 16 | time: 107.340
+		epoch: 17 | time: 113.993
+		epoch: 18 | time: 120.650
+		epoch: 19 | time: 127.294
+		epoch: 20 | time: 133.940
+		epoch: 21 | time: 140.577
+		epoch: 22 | time: 147.219
+		epoch: 23 | time: 153.906
+		epoch: 24 | time: 160.560
+		epoch: 25 | time: 167.254
+		epoch: 26 | time: 173.907
+		epoch: 27 | time: 180.562
+		epoch: 28 | time: 187.213
+		epoch: 29 | time: 193.871
+		epoch: 30 | time: 200.554
+	Accuracy of autoencoder stitch model is 10.232300884955754
+	Autoencoder stitch mean2 difference is nan
+	Vanilla stitch autoencoder mean2 difference is 0.00553221149274554
+***
+	stitching 4->1 which is (3, 0)->(1, 0)
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 6.038
+		epoch: 2 | time: 12.061
+		epoch: 3 | time: 18.098
+		epoch: 4 | time: 24.127
+	Accuracy of vanilla stitch model is 0.8147123893805309
+	Vanilla stitch mean2 difference is 0.1395350883404414
+		epoch: 1 | time: 4.316
+		epoch: 2 | time: 8.678
+		epoch: 3 | time: 13.011
+		epoch: 4 | time: 17.328
+		epoch: 5 | time: 21.632
+		epoch: 6 | time: 25.944
+		epoch: 7 | time: 30.247
+		epoch: 8 | time: 35.051
+		epoch: 9 | time: 39.526
+		epoch: 10 | time: 43.866
+		epoch: 11 | time: 48.196
+		epoch: 12 | time: 52.517
+		epoch: 13 | time: 56.827
+		epoch: 14 | time: 61.152
+		epoch: 15 | time: 65.488
+		epoch: 16 | time: 69.817
+		epoch: 17 | time: 74.146
+		epoch: 18 | time: 78.459
+		epoch: 19 | time: 82.767
+		epoch: 20 | time: 87.076
+		epoch: 21 | time: 91.392
+		epoch: 22 | time: 95.716
+		epoch: 23 | time: 100.033
+		epoch: 24 | time: 104.348
+		epoch: 25 | time: 108.668
+		epoch: 26 | time: 112.997
+		epoch: 27 | time: 117.347
+		epoch: 28 | time: 121.669
+		epoch: 29 | time: 125.977
+		epoch: 30 | time: 130.298
+	Accuracy of autoencoder stitch model is 9.900442477876107
+	Autoencoder stitch mean2 difference is 0.13489383875559538
+	Vanilla stitch autoencoder mean2 difference is 0.004013066746007938
+***
+	stitching 4->2 which is (3, 0)->(1, 1)
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 5.388
+		epoch: 2 | time: 10.745
+		epoch: 3 | time: 16.573
+		epoch: 4 | time: 22.190
+	Accuracy of vanilla stitch model is 0.8661504424778761
+	Vanilla stitch mean2 difference is 77.35538490491035
+		epoch: 1 | time: 5.295
+		epoch: 2 | time: 10.596
+		epoch: 3 | time: 15.905
+		epoch: 4 | time: 21.189
+		epoch: 5 | time: 26.499
+		epoch: 6 | time: 31.815
+		epoch: 7 | time: 37.114
+		epoch: 8 | time: 42.414
+		epoch: 9 | time: 47.724
+		epoch: 10 | time: 53.022
+		epoch: 11 | time: 58.333
+		epoch: 12 | time: 63.647
+		epoch: 13 | time: 68.948
+		epoch: 14 | time: 74.352
+		epoch: 15 | time: 79.666
+		epoch: 16 | time: 84.961
+		epoch: 17 | time: 90.246
+		epoch: 18 | time: 95.525
+		epoch: 19 | time: 100.810
+		epoch: 20 | time: 106.113
+		epoch: 21 | time: 111.448
+		epoch: 22 | time: 116.766
+		epoch: 23 | time: 122.079
+		epoch: 24 | time: 127.393
+		epoch: 25 | time: 132.709
+		epoch: 26 | time: 138.019
+		epoch: 27 | time: 143.318
+		epoch: 28 | time: 148.616
+		epoch: 29 | time: 153.925
+		epoch: 30 | time: 159.216
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 40.771466260078626
+	Vanilla stitch autoencoder mean2 difference is 22.61045213356996
+***
+	stitching 4->3 which is (3, 0)->(2, 0)
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 4.694
+		epoch: 2 | time: 9.426
+		epoch: 3 | time: 14.139
+		epoch: 4 | time: 18.852
+	Accuracy of vanilla stitch model is 0.8860619469026548
+	Vanilla stitch mean2 difference is 98773.3842147436
+		epoch: 1 | time: 6.138
+		epoch: 2 | time: 12.261
+		epoch: 3 | time: 18.387
+		epoch: 4 | time: 24.516
+		epoch: 5 | time: 30.652
+		epoch: 6 | time: 36.772
+		epoch: 7 | time: 42.885
+		epoch: 8 | time: 49.003
+		epoch: 9 | time: 56.224
+		epoch: 10 | time: 62.565
+		epoch: 11 | time: 68.673
+		epoch: 12 | time: 74.787
+		epoch: 13 | time: 80.901
+		epoch: 14 | time: 87.024
+		epoch: 15 | time: 93.153
+		epoch: 16 | time: 99.319
+		epoch: 17 | time: 105.439
+		epoch: 18 | time: 111.571
+		epoch: 19 | time: 117.690
+		epoch: 20 | time: 123.836
+		epoch: 21 | time: 129.963
+		epoch: 22 | time: 136.086
+		epoch: 23 | time: 142.210
+		epoch: 24 | time: 148.317
+		epoch: 25 | time: 154.436
+		epoch: 26 | time: 160.551
+		epoch: 27 | time: 166.655
+		epoch: 28 | time: 172.757
+		epoch: 29 | time: 178.882
+		epoch: 30 | time: 184.996
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 45880.83625801282
+	Vanilla stitch autoencoder mean2 difference is 32762.078084935896
+***
+	stitching 4->4 which is (3, 0)->(3, 0)
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 4.037
+		epoch: 2 | time: 8.047
+		epoch: 3 | time: 12.061
+		epoch: 4 | time: 16.070
+	Accuracy of vanilla stitch model is 0.9048672566371682
+	Vanilla stitch mean2 difference is nan
+		epoch: 1 | time: 6.375
+		epoch: 2 | time: 12.716
+		epoch: 3 | time: 19.067
+		epoch: 4 | time: 25.423
+		epoch: 5 | time: 31.768
+		epoch: 6 | time: 38.178
+		epoch: 7 | time: 44.522
+		epoch: 8 | time: 50.879
+		epoch: 9 | time: 57.236
+		epoch: 10 | time: 63.568
+		epoch: 11 | time: 70.333
+		epoch: 12 | time: 76.671
+		epoch: 13 | time: 83.015
+		epoch: 14 | time: 89.356
+		epoch: 15 | time: 95.692
+		epoch: 16 | time: 102.030
+		epoch: 17 | time: 108.380
+		epoch: 18 | time: 114.735
+		epoch: 19 | time: 121.091
+		epoch: 20 | time: 127.441
+		epoch: 21 | time: 133.793
+		epoch: 22 | time: 140.141
+		epoch: 23 | time: 146.494
+		epoch: 24 | time: 152.834
+		epoch: 25 | time: 159.194
+		epoch: 26 | time: 165.546
+		epoch: 27 | time: 171.889
+		epoch: 28 | time: 178.220
+		epoch: 29 | time: 184.546
+		epoch: 30 | time: 190.894
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is nan
+	Vanilla stitch autoencoder mean2 difference is 0.005155277746514632
+***
+	stitching 4->5 which is (3, 0)->(4, 0)
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 3.319
+		epoch: 2 | time: 6.631
+		epoch: 3 | time: 9.946
+		epoch: 4 | time: 13.284
+	Accuracy of vanilla stitch model is 0.9004424778761062
+	Vanilla stitch mean2 difference is nan
+		epoch: 1 | time: 6.488
+		epoch: 2 | time: 12.983
+		epoch: 3 | time: 19.474
+		epoch: 4 | time: 25.982
+		epoch: 5 | time: 32.484
+		epoch: 6 | time: 38.987
+		epoch: 7 | time: 45.469
+		epoch: 8 | time: 51.985
+		epoch: 9 | time: 58.477
+		epoch: 10 | time: 64.978
+		epoch: 11 | time: 71.479
+		epoch: 12 | time: 77.981
+		epoch: 13 | time: 84.496
+		epoch: 14 | time: 90.998
+		epoch: 15 | time: 97.516
+		epoch: 16 | time: 104.017
+		epoch: 17 | time: 110.516
+		epoch: 18 | time: 117.007
+		epoch: 19 | time: 123.495
+		epoch: 20 | time: 130.011
+		epoch: 21 | time: 136.525
+		epoch: 22 | time: 143.023
+		epoch: 23 | time: 149.528
+		epoch: 24 | time: 156.036
+		epoch: 25 | time: 162.521
+		epoch: 26 | time: 169.021
+		epoch: 27 | time: 175.528
+		epoch: 28 | time: 182.029
+		epoch: 29 | time: 188.514
+		epoch: 30 | time: 195.028
+	Accuracy of autoencoder stitch model is 9.45796460176991
+	Autoencoder stitch mean2 difference is nan
+	Vanilla stitch autoencoder mean2 difference is 0.003075655576032706
+***
+	stitching 4->6 which is (3, 0)->fc
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 3.344
+		epoch: 2 | time: 6.446
+		epoch: 3 | time: 9.404
+		epoch: 4 | time: 12.378
+	Accuracy of vanilla stitch model is 0.9043141592920354
+	Vanilla stitch mean2 difference is nan
+		epoch: 1 | time: 7.004
+		epoch: 2 | time: 14.013
+		epoch: 3 | time: 21.023
+		epoch: 4 | time: 28.031
+		epoch: 5 | time: 35.027
+		epoch: 6 | time: 42.025
+		epoch: 7 | time: 49.046
+		epoch: 8 | time: 56.050
+		epoch: 9 | time: 63.050
+		epoch: 10 | time: 70.062
+		epoch: 11 | time: 77.057
+		epoch: 12 | time: 84.058
+		epoch: 13 | time: 91.082
+		epoch: 14 | time: 98.095
+		epoch: 15 | time: 105.099
+		epoch: 16 | time: 112.095
+		epoch: 17 | time: 119.084
+		epoch: 18 | time: 126.102
+		epoch: 19 | time: 133.103
+		epoch: 20 | time: 140.110
+		epoch: 21 | time: 147.116
+		epoch: 22 | time: 154.125
+		epoch: 23 | time: 161.132
+		epoch: 24 | time: 168.157
+		epoch: 25 | time: 175.169
+		epoch: 26 | time: 182.170
+		epoch: 27 | time: 189.164
+		epoch: 28 | time: 196.174
+		epoch: 29 | time: 203.189
+		epoch: 30 | time: 210.200
+	Accuracy of autoencoder stitch model is 5.475663716814159
+	Autoencoder stitch mean2 difference is nan
+	Vanilla stitch autoencoder mean2 difference is 0.02716838612388342
+***
+	stitching 5->1 which is (4, 0)->(1, 0)
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 6.829
+		epoch: 2 | time: 13.607
+		epoch: 3 | time: 20.384
+		epoch: 4 | time: 27.142
+	Accuracy of vanilla stitch model is 0.9032079646017699
+	Vanilla stitch mean2 difference is 0.19252726588493738
+		epoch: 1 | time: 5.092
+		epoch: 2 | time: 10.185
+		epoch: 3 | time: 15.286
+		epoch: 4 | time: 20.398
+		epoch: 5 | time: 25.491
+		epoch: 6 | time: 30.575
+		epoch: 7 | time: 35.688
+		epoch: 8 | time: 40.780
+		epoch: 9 | time: 45.868
+		epoch: 10 | time: 50.974
+		epoch: 11 | time: 56.080
+		epoch: 12 | time: 61.194
+		epoch: 13 | time: 66.308
+		epoch: 14 | time: 71.409
+		epoch: 15 | time: 76.518
+		epoch: 16 | time: 81.622
+		epoch: 17 | time: 86.748
+		epoch: 18 | time: 91.850
+		epoch: 19 | time: 96.940
+		epoch: 20 | time: 102.047
+		epoch: 21 | time: 107.154
+		epoch: 22 | time: 112.279
+		epoch: 23 | time: 117.375
+		epoch: 24 | time: 122.481
+		epoch: 25 | time: 127.595
+		epoch: 26 | time: 132.692
+		epoch: 27 | time: 137.800
+		epoch: 28 | time: 142.900
+		epoch: 29 | time: 147.997
+		epoch: 30 | time: 153.115
+	Accuracy of autoencoder stitch model is 9.789823008849558
+	Autoencoder stitch mean2 difference is 0.13037313860960495
+	Vanilla stitch autoencoder mean2 difference is 0.06102186103279774
+***
+	stitching 5->2 which is (4, 0)->(1, 1)
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 6.112
+		epoch: 2 | time: 12.216
+		epoch: 3 | time: 18.331
+		epoch: 4 | time: 24.455
+	Accuracy of vanilla stitch model is 0.9209070796460178
+	Vanilla stitch mean2 difference is 4.566806580470159
+		epoch: 1 | time: 6.090
+		epoch: 2 | time: 12.150
+		epoch: 3 | time: 18.241
+		epoch: 4 | time: 24.337
+		epoch: 5 | time: 30.420
+		epoch: 6 | time: 36.498
+		epoch: 7 | time: 42.578
+		epoch: 8 | time: 48.663
+		epoch: 9 | time: 54.747
+		epoch: 10 | time: 60.849
+		epoch: 11 | time: 66.946
+		epoch: 12 | time: 73.050
+		epoch: 13 | time: 79.136
+		epoch: 14 | time: 85.221
+		epoch: 15 | time: 91.303
+		epoch: 16 | time: 97.381
+		epoch: 17 | time: 103.451
+		epoch: 18 | time: 109.541
+		epoch: 19 | time: 115.616
+		epoch: 20 | time: 121.692
+		epoch: 21 | time: 127.773
+		epoch: 22 | time: 133.849
+		epoch: 23 | time: 139.947
+		epoch: 24 | time: 146.023
+		epoch: 25 | time: 152.091
+		epoch: 26 | time: 158.175
+		epoch: 27 | time: 164.280
+		epoch: 28 | time: 170.343
+		epoch: 29 | time: 176.426
+		epoch: 30 | time: 182.657
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 2.0544584818375418
+	Vanilla stitch autoencoder mean2 difference is 2.272432665947156
+***
+	stitching 5->3 which is (4, 0)->(2, 0)
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 5.452
+		epoch: 2 | time: 10.908
+		epoch: 3 | time: 16.367
+		epoch: 4 | time: 21.821
+	Accuracy of vanilla stitch model is 0.9325221238938053
+	Vanilla stitch mean2 difference is 338.30597330729165
+		epoch: 1 | time: 6.883
+		epoch: 2 | time: 13.791
+		epoch: 3 | time: 20.693
+		epoch: 4 | time: 27.595
+		epoch: 5 | time: 34.490
+		epoch: 6 | time: 41.389
+		epoch: 7 | time: 51.199
+		epoch: 8 | time: 58.096
+		epoch: 9 | time: 65.025
+		epoch: 10 | time: 71.921
+		epoch: 11 | time: 78.822
+		epoch: 12 | time: 85.722
+		epoch: 13 | time: 92.649
+		epoch: 14 | time: 99.565
+		epoch: 15 | time: 106.471
+		epoch: 16 | time: 113.364
+		epoch: 17 | time: 120.268
+		epoch: 18 | time: 127.197
+		epoch: 19 | time: 134.110
+		epoch: 20 | time: 141.007
+		epoch: 21 | time: 147.915
+		epoch: 22 | time: 154.834
+		epoch: 23 | time: 161.725
+		epoch: 24 | time: 168.628
+		epoch: 25 | time: 175.535
+		epoch: 26 | time: 182.445
+		epoch: 27 | time: 189.334
+		epoch: 28 | time: 196.219
+		epoch: 29 | time: 203.127
+		epoch: 30 | time: 210.045
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 133.5522196843074
+	Vanilla stitch autoencoder mean2 difference is 185.2219530154497
+***
+	stitching 5->4 which is (4, 0)->(3, 0)
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 4.450
+		epoch: 2 | time: 8.862
+		epoch: 3 | time: 13.270
+		epoch: 4 | time: 17.701
+	Accuracy of vanilla stitch model is 0.9386061946902654
+	Vanilla stitch mean2 difference is 41607.77071314103
+		epoch: 1 | time: 6.812
+		epoch: 2 | time: 13.610
+		epoch: 3 | time: 20.403
+		epoch: 4 | time: 27.204
+		epoch: 5 | time: 34.001
+		epoch: 6 | time: 40.811
+		epoch: 7 | time: 47.613
+		epoch: 8 | time: 54.439
+		epoch: 9 | time: 61.255
+		epoch: 10 | time: 68.050
+		epoch: 11 | time: 74.892
+		epoch: 12 | time: 81.714
+		epoch: 13 | time: 88.509
+		epoch: 14 | time: 95.298
+		epoch: 15 | time: 102.099
+		epoch: 16 | time: 108.894
+		epoch: 17 | time: 115.698
+		epoch: 18 | time: 122.514
+		epoch: 19 | time: 129.316
+		epoch: 20 | time: 136.130
+		epoch: 21 | time: 142.938
+		epoch: 22 | time: 149.735
+		epoch: 23 | time: 156.564
+		epoch: 24 | time: 163.372
+		epoch: 25 | time: 170.168
+		epoch: 26 | time: 176.971
+		epoch: 27 | time: 183.767
+		epoch: 28 | time: 190.590
+		epoch: 29 | time: 197.412
+		epoch: 30 | time: 204.222
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 15486.834980969552
+	Vanilla stitch autoencoder mean2 difference is 21641.458203125
+***
+	stitching 5->5 which is (4, 0)->(4, 0)
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 3.826
+		epoch: 2 | time: 7.633
+		epoch: 3 | time: 11.441
+		epoch: 4 | time: 15.269
+	Accuracy of vanilla stitch model is 0.941924778761062
+	Vanilla stitch mean2 difference is 6609370.361538461
+		epoch: 1 | time: 7.054
+		epoch: 2 | time: 14.116
+		epoch: 3 | time: 21.168
+		epoch: 4 | time: 28.229
+		epoch: 5 | time: 35.300
+		epoch: 6 | time: 42.363
+		epoch: 7 | time: 49.413
+		epoch: 8 | time: 56.493
+		epoch: 9 | time: 63.565
+		epoch: 10 | time: 70.629
+		epoch: 11 | time: 77.685
+		epoch: 12 | time: 84.755
+		epoch: 13 | time: 91.842
+		epoch: 14 | time: 98.911
+		epoch: 15 | time: 105.978
+		epoch: 16 | time: 113.047
+		epoch: 17 | time: 120.097
+		epoch: 18 | time: 127.164
+		epoch: 19 | time: 134.217
+		epoch: 20 | time: 141.285
+		epoch: 21 | time: 148.350
+		epoch: 22 | time: 155.408
+		epoch: 23 | time: 162.475
+		epoch: 24 | time: 169.539
+		epoch: 25 | time: 176.606
+		epoch: 26 | time: 183.668
+		epoch: 27 | time: 190.724
+		epoch: 28 | time: 197.786
+		epoch: 29 | time: 204.851
+		epoch: 30 | time: 211.925
+	Accuracy of autoencoder stitch model is 9.734513274336283
+	Autoencoder stitch mean2 difference is 2386831.4294871795
+	Vanilla stitch autoencoder mean2 difference is 2996146.097435897
+***
+	stitching 5->6 which is (4, 0)->fc
+	Original accuracies were 0.9397123893805309 and 0.10121681415929204
+		epoch: 1 | time: 3.341
+		epoch: 2 | time: 6.694
+		epoch: 3 | time: 10.041
+		epoch: 4 | time: 13.389
+	Accuracy of vanilla stitch model is 0.9435840707964602
+	Vanilla stitch mean2 difference is nan
+		epoch: 1 | time: 7.403
+		epoch: 2 | time: 14.798
+		epoch: 3 | time: 22.225
+		epoch: 4 | time: 29.653
+		epoch: 5 | time: 37.056
+		epoch: 6 | time: 44.442
+		epoch: 7 | time: 51.841
+		epoch: 8 | time: 59.232
+		epoch: 9 | time: 66.623
+		epoch: 10 | time: 74.033
+		epoch: 11 | time: 81.425
+		epoch: 12 | time: 88.813
+		epoch: 13 | time: 96.216
+		epoch: 14 | time: 103.619
+		epoch: 15 | time: 111.012
+		epoch: 16 | time: 118.421
+		epoch: 17 | time: 125.919
+		epoch: 18 | time: 133.397
+		epoch: 19 | time: 140.817
+		epoch: 20 | time: 148.226
+		epoch: 21 | time: 155.626
+		epoch: 22 | time: 163.019
+		epoch: 23 | time: 170.406
+		epoch: 24 | time: 177.823
+		epoch: 25 | time: 185.218
+		epoch: 26 | time: 192.614
+		epoch: 27 | time: 200.005
+		epoch: 28 | time: 207.411
+		epoch: 29 | time: 214.799
+		epoch: 30 | time: 222.212
+	Accuracy of autoencoder stitch model is 15.984513274336285
+	Autoencoder stitch mean2 difference is nan
+	Vanilla stitch autoencoder mean2 difference is 0.35951241911985937
+***
+Saving sims to sims_resnet_1211_resnet_2111/resnet_1211_resnet_2111_rand_sims.pt
+Saving autoencoder sims to sims_resnet_1211_resnet_2111/resnet_1211_resnet_2111_rand_autoencoder_sims.pt
+Saving vanilla autoencoder mean2 to sims_resnet_1211_resnet_2111/resnet_1211_resnet_2111_rand_vanilla_autoencoder_mean2.pt
+Saving autoencoder rep mean2 to sims_resnet_1211_resnet_2111/resnet_1211_resnet_2111_rand_autoencoder_rep_mean2.pt
+Saving vanilla rep mean2 to sims_resnet_1211_resnet_2111/resnet_1211_resnet_2111_rand_vanilla_rep_mean2.pt
+Stitching resnet_1211_rand_resnet_2111_rand
+	stitching 0->1 which is conv1->(1, 0)
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 3.417
+		epoch: 2 | time: 6.834
+		epoch: 3 | time: 10.263
+		epoch: 4 | time: 13.679
+	Accuracy of vanilla stitch model is 0.13716814159292035
+	Vanilla stitch mean2 difference is 0.1726423509610005
+		epoch: 1 | time: 1.216
+		epoch: 2 | time: 2.437
+		epoch: 3 | time: 3.645
+		epoch: 4 | time: 4.858
+		epoch: 5 | time: 6.092
+		epoch: 6 | time: 7.313
+		epoch: 7 | time: 8.527
+		epoch: 8 | time: 9.753
+		epoch: 9 | time: 10.979
+		epoch: 10 | time: 12.183
+		epoch: 11 | time: 13.381
+		epoch: 12 | time: 14.597
+		epoch: 13 | time: 15.794
+		epoch: 14 | time: 17.004
+		epoch: 15 | time: 18.209
+		epoch: 16 | time: 19.427
+		epoch: 17 | time: 20.642
+		epoch: 18 | time: 21.859
+		epoch: 19 | time: 23.060
+		epoch: 20 | time: 24.266
+		epoch: 21 | time: 25.475
+		epoch: 22 | time: 26.706
+		epoch: 23 | time: 27.938
+		epoch: 24 | time: 29.139
+		epoch: 25 | time: 30.338
+		epoch: 26 | time: 31.537
+		epoch: 27 | time: 32.742
+		epoch: 28 | time: 33.947
+		epoch: 29 | time: 35.164
+		epoch: 30 | time: 36.384
+	Accuracy of autoencoder stitch model is 9.56858407079646
+	Autoencoder stitch mean2 difference is 0.0173981142636293
+	Vanilla stitch autoencoder mean2 difference is 0.12885732849438986
+***
+	stitching 0->2 which is conv1->(1, 1)
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 2.766
+		epoch: 2 | time: 5.538
+		epoch: 3 | time: 8.284
+		epoch: 4 | time: 11.049
+	Accuracy of vanilla stitch model is 0.1720132743362832
+	Vanilla stitch mean2 difference is 1.807904133429894
+		epoch: 1 | time: 2.193
+		epoch: 2 | time: 4.388
+		epoch: 3 | time: 6.591
+		epoch: 4 | time: 8.835
+		epoch: 5 | time: 11.055
+		epoch: 6 | time: 13.300
+		epoch: 7 | time: 15.514
+		epoch: 8 | time: 17.705
+		epoch: 9 | time: 19.897
+		epoch: 10 | time: 22.092
+		epoch: 11 | time: 24.281
+		epoch: 12 | time: 26.488
+		epoch: 13 | time: 28.699
+		epoch: 14 | time: 30.893
+		epoch: 15 | time: 33.099
+		epoch: 16 | time: 35.303
+		epoch: 17 | time: 37.513
+		epoch: 18 | time: 39.719
+		epoch: 19 | time: 41.922
+		epoch: 20 | time: 44.119
+		epoch: 21 | time: 46.311
+		epoch: 22 | time: 48.518
+		epoch: 23 | time: 50.725
+		epoch: 24 | time: 52.934
+		epoch: 25 | time: 55.149
+		epoch: 26 | time: 57.376
+		epoch: 27 | time: 59.574
+		epoch: 28 | time: 61.784
+		epoch: 29 | time: 63.969
+		epoch: 30 | time: 66.177
+	Accuracy of autoencoder stitch model is 10.287610619469026
+	Autoencoder stitch mean2 difference is 0.6262435268133114
+	Vanilla stitch autoencoder mean2 difference is 0.7998388213989062
+***
+	stitching 0->3 which is conv1->(2, 0)
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 2.074
+		epoch: 2 | time: 4.187
+		epoch: 3 | time: 6.307
+		epoch: 4 | time: 8.382
+	Accuracy of vanilla stitch model is 0.206858407079646
+	Vanilla stitch mean2 difference is 54.58257769071139
+		epoch: 1 | time: 3.002
+		epoch: 2 | time: 6.028
+		epoch: 3 | time: 9.041
+		epoch: 4 | time: 12.047
+		epoch: 5 | time: 15.046
+		epoch: 6 | time: 18.068
+		epoch: 7 | time: 21.094
+		epoch: 8 | time: 24.108
+		epoch: 9 | time: 27.133
+		epoch: 10 | time: 30.178
+		epoch: 11 | time: 33.196
+		epoch: 12 | time: 36.217
+		epoch: 13 | time: 39.237
+		epoch: 14 | time: 42.239
+		epoch: 15 | time: 45.256
+		epoch: 16 | time: 48.274
+		epoch: 17 | time: 51.305
+		epoch: 18 | time: 54.332
+		epoch: 19 | time: 57.345
+		epoch: 20 | time: 60.353
+		epoch: 21 | time: 63.359
+		epoch: 22 | time: 66.367
+		epoch: 23 | time: 69.370
+		epoch: 24 | time: 72.399
+		epoch: 25 | time: 75.433
+		epoch: 26 | time: 78.458
+		epoch: 27 | time: 81.494
+		epoch: 28 | time: 84.494
+		epoch: 29 | time: 87.512
+		epoch: 30 | time: 90.537
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 19.066196197118515
+	Vanilla stitch autoencoder mean2 difference is 23.194434601221328
+***
+	stitching 0->4 which is conv1->(3, 0)
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 1.691
+		epoch: 2 | time: 3.420
+		epoch: 3 | time: 5.059
+		epoch: 4 | time: 6.736
+	Accuracy of vanilla stitch model is 0.2538716814159292
+	Vanilla stitch mean2 difference is 2391.5434407552084
+		epoch: 1 | time: 3.461
+		epoch: 2 | time: 6.922
+		epoch: 3 | time: 10.388
+		epoch: 4 | time: 13.853
+		epoch: 5 | time: 17.315
+		epoch: 6 | time: 20.782
+		epoch: 7 | time: 24.251
+		epoch: 8 | time: 27.711
+		epoch: 9 | time: 31.178
+		epoch: 10 | time: 34.647
+		epoch: 11 | time: 38.093
+		epoch: 12 | time: 41.539
+		epoch: 13 | time: 45.024
+		epoch: 14 | time: 48.453
+		epoch: 15 | time: 51.878
+		epoch: 16 | time: 55.323
+		epoch: 17 | time: 58.769
+		epoch: 18 | time: 62.228
+		epoch: 19 | time: 65.693
+		epoch: 20 | time: 69.136
+		epoch: 21 | time: 72.615
+		epoch: 22 | time: 76.080
+		epoch: 23 | time: 79.523
+		epoch: 24 | time: 82.978
+		epoch: 25 | time: 86.418
+		epoch: 26 | time: 89.870
+		epoch: 27 | time: 93.324
+		epoch: 28 | time: 96.780
+		epoch: 29 | time: 100.216
+		epoch: 30 | time: 103.660
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 970.6379763872195
+	Vanilla stitch autoencoder mean2 difference is 734.0133685772236
+***
+	stitching 0->5 which is conv1->(4, 0)
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 1.183
+		epoch: 2 | time: 2.384
+		epoch: 3 | time: 3.572
+		epoch: 4 | time: 4.805
+	Accuracy of vanilla stitch model is 0.3185840707964602
+	Vanilla stitch mean2 difference is 113228.54294871795
+		epoch: 1 | time: 3.839
+		epoch: 2 | time: 7.690
+		epoch: 3 | time: 11.558
+		epoch: 4 | time: 15.423
+		epoch: 5 | time: 19.278
+		epoch: 6 | time: 23.148
+		epoch: 7 | time: 27.002
+		epoch: 8 | time: 30.849
+		epoch: 9 | time: 34.765
+		epoch: 10 | time: 38.657
+		epoch: 11 | time: 42.494
+		epoch: 12 | time: 46.335
+		epoch: 13 | time: 50.175
+		epoch: 14 | time: 54.031
+		epoch: 15 | time: 57.875
+		epoch: 16 | time: 61.718
+		epoch: 17 | time: 65.591
+		epoch: 18 | time: 69.445
+		epoch: 19 | time: 73.318
+		epoch: 20 | time: 77.197
+		epoch: 21 | time: 81.080
+		epoch: 22 | time: 84.937
+		epoch: 23 | time: 88.782
+		epoch: 24 | time: 92.645
+		epoch: 25 | time: 96.491
+		epoch: 26 | time: 100.350
+		epoch: 27 | time: 104.228
+		epoch: 28 | time: 108.079
+		epoch: 29 | time: 111.941
+		epoch: 30 | time: 115.799
+	Accuracy of autoencoder stitch model is 10.287610619469026
+	Autoencoder stitch mean2 difference is 58331.374699519234
+	Vanilla stitch autoencoder mean2 difference is 21275.718359375
+***
+	stitching 0->6 which is conv1->fc
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 0.999
+		epoch: 2 | time: 1.982
+		epoch: 3 | time: 2.962
+		epoch: 4 | time: 3.956
+	Accuracy of vanilla stitch model is 0.3407079646017699
+	Vanilla stitch mean2 difference is 2346054.1935897437
+		epoch: 1 | time: 4.515
+		epoch: 2 | time: 9.042
+		epoch: 3 | time: 13.563
+		epoch: 4 | time: 18.082
+		epoch: 5 | time: 22.594
+		epoch: 6 | time: 27.108
+		epoch: 7 | time: 31.650
+		epoch: 8 | time: 36.179
+		epoch: 9 | time: 40.695
+		epoch: 10 | time: 45.217
+		epoch: 11 | time: 49.757
+		epoch: 12 | time: 54.289
+		epoch: 13 | time: 58.819
+		epoch: 14 | time: 63.364
+		epoch: 15 | time: 67.881
+		epoch: 16 | time: 72.409
+		epoch: 17 | time: 76.939
+		epoch: 18 | time: 81.510
+		epoch: 19 | time: 86.044
+		epoch: 20 | time: 90.567
+		epoch: 21 | time: 95.084
+		epoch: 22 | time: 99.599
+		epoch: 23 | time: 104.127
+		epoch: 24 | time: 108.642
+		epoch: 25 | time: 113.159
+		epoch: 26 | time: 117.678
+		epoch: 27 | time: 122.209
+		epoch: 28 | time: 126.740
+		epoch: 29 | time: 131.269
+		epoch: 30 | time: 135.853
+	Accuracy of autoencoder stitch model is 13.274336283185843
+	Autoencoder stitch mean2 difference is 911966.2282051282
+	Vanilla stitch autoencoder mean2 difference is 938489.2429487179
+***
+	stitching 1->1 which is (1, 0)->(1, 0)
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 4.198
+		epoch: 2 | time: 8.398
+		epoch: 3 | time: 12.582
+		epoch: 4 | time: 16.780
+	Accuracy of vanilla stitch model is 0.144358407079646
+	Vanilla stitch mean2 difference is 0.5482246319452921
+		epoch: 1 | time: 2.214
+		epoch: 2 | time: 4.426
+		epoch: 3 | time: 6.651
+		epoch: 4 | time: 8.872
+		epoch: 5 | time: 11.118
+		epoch: 6 | time: 13.346
+		epoch: 7 | time: 15.578
+		epoch: 8 | time: 17.793
+		epoch: 9 | time: 20.016
+		epoch: 10 | time: 22.240
+		epoch: 11 | time: 24.487
+		epoch: 12 | time: 26.705
+		epoch: 13 | time: 28.927
+		epoch: 14 | time: 31.151
+		epoch: 15 | time: 33.372
+		epoch: 16 | time: 35.594
+		epoch: 17 | time: 37.807
+		epoch: 18 | time: 40.041
+		epoch: 19 | time: 42.255
+		epoch: 20 | time: 44.493
+		epoch: 21 | time: 46.726
+		epoch: 22 | time: 48.945
+		epoch: 23 | time: 51.181
+		epoch: 24 | time: 53.399
+		epoch: 25 | time: 55.622
+		epoch: 26 | time: 57.847
+		epoch: 27 | time: 60.090
+		epoch: 28 | time: 62.328
+		epoch: 29 | time: 64.559
+		epoch: 30 | time: 66.780
+	Accuracy of autoencoder stitch model is 11.283185840707963
+	Autoencoder stitch mean2 difference is 0.022262387226025263
+	Vanilla stitch autoencoder mean2 difference is 0.5110348576154464
+***
+	stitching 1->2 which is (1, 0)->(1, 1)
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 3.518
+		epoch: 2 | time: 7.041
+		epoch: 3 | time: 10.576
+		epoch: 4 | time: 14.113
+	Accuracy of vanilla stitch model is 0.16261061946902655
+	Vanilla stitch mean2 difference is 1.3042768857417963
+		epoch: 1 | time: 3.189
+		epoch: 2 | time: 6.398
+		epoch: 3 | time: 9.615
+		epoch: 4 | time: 12.839
+		epoch: 5 | time: 16.023
+		epoch: 6 | time: 19.218
+		epoch: 7 | time: 22.417
+		epoch: 8 | time: 25.627
+		epoch: 9 | time: 28.831
+		epoch: 10 | time: 32.048
+		epoch: 11 | time: 35.253
+		epoch: 12 | time: 38.468
+		epoch: 13 | time: 41.678
+		epoch: 14 | time: 44.873
+		epoch: 15 | time: 48.081
+		epoch: 16 | time: 51.270
+		epoch: 17 | time: 54.483
+		epoch: 18 | time: 57.705
+		epoch: 19 | time: 60.913
+		epoch: 20 | time: 64.125
+		epoch: 21 | time: 67.337
+		epoch: 22 | time: 70.549
+		epoch: 23 | time: 73.747
+		epoch: 24 | time: 76.955
+		epoch: 25 | time: 80.176
+		epoch: 26 | time: 83.384
+		epoch: 27 | time: 86.593
+		epoch: 28 | time: 89.808
+		epoch: 29 | time: 92.998
+		epoch: 30 | time: 96.204
+	Accuracy of autoencoder stitch model is 10.011061946902656
+	Autoencoder stitch mean2 difference is 0.09910315321041988
+	Vanilla stitch autoencoder mean2 difference is 1.1524254511564205
+***
+	stitching 1->3 which is (1, 0)->(2, 0)
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 2.885
+		epoch: 2 | time: 5.775
+		epoch: 3 | time: 8.638
+		epoch: 4 | time: 11.528
+	Accuracy of vanilla stitch model is 0.20464601769911506
+	Vanilla stitch mean2 difference is 4.265375056633583
+		epoch: 1 | time: 4.012
+		epoch: 2 | time: 8.042
+		epoch: 3 | time: 12.057
+		epoch: 4 | time: 16.075
+		epoch: 5 | time: 20.091
+		epoch: 6 | time: 24.123
+		epoch: 7 | time: 28.727
+		epoch: 8 | time: 32.744
+		epoch: 9 | time: 36.750
+		epoch: 10 | time: 40.742
+		epoch: 11 | time: 44.754
+		epoch: 12 | time: 48.780
+		epoch: 13 | time: 52.792
+		epoch: 14 | time: 56.807
+		epoch: 15 | time: 60.837
+		epoch: 16 | time: 64.868
+		epoch: 17 | time: 68.893
+		epoch: 18 | time: 72.905
+		epoch: 19 | time: 76.914
+		epoch: 20 | time: 80.937
+		epoch: 21 | time: 84.961
+		epoch: 22 | time: 88.979
+		epoch: 23 | time: 92.979
+		epoch: 24 | time: 96.990
+		epoch: 25 | time: 100.995
+		epoch: 26 | time: 105.017
+		epoch: 27 | time: 109.030
+		epoch: 28 | time: 113.032
+		epoch: 29 | time: 117.057
+		epoch: 30 | time: 121.082
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 0.5911465531740433
+	Vanilla stitch autoencoder mean2 difference is 3.418505138005966
+***
+	stitching 1->4 which is (1, 0)->(3, 0)
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 2.432
+		epoch: 2 | time: 4.772
+		epoch: 3 | time: 7.118
+		epoch: 4 | time: 9.465
+	Accuracy of vanilla stitch model is 0.2920353982300885
+	Vanilla stitch mean2 difference is 28.065406036376952
+		epoch: 1 | time: 4.463
+		epoch: 2 | time: 8.921
+		epoch: 3 | time: 13.375
+		epoch: 4 | time: 17.840
+		epoch: 5 | time: 22.295
+		epoch: 6 | time: 26.762
+		epoch: 7 | time: 31.216
+		epoch: 8 | time: 35.677
+		epoch: 9 | time: 40.131
+		epoch: 10 | time: 44.576
+		epoch: 11 | time: 49.044
+		epoch: 12 | time: 53.507
+		epoch: 13 | time: 57.976
+		epoch: 14 | time: 62.440
+		epoch: 15 | time: 66.902
+		epoch: 16 | time: 71.380
+		epoch: 17 | time: 75.845
+		epoch: 18 | time: 80.316
+		epoch: 19 | time: 84.785
+		epoch: 20 | time: 89.255
+		epoch: 21 | time: 93.725
+		epoch: 22 | time: 98.210
+		epoch: 23 | time: 102.683
+		epoch: 24 | time: 107.171
+		epoch: 25 | time: 111.656
+		epoch: 26 | time: 116.142
+		epoch: 27 | time: 120.590
+		epoch: 28 | time: 125.045
+		epoch: 29 | time: 129.510
+		epoch: 30 | time: 133.984
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 3.1560019603142373
+	Vanilla stitch autoencoder mean2 difference is 23.09756587101863
+***
+	stitching 1->5 which is (1, 0)->(4, 0)
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 1.893
+		epoch: 2 | time: 3.801
+		epoch: 3 | time: 5.706
+		epoch: 4 | time: 7.603
+	Accuracy of vanilla stitch model is 0.35011061946902655
+	Vanilla stitch mean2 difference is 110.88577642196265
+		epoch: 1 | time: 4.857
+		epoch: 2 | time: 9.706
+		epoch: 3 | time: 14.563
+		epoch: 4 | time: 19.422
+		epoch: 5 | time: 24.286
+		epoch: 6 | time: 29.134
+		epoch: 7 | time: 34.006
+		epoch: 8 | time: 38.844
+		epoch: 9 | time: 43.696
+		epoch: 10 | time: 48.566
+		epoch: 11 | time: 53.426
+		epoch: 12 | time: 58.280
+		epoch: 13 | time: 63.139
+		epoch: 14 | time: 67.988
+		epoch: 15 | time: 72.864
+		epoch: 16 | time: 77.726
+		epoch: 17 | time: 82.581
+		epoch: 18 | time: 87.442
+		epoch: 19 | time: 92.301
+		epoch: 20 | time: 97.137
+		epoch: 21 | time: 102.009
+		epoch: 22 | time: 106.861
+		epoch: 23 | time: 111.782
+		epoch: 24 | time: 116.645
+		epoch: 25 | time: 121.489
+		epoch: 26 | time: 126.361
+		epoch: 27 | time: 131.387
+		epoch: 28 | time: 136.244
+		epoch: 29 | time: 141.117
+		epoch: 30 | time: 146.236
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 12.790054536477113
+	Vanilla stitch autoencoder mean2 difference is 91.41586511073969
+***
+	stitching 1->6 which is (1, 0)->fc
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 1.857
+		epoch: 2 | time: 3.601
+		epoch: 3 | time: 5.342
+		epoch: 4 | time: 7.082
+	Accuracy of vanilla stitch model is 0.46626106194690264
+	Vanilla stitch mean2 difference is 366.33492697691304
+		epoch: 1 | time: 5.507
+		epoch: 2 | time: 11.032
+		epoch: 3 | time: 16.543
+		epoch: 4 | time: 22.067
+		epoch: 5 | time: 27.570
+		epoch: 6 | time: 33.091
+		epoch: 7 | time: 38.603
+		epoch: 8 | time: 44.126
+		epoch: 9 | time: 49.658
+		epoch: 10 | time: 55.168
+		epoch: 11 | time: 60.671
+		epoch: 12 | time: 66.184
+		epoch: 13 | time: 71.723
+		epoch: 14 | time: 77.242
+		epoch: 15 | time: 82.743
+		epoch: 16 | time: 88.317
+		epoch: 17 | time: 93.816
+		epoch: 18 | time: 99.332
+		epoch: 19 | time: 104.859
+		epoch: 20 | time: 110.371
+		epoch: 21 | time: 115.896
+		epoch: 22 | time: 121.405
+		epoch: 23 | time: 127.097
+		epoch: 24 | time: 132.648
+		epoch: 25 | time: 138.154
+		epoch: 26 | time: 143.665
+		epoch: 27 | time: 149.275
+		epoch: 28 | time: 154.919
+		epoch: 29 | time: 160.425
+		epoch: 30 | time: 165.941
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 0.9239944882881947
+	Vanilla stitch autoencoder mean2 difference is 364.68956157977766
+***
+	stitching 2->1 which is (2, 0)->(1, 0)
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 5.015
+		epoch: 2 | time: 9.959
+		epoch: 3 | time: 14.927
+		epoch: 4 | time: 19.867
+	Accuracy of vanilla stitch model is 0.16095132743362833
+	Vanilla stitch mean2 difference is 0.5231053667190747
+		epoch: 1 | time: 3.087
+		epoch: 2 | time: 6.174
+		epoch: 3 | time: 9.258
+		epoch: 4 | time: 12.345
+		epoch: 5 | time: 15.436
+		epoch: 6 | time: 18.518
+		epoch: 7 | time: 21.601
+		epoch: 8 | time: 24.716
+		epoch: 9 | time: 27.820
+		epoch: 10 | time: 30.923
+		epoch: 11 | time: 34.034
+		epoch: 12 | time: 37.150
+		epoch: 13 | time: 40.260
+		epoch: 14 | time: 43.355
+		epoch: 15 | time: 46.461
+		epoch: 16 | time: 49.557
+		epoch: 17 | time: 52.674
+		epoch: 18 | time: 55.776
+		epoch: 19 | time: 58.871
+		epoch: 20 | time: 61.971
+		epoch: 21 | time: 65.054
+		epoch: 22 | time: 68.167
+		epoch: 23 | time: 71.247
+		epoch: 24 | time: 74.334
+		epoch: 25 | time: 77.413
+		epoch: 26 | time: 80.500
+		epoch: 27 | time: 83.977
+		epoch: 28 | time: 87.265
+		epoch: 29 | time: 90.345
+		epoch: 30 | time: 93.424
+	Accuracy of autoencoder stitch model is 9.955752212389381
+	Autoencoder stitch mean2 difference is 0.038470330452307674
+	Vanilla stitch autoencoder mean2 difference is 0.47391367310132737
+***
+	stitching 2->2 which is (2, 0)->(1, 1)
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 4.300
+		epoch: 2 | time: 8.580
+		epoch: 3 | time: 12.867
+		epoch: 4 | time: 17.164
+	Accuracy of vanilla stitch model is 0.17754424778761063
+	Vanilla stitch mean2 difference is 1.290585296581953
+		epoch: 1 | time: 4.069
+		epoch: 2 | time: 8.136
+		epoch: 3 | time: 12.209
+		epoch: 4 | time: 16.278
+		epoch: 5 | time: 20.366
+		epoch: 6 | time: 24.441
+		epoch: 7 | time: 28.511
+		epoch: 8 | time: 32.605
+		epoch: 9 | time: 36.683
+		epoch: 10 | time: 40.749
+		epoch: 11 | time: 44.808
+		epoch: 12 | time: 48.880
+		epoch: 13 | time: 52.948
+		epoch: 14 | time: 57.017
+		epoch: 15 | time: 61.085
+		epoch: 16 | time: 65.154
+		epoch: 17 | time: 69.226
+		epoch: 18 | time: 73.294
+		epoch: 19 | time: 77.364
+		epoch: 20 | time: 81.428
+		epoch: 21 | time: 85.488
+		epoch: 22 | time: 89.565
+		epoch: 23 | time: 93.617
+		epoch: 24 | time: 97.683
+		epoch: 25 | time: 101.740
+		epoch: 26 | time: 105.809
+		epoch: 27 | time: 109.876
+		epoch: 28 | time: 113.955
+		epoch: 29 | time: 118.029
+		epoch: 30 | time: 122.104
+	Accuracy of autoencoder stitch model is 10.232300884955754
+	Autoencoder stitch mean2 difference is 0.09405880769093831
+	Vanilla stitch autoencoder mean2 difference is 1.16410379470923
+***
+	stitching 2->3 which is (2, 0)->(2, 0)
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 3.639
+		epoch: 2 | time: 7.270
+		epoch: 3 | time: 10.895
+		epoch: 4 | time: 14.543
+	Accuracy of vanilla stitch model is 0.20353982300884957
+	Vanilla stitch mean2 difference is 4.972949727376302
+		epoch: 1 | time: 4.899
+		epoch: 2 | time: 9.780
+		epoch: 3 | time: 14.681
+		epoch: 4 | time: 19.571
+		epoch: 5 | time: 24.455
+		epoch: 6 | time: 29.357
+		epoch: 7 | time: 34.235
+		epoch: 8 | time: 39.129
+		epoch: 9 | time: 44.030
+		epoch: 10 | time: 48.926
+		epoch: 11 | time: 53.832
+		epoch: 12 | time: 58.747
+		epoch: 13 | time: 63.639
+		epoch: 14 | time: 68.544
+		epoch: 15 | time: 73.437
+		epoch: 16 | time: 78.359
+		epoch: 17 | time: 83.236
+		epoch: 18 | time: 88.115
+		epoch: 19 | time: 93.019
+		epoch: 20 | time: 97.916
+		epoch: 21 | time: 102.808
+		epoch: 22 | time: 107.698
+		epoch: 23 | time: 112.598
+		epoch: 24 | time: 117.502
+		epoch: 25 | time: 122.396
+		epoch: 26 | time: 127.285
+		epoch: 27 | time: 132.193
+		epoch: 28 | time: 137.084
+		epoch: 29 | time: 141.973
+		epoch: 30 | time: 147.165
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 0.4991240211022206
+	Vanilla stitch autoencoder mean2 difference is 4.288160011095878
+***
+	stitching 2->4 which is (2, 0)->(3, 0)
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 2.822
+		epoch: 2 | time: 5.639
+		epoch: 3 | time: 8.461
+		epoch: 4 | time: 11.279
+	Accuracy of vanilla stitch model is 0.2605088495575221
+	Vanilla stitch mean2 difference is 32.01423925742125
+		epoch: 1 | time: 5.047
+		epoch: 2 | time: 10.089
+		epoch: 3 | time: 15.153
+		epoch: 4 | time: 20.202
+		epoch: 5 | time: 25.239
+		epoch: 6 | time: 30.300
+		epoch: 7 | time: 35.352
+		epoch: 8 | time: 40.393
+		epoch: 9 | time: 45.871
+		epoch: 10 | time: 51.163
+		epoch: 11 | time: 56.237
+		epoch: 12 | time: 61.284
+		epoch: 13 | time: 66.324
+		epoch: 14 | time: 71.376
+		epoch: 15 | time: 76.427
+		epoch: 16 | time: 81.476
+		epoch: 17 | time: 86.539
+		epoch: 18 | time: 91.586
+		epoch: 19 | time: 96.625
+		epoch: 20 | time: 101.665
+		epoch: 21 | time: 106.721
+		epoch: 22 | time: 111.776
+		epoch: 23 | time: 116.836
+		epoch: 24 | time: 121.871
+		epoch: 25 | time: 126.910
+		epoch: 26 | time: 131.977
+		epoch: 27 | time: 137.011
+		epoch: 28 | time: 142.060
+		epoch: 29 | time: 147.112
+		epoch: 30 | time: 152.145
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 3.351131930718055
+	Vanilla stitch autoencoder mean2 difference is 26.590009082892003
+***
+	stitching 2->5 which is (2, 0)->(4, 0)
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 2.400
+		epoch: 2 | time: 4.779
+		epoch: 3 | time: 7.164
+		epoch: 4 | time: 9.553
+	Accuracy of vanilla stitch model is 0.3313053097345133
+	Vanilla stitch mean2 difference is 179.78331455328527
+		epoch: 1 | time: 5.455
+		epoch: 2 | time: 10.937
+		epoch: 3 | time: 16.395
+		epoch: 4 | time: 21.865
+		epoch: 5 | time: 27.331
+		epoch: 6 | time: 32.811
+		epoch: 7 | time: 38.282
+		epoch: 8 | time: 43.740
+		epoch: 9 | time: 49.210
+		epoch: 10 | time: 54.683
+		epoch: 11 | time: 60.140
+		epoch: 12 | time: 65.609
+		epoch: 13 | time: 71.086
+		epoch: 14 | time: 76.531
+		epoch: 15 | time: 81.986
+		epoch: 16 | time: 87.443
+		epoch: 17 | time: 92.913
+		epoch: 18 | time: 98.380
+		epoch: 19 | time: 103.856
+		epoch: 20 | time: 109.313
+		epoch: 21 | time: 114.768
+		epoch: 22 | time: 120.232
+		epoch: 23 | time: 125.697
+		epoch: 24 | time: 131.158
+		epoch: 25 | time: 136.633
+		epoch: 26 | time: 142.105
+		epoch: 27 | time: 147.583
+		epoch: 28 | time: 153.056
+		epoch: 29 | time: 158.528
+		epoch: 30 | time: 163.989
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 19.11702471023951
+	Vanilla stitch autoencoder mean2 difference is 148.97010490221854
+***
+	stitching 2->6 which is (2, 0)->fc
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 2.071
+		epoch: 2 | time: 4.153
+		epoch: 3 | time: 6.219
+		epoch: 4 | time: 8.286
+	Accuracy of vanilla stitch model is 0.543141592920354
+	Vanilla stitch mean2 difference is 677.8469657702324
+		epoch: 1 | time: 5.949
+		epoch: 2 | time: 11.891
+		epoch: 3 | time: 17.844
+		epoch: 4 | time: 23.793
+		epoch: 5 | time: 29.779
+		epoch: 6 | time: 35.715
+		epoch: 7 | time: 41.671
+		epoch: 8 | time: 47.627
+		epoch: 9 | time: 53.584
+		epoch: 10 | time: 59.550
+		epoch: 11 | time: 65.513
+		epoch: 12 | time: 71.469
+		epoch: 13 | time: 77.427
+		epoch: 14 | time: 83.393
+		epoch: 15 | time: 89.362
+		epoch: 16 | time: 95.334
+		epoch: 17 | time: 101.288
+		epoch: 18 | time: 107.257
+		epoch: 19 | time: 113.231
+		epoch: 20 | time: 119.187
+		epoch: 21 | time: 125.163
+		epoch: 22 | time: 131.133
+		epoch: 23 | time: 137.087
+		epoch: 24 | time: 143.044
+		epoch: 25 | time: 149.010
+		epoch: 26 | time: 154.974
+		epoch: 27 | time: 160.929
+		epoch: 28 | time: 166.898
+		epoch: 29 | time: 172.848
+		epoch: 30 | time: 178.816
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 1.5682402659685184
+	Vanilla stitch autoencoder mean2 difference is 675.0709857647236
+***
+	stitching 3->1 which is (2, 1)->(1, 0)
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 5.447
+		epoch: 2 | time: 10.913
+		epoch: 3 | time: 16.379
+		epoch: 4 | time: 21.838
+	Accuracy of vanilla stitch model is 0.12444690265486726
+	Vanilla stitch mean2 difference is 0.9054912961446322
+		epoch: 1 | time: 3.674
+		epoch: 2 | time: 7.373
+		epoch: 3 | time: 11.073
+		epoch: 4 | time: 14.772
+		epoch: 5 | time: 18.454
+		epoch: 6 | time: 22.149
+		epoch: 7 | time: 25.852
+		epoch: 8 | time: 29.551
+		epoch: 9 | time: 33.277
+		epoch: 10 | time: 36.975
+		epoch: 11 | time: 40.656
+		epoch: 12 | time: 44.338
+		epoch: 13 | time: 48.018
+		epoch: 14 | time: 51.704
+		epoch: 15 | time: 55.375
+		epoch: 16 | time: 59.050
+		epoch: 17 | time: 62.740
+		epoch: 18 | time: 66.428
+		epoch: 19 | time: 70.096
+		epoch: 20 | time: 73.806
+		epoch: 21 | time: 77.476
+		epoch: 22 | time: 81.156
+		epoch: 23 | time: 84.831
+		epoch: 24 | time: 88.517
+		epoch: 25 | time: 92.209
+		epoch: 26 | time: 95.880
+		epoch: 27 | time: 99.551
+		epoch: 28 | time: 103.219
+		epoch: 29 | time: 106.894
+		epoch: 30 | time: 110.575
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 0.044389005712209606
+	Vanilla stitch autoencoder mean2 difference is 0.8514905492464702
+***
+	stitching 3->2 which is (2, 1)->(1, 1)
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 4.800
+		epoch: 2 | time: 9.613
+		epoch: 3 | time: 14.405
+		epoch: 4 | time: 19.204
+	Accuracy of vanilla stitch model is 0.16316371681415925
+	Vanilla stitch mean2 difference is 1.8542655241795076
+		epoch: 1 | time: 4.642
+		epoch: 2 | time: 9.294
+		epoch: 3 | time: 13.951
+		epoch: 4 | time: 18.617
+		epoch: 5 | time: 23.290
+		epoch: 6 | time: 27.991
+		epoch: 7 | time: 32.665
+		epoch: 8 | time: 37.323
+		epoch: 9 | time: 41.990
+		epoch: 10 | time: 46.657
+		epoch: 11 | time: 51.303
+		epoch: 12 | time: 55.981
+		epoch: 13 | time: 60.654
+		epoch: 14 | time: 65.319
+		epoch: 15 | time: 69.988
+		epoch: 16 | time: 74.647
+		epoch: 17 | time: 79.309
+		epoch: 18 | time: 83.969
+		epoch: 19 | time: 88.643
+		epoch: 20 | time: 93.307
+		epoch: 21 | time: 97.984
+		epoch: 22 | time: 102.657
+		epoch: 23 | time: 107.321
+		epoch: 24 | time: 111.990
+		epoch: 25 | time: 116.676
+		epoch: 26 | time: 121.329
+		epoch: 27 | time: 125.991
+		epoch: 28 | time: 130.665
+		epoch: 29 | time: 135.335
+		epoch: 30 | time: 140.276
+	Accuracy of autoencoder stitch model is 10.011061946902656
+	Autoencoder stitch mean2 difference is 0.1057760211519706
+	Vanilla stitch autoencoder mean2 difference is 1.718836602797875
+***
+	stitching 3->3 which is (2, 1)->(2, 0)
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 4.121
+		epoch: 2 | time: 8.254
+		epoch: 3 | time: 12.379
+		epoch: 4 | time: 16.518
+	Accuracy of vanilla stitch model is 0.19579646017699115
+	Vanilla stitch mean2 difference is 4.600247180156218
+		epoch: 1 | time: 5.461
+		epoch: 2 | time: 10.947
+		epoch: 3 | time: 16.430
+		epoch: 4 | time: 21.905
+		epoch: 5 | time: 27.383
+		epoch: 6 | time: 32.842
+		epoch: 7 | time: 38.310
+		epoch: 8 | time: 43.805
+		epoch: 9 | time: 49.276
+		epoch: 10 | time: 54.741
+		epoch: 11 | time: 60.210
+		epoch: 12 | time: 65.678
+		epoch: 13 | time: 71.136
+		epoch: 14 | time: 76.594
+		epoch: 15 | time: 82.055
+		epoch: 16 | time: 87.535
+		epoch: 17 | time: 92.997
+		epoch: 18 | time: 98.454
+		epoch: 19 | time: 103.905
+		epoch: 20 | time: 109.374
+		epoch: 21 | time: 114.843
+		epoch: 22 | time: 120.304
+		epoch: 23 | time: 125.783
+		epoch: 24 | time: 131.250
+		epoch: 25 | time: 136.730
+		epoch: 26 | time: 142.187
+		epoch: 27 | time: 147.666
+		epoch: 28 | time: 153.113
+		epoch: 29 | time: 158.563
+		epoch: 30 | time: 164.027
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 0.3644401029134408
+	Vanilla stitch autoencoder mean2 difference is 4.141265656397893
+***
+	stitching 3->4 which is (2, 1)->(3, 0)
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 3.334
+		epoch: 2 | time: 6.664
+		epoch: 3 | time: 10.002
+		epoch: 4 | time: 13.354
+	Accuracy of vanilla stitch model is 0.2411504424778761
+	Vanilla stitch mean2 difference is 15.141752756558931
+		epoch: 1 | time: 5.613
+		epoch: 2 | time: 11.241
+		epoch: 3 | time: 16.877
+		epoch: 4 | time: 22.512
+		epoch: 5 | time: 28.146
+		epoch: 6 | time: 33.784
+		epoch: 7 | time: 39.419
+		epoch: 8 | time: 45.050
+		epoch: 9 | time: 50.705
+		epoch: 10 | time: 56.352
+		epoch: 11 | time: 61.982
+		epoch: 12 | time: 67.694
+		epoch: 13 | time: 73.329
+		epoch: 14 | time: 78.961
+		epoch: 15 | time: 84.596
+		epoch: 16 | time: 90.229
+		epoch: 17 | time: 95.862
+		epoch: 18 | time: 101.529
+		epoch: 19 | time: 107.174
+		epoch: 20 | time: 112.824
+		epoch: 21 | time: 118.466
+		epoch: 22 | time: 124.103
+		epoch: 23 | time: 129.733
+		epoch: 24 | time: 135.358
+		epoch: 25 | time: 140.990
+		epoch: 26 | time: 146.621
+		epoch: 27 | time: 152.253
+		epoch: 28 | time: 159.498
+		epoch: 29 | time: 165.135
+		epoch: 30 | time: 170.764
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 1.449821870143597
+	Vanilla stitch autoencoder mean2 difference is 13.048410787337865
+***
+	stitching 3->5 which is (2, 1)->(4, 0)
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 2.906
+		epoch: 2 | time: 5.814
+		epoch: 3 | time: 8.727
+		epoch: 4 | time: 11.647
+	Accuracy of vanilla stitch model is 0.30918141592920356
+	Vanilla stitch mean2 difference is 57.676074942564355
+		epoch: 1 | time: 6.045
+		epoch: 2 | time: 12.082
+		epoch: 3 | time: 18.147
+		epoch: 4 | time: 24.208
+		epoch: 5 | time: 30.257
+		epoch: 6 | time: 36.299
+		epoch: 7 | time: 42.370
+		epoch: 8 | time: 48.429
+		epoch: 9 | time: 54.490
+		epoch: 10 | time: 60.534
+		epoch: 11 | time: 66.579
+		epoch: 12 | time: 72.637
+		epoch: 13 | time: 78.692
+		epoch: 14 | time: 84.738
+		epoch: 15 | time: 90.788
+		epoch: 16 | time: 96.840
+		epoch: 17 | time: 102.900
+		epoch: 18 | time: 108.964
+		epoch: 19 | time: 115.015
+		epoch: 20 | time: 121.070
+		epoch: 21 | time: 127.112
+		epoch: 22 | time: 133.160
+		epoch: 23 | time: 139.206
+		epoch: 24 | time: 145.252
+		epoch: 25 | time: 151.304
+		epoch: 26 | time: 157.361
+		epoch: 27 | time: 163.415
+		epoch: 28 | time: 169.472
+		epoch: 29 | time: 175.530
+		epoch: 30 | time: 181.584
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 5.040140230227739
+	Vanilla stitch autoencoder mean2 difference is 49.75360635610727
+***
+	stitching 3->6 which is (2, 1)->fc
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 2.570
+		epoch: 2 | time: 5.179
+		epoch: 3 | time: 7.786
+		epoch: 4 | time: 10.388
+	Accuracy of vanilla stitch model is 0.38827433628318586
+	Vanilla stitch mean2 difference is 156.64596416766827
+		epoch: 1 | time: 6.536
+		epoch: 2 | time: 13.085
+		epoch: 3 | time: 19.627
+		epoch: 4 | time: 26.172
+		epoch: 5 | time: 32.706
+		epoch: 6 | time: 39.236
+		epoch: 7 | time: 45.783
+		epoch: 8 | time: 52.333
+		epoch: 9 | time: 58.884
+		epoch: 10 | time: 65.432
+		epoch: 11 | time: 72.022
+		epoch: 12 | time: 78.561
+		epoch: 13 | time: 85.096
+		epoch: 14 | time: 91.655
+		epoch: 15 | time: 98.205
+		epoch: 16 | time: 104.745
+		epoch: 17 | time: 111.295
+		epoch: 18 | time: 117.837
+		epoch: 19 | time: 124.365
+		epoch: 20 | time: 130.892
+		epoch: 21 | time: 137.432
+		epoch: 22 | time: 143.962
+		epoch: 23 | time: 150.503
+		epoch: 24 | time: 157.048
+		epoch: 25 | time: 163.596
+		epoch: 26 | time: 170.163
+		epoch: 27 | time: 176.696
+		epoch: 28 | time: 183.263
+		epoch: 29 | time: 189.827
+		epoch: 30 | time: 196.370
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 0.24677222699691087
+	Vanilla stitch autoencoder mean2 difference is 156.21525041629107
+***
+	stitching 4->1 which is (3, 0)->(1, 0)
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 6.033
+		epoch: 2 | time: 12.073
+		epoch: 3 | time: 18.111
+		epoch: 4 | time: 24.150
+	Accuracy of vanilla stitch model is 0.15486725663716813
+	Vanilla stitch mean2 difference is 0.6435169617335001
+		epoch: 1 | time: 4.325
+		epoch: 2 | time: 8.657
+		epoch: 3 | time: 12.986
+		epoch: 4 | time: 17.295
+		epoch: 5 | time: 21.608
+		epoch: 6 | time: 25.951
+		epoch: 7 | time: 30.282
+		epoch: 8 | time: 34.619
+		epoch: 9 | time: 38.933
+		epoch: 10 | time: 43.262
+		epoch: 11 | time: 47.578
+		epoch: 12 | time: 51.888
+		epoch: 13 | time: 56.200
+		epoch: 14 | time: 60.517
+		epoch: 15 | time: 64.835
+		epoch: 16 | time: 69.161
+		epoch: 17 | time: 73.507
+		epoch: 18 | time: 77.822
+		epoch: 19 | time: 82.135
+		epoch: 20 | time: 86.449
+		epoch: 21 | time: 90.781
+		epoch: 22 | time: 95.115
+		epoch: 23 | time: 99.433
+		epoch: 24 | time: 103.756
+		epoch: 25 | time: 108.091
+		epoch: 26 | time: 112.379
+		epoch: 27 | time: 116.706
+		epoch: 28 | time: 121.038
+		epoch: 29 | time: 125.353
+		epoch: 30 | time: 129.645
+	Accuracy of autoencoder stitch model is 9.955752212389381
+	Autoencoder stitch mean2 difference is 0.06422439857553212
+	Vanilla stitch autoencoder mean2 difference is 0.5690333959383842
+***
+	stitching 4->2 which is (3, 0)->(1, 1)
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 5.366
+		epoch: 2 | time: 10.729
+		epoch: 3 | time: 16.113
+		epoch: 4 | time: 21.493
+	Accuracy of vanilla stitch model is 0.17809734513274336
+	Vanilla stitch mean2 difference is 1.5237929509236263
+		epoch: 1 | time: 5.300
+		epoch: 2 | time: 10.595
+		epoch: 3 | time: 15.898
+		epoch: 4 | time: 21.222
+		epoch: 5 | time: 26.532
+		epoch: 6 | time: 31.850
+		epoch: 7 | time: 37.149
+		epoch: 8 | time: 42.472
+		epoch: 9 | time: 47.784
+		epoch: 10 | time: 53.097
+		epoch: 11 | time: 58.432
+		epoch: 12 | time: 63.743
+		epoch: 13 | time: 69.059
+		epoch: 14 | time: 74.375
+		epoch: 15 | time: 79.707
+		epoch: 16 | time: 85.021
+		epoch: 17 | time: 90.328
+		epoch: 18 | time: 95.636
+		epoch: 19 | time: 100.957
+		epoch: 20 | time: 106.272
+		epoch: 21 | time: 111.570
+		epoch: 22 | time: 116.864
+		epoch: 23 | time: 122.173
+		epoch: 24 | time: 127.482
+		epoch: 25 | time: 132.786
+		epoch: 26 | time: 138.098
+		epoch: 27 | time: 143.405
+		epoch: 28 | time: 148.851
+		epoch: 29 | time: 154.304
+		epoch: 30 | time: 159.606
+	Accuracy of autoencoder stitch model is 12.002212389380531
+	Autoencoder stitch mean2 difference is 0.13031255465287428
+	Vanilla stitch autoencoder mean2 difference is 1.370138777830662
+***
+	stitching 4->3 which is (3, 0)->(2, 0)
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 4.720
+		epoch: 2 | time: 9.408
+		epoch: 3 | time: 14.103
+		epoch: 4 | time: 18.823
+	Accuracy of vanilla stitch model is 0.22234513274336284
+	Vanilla stitch mean2 difference is 4.162363727276142
+		epoch: 1 | time: 6.106
+		epoch: 2 | time: 12.210
+		epoch: 3 | time: 18.315
+		epoch: 4 | time: 24.410
+		epoch: 5 | time: 30.523
+		epoch: 6 | time: 36.622
+		epoch: 7 | time: 42.746
+		epoch: 8 | time: 48.852
+		epoch: 9 | time: 54.971
+		epoch: 10 | time: 61.063
+		epoch: 11 | time: 67.373
+		epoch: 12 | time: 73.499
+		epoch: 13 | time: 79.608
+		epoch: 14 | time: 85.723
+		epoch: 15 | time: 91.822
+		epoch: 16 | time: 97.940
+		epoch: 17 | time: 104.058
+		epoch: 18 | time: 110.174
+		epoch: 19 | time: 116.279
+		epoch: 20 | time: 122.372
+		epoch: 21 | time: 128.463
+		epoch: 22 | time: 134.558
+		epoch: 23 | time: 140.664
+		epoch: 24 | time: 146.760
+		epoch: 25 | time: 152.875
+		epoch: 26 | time: 158.973
+		epoch: 27 | time: 165.093
+		epoch: 28 | time: 171.209
+		epoch: 29 | time: 177.306
+		epoch: 30 | time: 183.425
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 0.5221860634974944
+	Vanilla stitch autoencoder mean2 difference is 3.552905202523256
+***
+	stitching 4->4 which is (3, 0)->(3, 0)
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 4.006
+		epoch: 2 | time: 8.004
+		epoch: 3 | time: 12.017
+		epoch: 4 | time: 16.023
+	Accuracy of vanilla stitch model is 0.2588495575221239
+	Vanilla stitch mean2 difference is 15.889023741697654
+		epoch: 1 | time: 6.362
+		epoch: 2 | time: 12.744
+		epoch: 3 | time: 19.116
+		epoch: 4 | time: 25.489
+		epoch: 5 | time: 31.862
+		epoch: 6 | time: 38.246
+		epoch: 7 | time: 44.588
+		epoch: 8 | time: 50.933
+		epoch: 9 | time: 57.291
+		epoch: 10 | time: 63.641
+		epoch: 11 | time: 70.009
+		epoch: 12 | time: 76.373
+		epoch: 13 | time: 82.744
+		epoch: 14 | time: 89.122
+		epoch: 15 | time: 95.492
+		epoch: 16 | time: 101.877
+		epoch: 17 | time: 108.229
+		epoch: 18 | time: 114.584
+		epoch: 19 | time: 120.939
+		epoch: 20 | time: 127.311
+		epoch: 21 | time: 133.660
+		epoch: 22 | time: 140.038
+		epoch: 23 | time: 146.395
+		epoch: 24 | time: 152.758
+		epoch: 25 | time: 159.117
+		epoch: 26 | time: 165.487
+		epoch: 27 | time: 171.858
+		epoch: 28 | time: 178.221
+		epoch: 29 | time: 184.601
+		epoch: 30 | time: 190.969
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 2.097340626594348
+	Vanilla stitch autoencoder mean2 difference is 13.178785686003856
+***
+	stitching 4->5 which is (3, 0)->(4, 0)
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 3.368
+		epoch: 2 | time: 6.719
+		epoch: 3 | time: 10.053
+		epoch: 4 | time: 13.373
+	Accuracy of vanilla stitch model is 0.290929203539823
+	Vanilla stitch mean2 difference is 85.23705866887019
+		epoch: 1 | time: 6.527
+		epoch: 2 | time: 13.041
+		epoch: 3 | time: 19.563
+		epoch: 4 | time: 26.099
+		epoch: 5 | time: 32.630
+		epoch: 6 | time: 39.152
+		epoch: 7 | time: 45.673
+		epoch: 8 | time: 52.203
+		epoch: 9 | time: 58.724
+		epoch: 10 | time: 65.250
+		epoch: 11 | time: 71.795
+		epoch: 12 | time: 78.323
+		epoch: 13 | time: 84.853
+		epoch: 14 | time: 91.389
+		epoch: 15 | time: 97.910
+		epoch: 16 | time: 104.457
+		epoch: 17 | time: 110.996
+		epoch: 18 | time: 117.533
+		epoch: 19 | time: 124.077
+		epoch: 20 | time: 130.611
+		epoch: 21 | time: 137.146
+		epoch: 22 | time: 143.689
+		epoch: 23 | time: 150.221
+		epoch: 24 | time: 162.580
+		epoch: 25 | time: 169.104
+		epoch: 26 | time: 175.643
+		epoch: 27 | time: 182.177
+		epoch: 28 | time: 188.723
+		epoch: 29 | time: 195.248
+		epoch: 30 | time: 201.794
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 11.401954645988269
+	Vanilla stitch autoencoder mean2 difference is 67.58670591696715
+***
+	stitching 4->6 which is (3, 0)->fc
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 3.524
+		epoch: 2 | time: 6.501
+		epoch: 3 | time: 9.451
+		epoch: 4 | time: 12.411
+	Accuracy of vanilla stitch model is 0.4856194690265487
+	Vanilla stitch mean2 difference is 383.66912137545074
+		epoch: 1 | time: 6.974
+		epoch: 2 | time: 13.958
+		epoch: 3 | time: 20.940
+		epoch: 4 | time: 27.923
+		epoch: 5 | time: 34.911
+		epoch: 6 | time: 41.922
+		epoch: 7 | time: 48.925
+		epoch: 8 | time: 55.922
+		epoch: 9 | time: 62.900
+		epoch: 10 | time: 69.893
+		epoch: 11 | time: 76.869
+		epoch: 12 | time: 83.863
+		epoch: 13 | time: 90.838
+		epoch: 14 | time: 97.823
+		epoch: 15 | time: 104.802
+		epoch: 16 | time: 111.768
+		epoch: 17 | time: 118.737
+		epoch: 18 | time: 125.729
+		epoch: 19 | time: 132.715
+		epoch: 20 | time: 139.696
+		epoch: 21 | time: 146.665
+		epoch: 22 | time: 153.652
+		epoch: 23 | time: 160.645
+		epoch: 24 | time: 167.646
+		epoch: 25 | time: 174.631
+		epoch: 26 | time: 181.604
+		epoch: 27 | time: 188.598
+		epoch: 28 | time: 195.588
+		epoch: 29 | time: 202.576
+		epoch: 30 | time: 209.566
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 1.5217324550335223
+	Vanilla stitch autoencoder mean2 difference is 381.28069974459135
+***
+	stitching 5->1 which is (4, 0)->(1, 0)
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 6.769
+		epoch: 2 | time: 13.534
+		epoch: 3 | time: 20.316
+		epoch: 4 | time: 27.089
+	Accuracy of vanilla stitch model is 0.1709070796460177
+	Vanilla stitch mean2 difference is 1.063069670322614
+		epoch: 1 | time: 5.097
+		epoch: 2 | time: 10.238
+		epoch: 3 | time: 15.342
+		epoch: 4 | time: 20.434
+		epoch: 5 | time: 25.518
+		epoch: 6 | time: 30.616
+		epoch: 7 | time: 35.710
+		epoch: 8 | time: 40.825
+		epoch: 9 | time: 45.929
+		epoch: 10 | time: 51.015
+		epoch: 11 | time: 56.103
+		epoch: 12 | time: 61.186
+		epoch: 13 | time: 66.279
+		epoch: 14 | time: 71.360
+		epoch: 15 | time: 76.442
+		epoch: 16 | time: 81.530
+		epoch: 17 | time: 86.630
+		epoch: 18 | time: 91.729
+		epoch: 19 | time: 96.819
+		epoch: 20 | time: 101.916
+		epoch: 21 | time: 107.013
+		epoch: 22 | time: 112.132
+		epoch: 23 | time: 117.226
+		epoch: 24 | time: 122.327
+		epoch: 25 | time: 127.445
+		epoch: 26 | time: 132.552
+		epoch: 27 | time: 137.659
+		epoch: 28 | time: 142.765
+		epoch: 29 | time: 147.890
+		epoch: 30 | time: 152.989
+	Accuracy of autoencoder stitch model is 9.900442477876107
+	Autoencoder stitch mean2 difference is 0.08459149159682103
+	Vanilla stitch autoencoder mean2 difference is 0.9691561989295177
+***
+	stitching 5->2 which is (4, 0)->(1, 1)
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 6.131
+		epoch: 2 | time: 12.252
+		epoch: 3 | time: 18.372
+		epoch: 4 | time: 24.496
+	Accuracy of vanilla stitch model is 0.20630530973451328
+	Vanilla stitch mean2 difference is 2.7216786824739896
+		epoch: 1 | time: 6.084
+		epoch: 2 | time: 12.163
+		epoch: 3 | time: 18.245
+		epoch: 4 | time: 24.327
+		epoch: 5 | time: 30.391
+		epoch: 6 | time: 36.462
+		epoch: 7 | time: 42.536
+		epoch: 8 | time: 48.614
+		epoch: 9 | time: 54.695
+		epoch: 10 | time: 60.768
+		epoch: 11 | time: 66.848
+		epoch: 12 | time: 72.934
+		epoch: 13 | time: 78.995
+		epoch: 14 | time: 85.066
+		epoch: 15 | time: 91.163
+		epoch: 16 | time: 97.246
+		epoch: 17 | time: 103.324
+		epoch: 18 | time: 109.405
+		epoch: 19 | time: 115.472
+		epoch: 20 | time: 121.543
+		epoch: 21 | time: 127.609
+		epoch: 22 | time: 133.691
+		epoch: 23 | time: 139.768
+		epoch: 24 | time: 145.831
+		epoch: 25 | time: 151.905
+		epoch: 26 | time: 157.997
+		epoch: 27 | time: 164.098
+		epoch: 28 | time: 170.181
+		epoch: 29 | time: 176.263
+		epoch: 30 | time: 182.341
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 0.19876191432659443
+	Vanilla stitch autoencoder mean2 difference is 2.502587845386603
+***
+	stitching 5->3 which is (4, 0)->(2, 0)
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 5.471
+		epoch: 2 | time: 10.917
+		epoch: 3 | time: 16.375
+		epoch: 4 | time: 21.824
+	Accuracy of vanilla stitch model is 0.2295353982300885
+	Vanilla stitch mean2 difference is 12.429457982381185
+		epoch: 1 | time: 6.884
+		epoch: 2 | time: 13.776
+		epoch: 3 | time: 20.939
+		epoch: 4 | time: 27.825
+		epoch: 5 | time: 34.716
+		epoch: 6 | time: 41.759
+		epoch: 7 | time: 48.903
+		epoch: 8 | time: 55.814
+		epoch: 9 | time: 62.704
+		epoch: 10 | time: 69.580
+		epoch: 11 | time: 76.473
+		epoch: 12 | time: 83.381
+		epoch: 13 | time: 90.266
+		epoch: 14 | time: 97.146
+		epoch: 15 | time: 104.060
+		epoch: 16 | time: 110.954
+		epoch: 17 | time: 117.838
+		epoch: 18 | time: 124.739
+		epoch: 19 | time: 131.639
+		epoch: 20 | time: 138.549
+		epoch: 21 | time: 145.438
+		epoch: 22 | time: 152.325
+		epoch: 23 | time: 159.206
+		epoch: 24 | time: 166.082
+		epoch: 25 | time: 172.968
+		epoch: 26 | time: 179.856
+		epoch: 27 | time: 187.311
+		epoch: 28 | time: 194.187
+		epoch: 29 | time: 201.073
+		epoch: 30 | time: 208.504
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 0.9977226480459556
+	Vanilla stitch autoencoder mean2 difference is 11.34041355328682
+***
+	stitching 5->4 which is (4, 0)->(3, 0)
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 4.400
+		epoch: 2 | time: 8.819
+		epoch: 3 | time: 13.238
+		epoch: 4 | time: 17.649
+	Accuracy of vanilla stitch model is 0.28982300884955753
+	Vanilla stitch mean2 difference is 43.98505916106395
+		epoch: 1 | time: 6.823
+		epoch: 2 | time: 13.626
+		epoch: 3 | time: 20.418
+		epoch: 4 | time: 27.231
+		epoch: 5 | time: 34.027
+		epoch: 6 | time: 40.830
+		epoch: 7 | time: 47.625
+		epoch: 8 | time: 54.547
+		epoch: 9 | time: 61.354
+		epoch: 10 | time: 68.146
+		epoch: 11 | time: 74.942
+		epoch: 12 | time: 81.750
+		epoch: 13 | time: 88.551
+		epoch: 14 | time: 95.361
+		epoch: 15 | time: 102.167
+		epoch: 16 | time: 109.561
+		epoch: 17 | time: 116.518
+		epoch: 18 | time: 123.320
+		epoch: 19 | time: 130.110
+		epoch: 20 | time: 136.923
+		epoch: 21 | time: 143.730
+		epoch: 22 | time: 150.539
+		epoch: 23 | time: 157.339
+		epoch: 24 | time: 164.152
+		epoch: 25 | time: 170.957
+		epoch: 26 | time: 177.775
+		epoch: 27 | time: 184.585
+		epoch: 28 | time: 191.408
+		epoch: 29 | time: 198.235
+		epoch: 30 | time: 205.044
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 4.317528340755365
+	Vanilla stitch autoencoder mean2 difference is 38.99004283807216
+***
+	stitching 5->5 which is (4, 0)->(4, 0)
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 3.815
+		epoch: 2 | time: 7.650
+		epoch: 3 | time: 11.466
+		epoch: 4 | time: 15.278
+	Accuracy of vanilla stitch model is 0.3019911504424779
+	Vanilla stitch mean2 difference is 250.278418751252
+		epoch: 1 | time: 7.056
+		epoch: 2 | time: 14.123
+		epoch: 3 | time: 21.205
+		epoch: 4 | time: 28.255
+		epoch: 5 | time: 35.325
+		epoch: 6 | time: 42.385
+		epoch: 7 | time: 49.443
+		epoch: 8 | time: 56.512
+		epoch: 9 | time: 63.589
+		epoch: 10 | time: 70.651
+		epoch: 11 | time: 77.712
+		epoch: 12 | time: 84.775
+		epoch: 13 | time: 91.840
+		epoch: 14 | time: 98.891
+		epoch: 15 | time: 105.975
+		epoch: 16 | time: 113.030
+		epoch: 17 | time: 120.097
+		epoch: 18 | time: 127.176
+		epoch: 19 | time: 134.258
+		epoch: 20 | time: 141.330
+		epoch: 21 | time: 148.378
+		epoch: 22 | time: 155.448
+		epoch: 23 | time: 162.500
+		epoch: 24 | time: 169.565
+		epoch: 25 | time: 176.629
+		epoch: 26 | time: 183.689
+		epoch: 27 | time: 190.772
+		epoch: 28 | time: 197.842
+		epoch: 29 | time: 204.904
+		epoch: 30 | time: 211.962
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 26.472939760257038
+	Vanilla stitch autoencoder mean2 difference is 214.77174557416868
+***
+	stitching 5->6 which is (4, 0)->fc
+	Original accuracies were 0.10121681415929204 and 0.10121681415929204
+		epoch: 1 | time: 3.351
+		epoch: 2 | time: 6.694
+		epoch: 3 | time: 10.042
+		epoch: 4 | time: 13.416
+	Accuracy of vanilla stitch model is 0.4347345132743363
+	Vanilla stitch mean2 difference is 1177.745819561298
+		epoch: 1 | time: 7.385
+		epoch: 2 | time: 14.762
+		epoch: 3 | time: 22.419
+		epoch: 4 | time: 30.173
+		epoch: 5 | time: 37.548
+		epoch: 6 | time: 44.932
+		epoch: 7 | time: 52.321
+		epoch: 8 | time: 59.719
+		epoch: 9 | time: 67.106
+		epoch: 10 | time: 74.494
+		epoch: 11 | time: 81.891
+		epoch: 12 | time: 89.283
+		epoch: 13 | time: 96.672
+		epoch: 14 | time: 104.054
+		epoch: 15 | time: 111.454
+		epoch: 16 | time: 118.830
+		epoch: 17 | time: 126.210
+		epoch: 18 | time: 133.586
+		epoch: 19 | time: 140.966
+		epoch: 20 | time: 148.364
+		epoch: 21 | time: 155.740
+		epoch: 22 | time: 163.115
+		epoch: 23 | time: 170.497
+		epoch: 24 | time: 177.898
+		epoch: 25 | time: 185.289
+		epoch: 26 | time: 192.699
+		epoch: 27 | time: 200.107
+		epoch: 28 | time: 207.505
+		epoch: 29 | time: 214.898
+		epoch: 30 | time: 222.242
+	Accuracy of autoencoder stitch model is 10.06637168141593
+	Autoencoder stitch mean2 difference is 2.488218110646957
+	Vanilla stitch autoencoder mean2 difference is 1171.0807848808092
+***
+Saving sims to sims_resnet_1211_resnet_2111/resnet_1211_rand_resnet_2111_rand_sims.pt
+Saving autoencoder sims to sims_resnet_1211_resnet_2111/resnet_1211_rand_resnet_2111_rand_autoencoder_sims.pt
+Saving vanilla autoencoder mean2 to sims_resnet_1211_resnet_2111/resnet_1211_rand_resnet_2111_rand_vanilla_autoencoder_mean2.pt
+Saving autoencoder rep mean2 to sims_resnet_1211_resnet_2111/resnet_1211_rand_resnet_2111_rand_autoencoder_rep_mean2.pt
+Saving vanilla rep mean2 to sims_resnet_1211_resnet_2111/resnet_1211_rand_resnet_2111_rand_vanilla_rep_mean2.pt
