@@ -1,9 +1,46 @@
 import os
 from typing import Dict, List, Tuple
+import numpy as np
+import matplotlib.pyplot as plt
 
 # Pretty printer is invaluable for debuggings
 from pprint import PrettyPrinter
 pp = PrettyPrinter(indent=4)
+
+# NOTE this is copied from stitching/visualizer.py
+
+
+def matrix_heatmap(mat, output_file_name: str):
+    mat = np.array(mat)
+    assert len(mat.shape) == 2
+
+    mat_height, mat_width = mat.shape
+
+    mat = np.round(mat, decimals=2)
+    yticks, xticks = np.arange(mat_height), np.arange(mat_width)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.imshow(mat)
+    ax.set_yticks(yticks)
+    ax.set_xticks(xticks)
+    ax.set_xticklabels(xticks)
+    ax.set_yticklabels(yticks)
+    plt.setp(ax.get_xticklabels(), rotation=45,
+             ha="right", rotation_mode="anchor")
+
+    # This is inserting the text into the boxes so that we can compare easily
+    for i in range(len(yticks)):
+        for j in range(len(xticks)):
+            ax.text(j, i, mat[i, j], ha="center", va="center", color="w")
+
+    # remove the path and the .png extension
+    title = output_file_name.split("/")[-1][:-4]
+    ax.set_title(f"{title}")
+    fig.tight_layout()
+    fig.savefig(output_file_name)
+    plt.close(fig)
+    plt.clf()
 
 
 class Label(object):
@@ -31,6 +68,17 @@ class Label(object):
 
     def __hash__(self) -> int:
         return hash(self.label_str)
+
+
+def get_or(dictionary, key, default):
+    if key in dictionary:
+        return dictionary[key]
+    else:
+        return default
+
+
+def map_table(func, table):
+    return [[func(elem) for elem in row] for row in table]
 
 
 def parse_percent_or_float(s):
@@ -262,6 +310,93 @@ class ExperimentInfo(object):
             self.labels2stitchinfo_rand_rand)
         assert len(self.labels2stitchinfo_orig_orig) == len(self.idx2labels)
 
+        # min idx is 0
+        N = 2 + sum(self.numbers1)
+        M = 2 + sum(self.numbers2)
+        assert N > 0
+        assert M > 0
+        stitch_info_table_orig_orig = [
+            [
+                get_or(self.labels2stitchinfo_orig_orig,
+                       get_or(self.idx2labels, (i, j), None), None)
+                for j in range(M)
+            ]for i in range(N)
+        ]
+        stitch_info_table_orig_rand = [
+            [
+                get_or(self.labels2stitchinfo_orig_rand,
+                       get_or(self.idx2labels, (i, j), None), None)
+                for j in range(M)
+            ]for i in range(N)
+        ]
+
+        stitch_info_table_rand_orig = [
+            [
+                get_or(self.labels2stitchinfo_rand_orig,
+                       get_or(self.idx2labels, (i, j), None), None)
+                for j in range(M)
+            ]for i in range(N)
+        ]
+
+        stitch_info_table_rand_rand = [
+            [
+                get_or(self.labels2stitchinfo_rand_rand,
+                       get_or(self.idx2labels, (i, j), None), None)
+                for j in range(M)
+            ]for i in range(N)
+        ]
+
+        # default is zero since it means they "can't be stitched" i.e. are infinitely far away
+        self.stitch_orig_orig_vanilla_accs_table = map_table(
+            lambda x: 0 if x is None else x.vanilla_acc, stitch_info_table_orig_orig)
+        self.stitch_orig_rand_vanilla_accs_table = map_table(
+            lambda x: 0 if x is None else x.vanilla_acc, stitch_info_table_orig_rand)
+        self.stitch_rand_orig_vanilla_accs_table = map_table(
+            lambda x: 0 if x is None else x.vanilla_acc, stitch_info_table_rand_orig)
+        self.stitch_rand_rand_vanilla_accs_table = map_table(
+            lambda x: 0 if x is None else x.vanilla_acc, stitch_info_table_rand_rand)
+
+        self.stitch_orig_orig_autoencoder_accs_table = map_table(
+            lambda x: 0 if x is None else x.autoencoder_acc, stitch_info_table_orig_orig)
+        self.stitch_orig_rand_autoencoder_accs_table = map_table(
+            lambda x: 0 if x is None else x.autoencoder_acc, stitch_info_table_orig_rand)
+        self.stitch_rand_orig_autoencoder_accs_table = map_table(
+            lambda x: 0 if x is None else x.autoencoder_acc, stitch_info_table_rand_orig)
+        self.stitch_rand_rand_autoencoder_accs_table = map_table(
+            lambda x: 0 if x is None else x.autoencoder_acc, stitch_info_table_rand_rand)
+
+        # Negative one since these'll be close to zero
+        self.stitch_orig_orig_vanilla_orig_mean2_table = map_table(
+            lambda x: -1 if x is None else x.vanilla_autoencoder_mean2, stitch_info_table_orig_orig)
+        self.stitch_orig_orig_vanilla_autoencoder_mean2_table = map_table(
+            lambda x: -1 if x is None else x.vanilla_autoencoder_mean2, stitch_info_table_orig_orig)
+        self.stitch_orig_orig_autoencoder_orig_mean2_table = map_table(
+            lambda x: -1 if x is None else x.vanilla_autoencoder_mean2, stitch_info_table_orig_orig)
+
+        # Negative one since these'll be close to zero
+        self.stitch_orig_rand_vanilla_orig_mean2_table = map_table(
+            lambda x: -1 if x is None else x.vanilla_autoencoder_mean2, stitch_info_table_orig_rand)
+        self.stitch_orig_rand_vanilla_autoencoder_mean2_table = map_table(
+            lambda x: -1 if x is None else x.vanilla_autoencoder_mean2, stitch_info_table_orig_rand)
+        self.stitch_orig_rand_autoencoder_orig_mean2_table = map_table(
+            lambda x: -1 if x is None else x.vanilla_autoencoder_mean2, stitch_info_table_orig_rand)
+
+        # Negative one since these'll be close to zero
+        self.stitch_rand_orig_vanilla_orig_mean2_table = map_table(
+            lambda x: -1 if x is None else x.vanilla_autoencoder_mean2, stitch_info_table_rand_orig)
+        self.stitch_rand_orig_vanilla_autoencoder_mean2_table = map_table(
+            lambda x: -1 if x is None else x.vanilla_autoencoder_mean2, stitch_info_table_rand_orig)
+        self.stitch_rand_orig_autoencoder_orig_mean2_table = map_table(
+            lambda x: -1 if x is None else x.vanilla_autoencoder_mean2, stitch_info_table_rand_orig)
+
+        # Negative one since these'll be close to zero
+        self.stitch_rand_rand_vanilla_orig_mean2_table = map_table(
+            lambda x: -1 if x is None else x.vanilla_autoencoder_mean2, stitch_info_table_rand_rand)
+        self.stitch_rand_rand_vanilla_autoencoder_mean2_table = map_table(
+            lambda x: -1 if x is None else x.vanilla_autoencoder_mean2, stitch_info_table_rand_rand)
+        self.stitch_rand_rand_autoencoder_orig_mean2_table = map_table(
+            lambda x: -1 if x is None else x.vanilla_autoencoder_mean2, stitch_info_table_rand_rand)
+
     def parse_global_header(self, header):
         # Example:
         # 0:                 importing
@@ -375,9 +510,9 @@ class ExperimentInfo(object):
 
         # We can't really use json.parse since it doesn't support tuples; anyways, this is OK because it's not nested
         # Get the string for the idx2labels
-        idx2labels_str = "".join(header[15:-1])
+        idx2labels_str = "".join(header[15: -1])
         # We remove the { and } and then have to split by ), because , would catch 1, 0 inside the parens
-        idx2labels_str = idx2labels_str[1:-1]
+        idx2labels_str = idx2labels_str[1: -1]
         idx2labels_str = "".join(
             list(filter(lambda x: x != "'", idx2labels_str)),
         )
@@ -453,7 +588,7 @@ class ExperimentInfo(object):
         blocks[0] = first_block
 
         # global header tells you which network architectures are being stitched, etcetera
-        global_header = intro_block[:-8]
+        global_header = intro_block[: -8]
         self.parse_global_header(global_header)
 
         # clean = "\n\n".join(map(lambda lines: "\n".join(
@@ -466,6 +601,7 @@ class ExperimentInfo(object):
 
 class MultiExperimentInfo(object):
     LOG_FOLDER = "./logs2analyze"
+    HEATMAPS_FOLDER = "./heatmaps"
 
     def __init__(self, log_folder=LOG_FOLDER, verbose=True):
         self.experiments = None
@@ -491,10 +627,12 @@ class MultiExperimentInfo(object):
 
         self.experiments = list(
             filter(lambda x: not x is None, (ExperimentInfoCreator(file) for file in logs)))
-        print(f"Was able to load {len(self.experiments)}/{len(logs)} logs")
+        if verbose:
+            print(f"Was able to load {len(self.experiments)}/{len(logs)} logs")
         assert len(self.experiments) > 0,\
             f"Zero experiment infos created, are you sure you have the right folder {log_folder}?"
 
+        # NOTE this is primarily used for verbose logging
         self.nets2experiment_info = {}
         for experiment in self.experiments:
             nets = tuple(experiment.numbers1), tuple(experiment.numbers2)
@@ -502,8 +640,88 @@ class MultiExperimentInfo(object):
                 f"Found multiple experiments with the same networks {nets}"
             self.nets2experiment_info[nets] = experiment
 
-        print("")
-        print("\n".join(map(str, self.nets2experiment_info.keys())))
+        # Debug
+        if verbose:
+            print("")
+            print("\n".join(map(str, self.nets2experiment_info.keys())))
+
+        # Example
+        if verbose:
+            print("Heatmap for example ((1,1,1,1),(1,1,1,1))")
+            n1111 = (1, 1, 1, 1)
+            ex_key = (n1111, n1111)
+            assert ex_key in self.nets2experiment_info
+
+            ex = self.nets2experiment_info[ex_key]
+            print("")
+            print("\n".join(",".join(map(str, row))
+                            for row in ex.stitch_orig_orig_vanilla_accs_table))
+
+        # Store all the heatmaps in the folder
+        for experiment in self.experiments:
+            folder_name = os.path.join(
+                MultiExperimentInfo.HEATMAPS_FOLDER,
+                f"{experiment.name1}_{experiment.name2}",
+            )
+            if not os.path.exists(folder_name):
+                os.makedirs(folder_name)
+            for output, output_fname in [
+                # Similarities by stitch accuracy
+                (experiment.stitch_orig_orig_vanilla_accs_table,
+                 "orig_orig_vanilla_accs.png"),
+                (experiment.stitch_orig_rand_vanilla_accs_table,
+                 "orig_rand_vanilla_accs.png"),
+                (experiment.stitch_rand_orig_vanilla_accs_table,
+                 "rand_orig_vanilla_accs.png"),
+                (experiment.stitch_rand_rand_vanilla_accs_table,
+                 "rand_rand_vanilla_accs.png"),
+                # Similarities by stitch accuracy of autoencoder stitch
+                (experiment.stitch_orig_orig_autoencoder_accs_table,
+                 "orig_orig_autoencoder_accs.png"),
+                (experiment.stitch_orig_rand_autoencoder_accs_table,
+                 "orig_rand_autoencoder_accs.png"),
+                (experiment.stitch_rand_orig_autoencoder_accs_table,
+                 "rand_orig_autoencoder_accs.png"),
+                (experiment.stitch_rand_rand_autoencoder_accs_table,
+                 "rand_rand_autoencoder_accs.png"),
+                # Mean2 error after training for each table for each error metric (it's a triangle)
+                # Orig Orig
+                (experiment.stitch_orig_orig_vanilla_orig_mean2_table,
+                 "orig_orig_vanilla_orig_mean2.png"),
+                (experiment.stitch_orig_orig_vanilla_autoencoder_mean2_table,
+                 "orig_orig_vanilla_autoencoder_mean2.png"),
+                (experiment.stitch_orig_orig_autoencoder_orig_mean2_table,
+                 "orig_orig_autoencoder_orig_mean2_table.png"),
+                # Orig Rand
+                (experiment.stitch_orig_rand_vanilla_orig_mean2_table,
+                 "orig_rand_vanilla_orig_mean2.png"),
+                (experiment.stitch_orig_rand_vanilla_autoencoder_mean2_table,
+                 "orig_rand_vanilla_autoencoder_mean2.png"),
+                (experiment.stitch_orig_rand_autoencoder_orig_mean2_table,
+                 "orig_rand_autoencoder_orig_mean2_table.png"),
+                # Rand Orig
+                (experiment.stitch_rand_orig_vanilla_orig_mean2_table,
+                 "rand_orig_vanilla_orig_mean2.png"),
+                (experiment.stitch_rand_orig_vanilla_autoencoder_mean2_table,
+                 "rand_orig_vanilla_autoencoder_mean2.png"),
+                (experiment.stitch_rand_orig_autoencoder_orig_mean2_table,
+                 "rand_orig_autoencoder_orig_mean2_table.png"),
+                # Rand Rand
+                (experiment.stitch_rand_rand_vanilla_orig_mean2_table,
+                 "rand_rand_vanilla_orig_mean2.png"),
+                (experiment.stitch_rand_rand_vanilla_autoencoder_mean2_table,
+                 "rand_rand_vanilla_autoencoder_mean2.png"),
+                (experiment.stitch_rand_rand_autoencoder_orig_mean2_table,
+                 "rand_rand_autoencoder_orig_mean2_table.png"),
+            ]:
+                if verbose:
+                    print(
+                        f"\tHeatmaps for {experiment.name1}_{experiment.name2}")
+                output_fname = os.path.join(folder_name, output_fname)
+                matrix_heatmap(output, output_fname)
+        if verbose:
+            print("Done!")
+        pass
 
 
 if __name__ == "__main__":
