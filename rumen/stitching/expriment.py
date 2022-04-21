@@ -407,12 +407,17 @@ class Experiment(object):
             )
             for (model1_name, model1), (model2_name, model2) in pairs
         }
+        print(f"There are {idx2labels} pairs")
+        
+        def train_with_info(st: StitchedResnet):
+            print(f"\tTraining on stitch {st.send_label} -> {st.recv_label}")
+            return Trainer.train_loop(args, st, train_loader, test_loader)
 
         print("Training stitches")
         vanilla_sims: Dict[Tuple[str, str], List[List[float]]] = {
             (model1_name, model2_name):
             Table.mappedTable(
-                lambda st: Trainer.train_loop(args, st, train_loader, test_loader),
+                train_with_info,
                 stitched_nets_table,
             )
             for (model1_name, model2_name), stitched_nets_table in stitched_nets.items()

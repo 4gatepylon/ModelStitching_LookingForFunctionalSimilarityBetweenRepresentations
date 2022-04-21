@@ -142,7 +142,7 @@ class Resnet(nn.Module):
             )
         return nn.Sequential(*layers)
 
-    def into_forward(self, x: Tensor, vent: LayerLabel) -> Tensor:
+    def into_forward(self, x: Tensor, vent: LayerLabel, pool_and_flatten: bool = False) -> Tensor:
         if vent.isInput():
             raise Exception(
                 "can vent out from input but NOT into input in `intoForward(x, vent)`")
@@ -151,14 +151,17 @@ class Resnet(nn.Module):
         elif vent.isBlock():
             # Resnets vent every time so that we can shorten our code
             blockset, block = vent.getBlockset(), vent.getBlock()
-            xp = self.blocksets[blockset][block:](x)
-            if blockset + 1 < LayerLabel.BLOCKSET_MAX:
-                xp = self.blocksets[blockset+1:](xp)
+            xp = self.blocksets[blockset-1][block:](x)
+            if blockset < LayerLabel.BLOCKSET_MAX:
+                xp = self.blocksets[blockset:](xp)
             a = self.avgpool(xp)
             f = torch.flatten(a, 1)
             y = self.fc(f)
             return y
         elif vent.isFc():
+            if pool_and_flatten:
+                x = self.avgpool(x)
+                x = torch.flatten(x, 1)
             return self.fc(x)
         elif vent.isOutput():
             return x
@@ -191,8 +194,8 @@ class Resnet(nn.Module):
         x = self.bn1(x)
         x = self.relu(x)
         # NOTE we always take vent+1 because lists are exclusive in python
-        x = self.blocksets[:blockset](x)
-        y = self.blocksets[blockset][:block+1](x)
+        x = self.blocksets[:blockset-1](x)
+        y = self.blocksets[blockset-1][:block](x)
         return y
 
     def forward(self, x: Tensor):

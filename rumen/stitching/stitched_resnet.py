@@ -84,7 +84,7 @@ class StitchedResnet(nn.Module):
         with autocast():
             h = self.sender.outfrom_forward(x, self.send_label, pool_and_flatten=False)
             h = self.stitch(h)
-            h = self.reciever.into_forward(h, self.recv_label)
+            h = self.reciever.into_forward(h, self.recv_label, pool_and_flatten=self.recv_label.isFc())
         return h
 
     @staticmethod
