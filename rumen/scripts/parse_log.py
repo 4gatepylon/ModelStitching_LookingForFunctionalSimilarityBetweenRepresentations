@@ -231,7 +231,7 @@ class ExperimentInfo(object):
         self.labels2stitchinfo_rand_rand: Dict[Tuple[Label,
                                                      Label], StitchInfo] = None
 
-        with open(args.input, "r") as f:
+        with open(logfile, "r") as f:
             contents = f.read()
         self.parse(contents)
 
@@ -467,13 +467,43 @@ class ExperimentInfo(object):
 class MultiExperimentInfo(object):
     LOG_FOLDER = "./logs2analyze"
 
-    def __init__(self, log_folder=LOG_FOLDER):
-        self.experiments = [ExperimentInfo(file) for file in os.listdir(log_folder)]
+    def __init__(self, log_folder=LOG_FOLDER, verbose=True):
+        self.experiments = None
+        logs = [
+            os.path.join(log_folder, log) for log in os.listdir(log_folder)
+        ]
+        if verbose:
+            print(f"Going to get all {len(logs)} logs from {log_folder}")
+            print("\n".join(map(lambda log: f"\t{log}", logs)))
+            print("")
 
-    @staticmethod
-    def from_log_folder():
-        multi = MultiExperimentInfo()
-        multi.experiments = ExperimentInfo()
+        def ExperimentInfoCreator(file):
+            if verbose:
+                print(f"\tLoading experiment info for {file}")
+            try:
+                info = ExperimentInfo(file)
+            except Exception as e:
+                print(
+                    f"\tERROR: Failed to load {file} into an Experiment Info: {e}")
+                print(f"\tIGNORING ERROR for {file}")
+                info = None
+            return info
+
+        self.experiments = list(
+            filter(lambda x: not x is None, (ExperimentInfoCreator(file) for file in logs)))
+        print(f"Was able to load {len(self.experiments)}/{len(logs)} logs")
+        assert len(self.experiments) > 0,\
+            f"Zero experiment infos created, are you sure you have the right folder {log_folder}?"
+
+        self.nets2experiment_info = {}
+        for experiment in self.experiments:
+            nets = tuple(experiment.numbers1), tuple(experiment.numbers2)
+            assert not nets in self.nets2experiment_info,\
+                f"Found multiple experiments with the same networks {nets}"
+            self.nets2experiment_info[nets] = experiment
+
+        print("")
+        print("\n".join(map(str, self.nets2experiment_info.keys())))
 
 
 if __name__ == "__main__":
