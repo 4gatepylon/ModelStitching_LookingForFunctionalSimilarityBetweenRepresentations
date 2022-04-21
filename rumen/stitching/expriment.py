@@ -411,6 +411,7 @@ class Experiment(object):
         
         def train_with_info(st: StitchedResnet):
             print(f"\tTraining on stitch {st.send_label} -> {st.recv_label}")
+            st.freeze()
             return Trainer.train_loop(args, st, train_loader, test_loader)
 
         print("Training stitches")
@@ -425,11 +426,13 @@ class Experiment(object):
 
         if not os.path.exists(Experiment.SIMS_FOLDER):
             os.mkdir(Experiment.SIMS_FOLDER)
+        if not os.path.exists(Experiment.HEATMAPS_FOLDER):
+            os.mkdir(Experiment.HEATMAPS_FOLDER)
         for (model1_name, model2_name), vanilla_sim_table in vanilla_sims.items():
             sim_path = os.path.join(
                 Experiment.SIMS_FOLDER, f"{model1_name}_{model2_name}_sims.pt")
             heat_path = os.path.join(
-                Experiment.HEATMAPS_FOLDER, f"{model1_name}_{model2_name}_heatmaps.pt")
+                Experiment.HEATMAPS_FOLDER, f"{model1_name}_{model2_name}_heatmaps.png")
             torch.save(torch.tensor(vanilla_sim_table), sim_path)
 
             # Note might be nice to not have to save and then re-load

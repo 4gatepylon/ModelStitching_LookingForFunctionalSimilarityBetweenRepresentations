@@ -195,7 +195,7 @@ class Resnet(nn.Module):
         x = self.relu(x)
         # NOTE we always take vent+1 because lists are exclusive in python
         x = self.blocksets[:blockset-1](x)
-        y = self.blocksets[blockset-1][:block](x)
+        y = self.blocksets[blockset-1][:block + 1](x)
         return y
 
     def forward(self, x: Tensor):

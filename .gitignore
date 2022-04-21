@@ -169,10 +169,15 @@ long/**/*.pt
 .vscde*
 
 # Look at experiment in stitching
+sims/
 */sims/
 **/sims/
+viz/
 */viz/
 **/viz/
+heatmaps/
+*/heatmaps/
+**/heatmaps/
 
 data_ffcv/
 data_no_ffcv/

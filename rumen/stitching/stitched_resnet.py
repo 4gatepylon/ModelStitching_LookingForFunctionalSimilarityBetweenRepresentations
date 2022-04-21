@@ -83,7 +83,9 @@ class StitchedResnet(nn.Module):
         # we want the full tensor `representation`)
         with autocast():
             h = self.sender.outfrom_forward(x, self.send_label, pool_and_flatten=False)
+            # print(f"\t\t\tstitch gets shape {h.shape}")
             h = self.stitch(h)
+            #print("\t\t\t\done")
             h = self.reciever.into_forward(h, self.recv_label, pool_and_flatten=self.recv_label.isFc())
         return h
 
