@@ -11,3 +11,5 @@ and
 ```
 scp -r ahernandez@txe1-login.mit.edu:/home2/gridsan/ahernandez/git/Plato/rumen/myScript.sh.log-14471538-1 .
 ```
+
+Make sure that the thigns inside the logs to analyze are ONLY logs
