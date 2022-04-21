@@ -40,6 +40,7 @@ from loaders import Loaders
 from resnet.resnet_generator import ResnetGenerator
 from trainer import Trainer, Hyperparams
 from visualizer import Visualizer
+from cifar import named_models_clone, named_model_likes_clone, pclone, mapeq, mapneq
 
 T = TypeVar('T')
 G = TypeVar('G')
@@ -379,7 +380,7 @@ class Experiment(object):
             assert acc < hi
 
         print("Generating table of labels")
-        def iden(x,y): return (x,y)
+        def iden(x, y): return (x, y)
         labels, idx2labels = LayerLabel.generateTable(iden, numbers1, numbers2)
         print("***************** labels *******************")
         print(labels)
@@ -407,8 +408,25 @@ class Experiment(object):
             )
             for (model1_name, model1), (model2_name, model2) in pairs
         }
+
+        print("Generating debugging tests to make sure that models weights did NOT change")
+
+        def pclone_stitchedResnet_table(stitched_net):
+            return Table.mappedTable(
+                lambda stitched_resnet: pclone(stitched_resnet.stitch),
+                stitched_net,
+            )
+
+        DEBUG_ORIG_MODELS_PARAMS =\
+            named_models_clone(named_models)
+        DEBUG_ORIG_STITCHES_PARAMS =\
+            named_model_likes_clone(
+                pclone_stitchedResnet_table,
+                stitched_nets.items(),
+            )
+
         print(f"There are {idx2labels} pairs")
-        
+
         def train_with_info(st: StitchedResnet):
             print(f"\tTraining on stitch {st.send_label} -> {st.recv_label}")
             st.freeze()
@@ -437,6 +455,19 @@ class Experiment(object):
 
             # Note might be nice to not have to save and then re-load
             Visualizer.matrix_heatmap(sim_path, heat_path)
+
+        print("Sanity testing that models weights did NOT change and stitches' weights did")
+        DEBUG_NEW_MODELS_PARAMS =\
+            named_models_clone(named_models)
+        DEBUG_NEW_STITCHES_PARAMS =\
+            named_model_likes_clone(
+                pclone_stitchedResnet_table,
+                stitched_nets.items(),
+            )
+
+        # NO models should have changed and ALL stitches should have changed
+        assert mapeq(DEBUG_ORIG_MODELS_PARAMS, DEBUG_NEW_MODELS_PARAMS)
+        assert mapneq(DEBUG_ORIG_STITCHES_PARAMS, DEBUG_NEW_STITCHES_PARAMS)
 
 
 if __name__ == "__main__":

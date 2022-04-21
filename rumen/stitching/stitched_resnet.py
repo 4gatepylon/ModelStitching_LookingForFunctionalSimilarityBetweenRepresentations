@@ -31,6 +31,7 @@ from rep_shape import RepShape
 from stitch_generator import StitchGenerator
 from trainer import Trainer, Hyperparams
 from loaders import MockDataLoader
+from cifar import pclone, listeq
 
 
 class StitchedResnet(nn.Module):
@@ -82,11 +83,13 @@ class StitchedResnet(nn.Module):
         # Pool and flatten should only happen for MSE losses (otherwise we don't, since
         # we want the full tensor `representation`)
         with autocast():
-            h = self.sender.outfrom_forward(x, self.send_label, pool_and_flatten=False)
+            h = self.sender.outfrom_forward(
+                x, self.send_label, pool_and_flatten=False)
             # print(f"\t\t\tstitch gets shape {h.shape}")
             h = self.stitch(h)
-            #print("\t\t\t\done")
-            h = self.reciever.into_forward(h, self.recv_label, pool_and_flatten=self.recv_label.isFc())
+            # print("\t\t\t\done")
+            h = self.reciever.into_forward(
+                h, self.recv_label, pool_and_flatten=self.recv_label.isFc())
         return h
 
     @staticmethod
@@ -168,11 +171,6 @@ class TestStitchedResnet(unittest.TestCase):
 
     def test_proper_freeze_mock(self: TestStitchedResnet) -> NoReturn:
         R = [1, 1, 1, 1]
-
-        def pclone(model): return [p.data.detach().clone()
-                                   for p in model.parameters()]
-        def listeq(l1, l2): return min((torch.eq(a, b).int().min().item()
-                                        for a, b in zip(l1, l2))) == 1
 
         # Create a mock resnet
         prefix = MockResnet()

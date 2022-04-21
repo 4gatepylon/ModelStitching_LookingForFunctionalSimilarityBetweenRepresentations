@@ -1,13 +1,14 @@
 import torchvision
 import torchvision.transforms.functional as TF
 import torch
+import torch.nn as nn
 import torchvision
 from torchvision import transforms
 from torch.cuda.amp import autocast
 
 import cv2
 import os
-from typing import List
+from typing import List, Tuple, Dict, Callable, Any
 
 from layer_label import LayerLabel
 
@@ -32,6 +33,43 @@ NO_FFCV_INV_NORMALIZE_TRANSFORM = transforms.Compose([
     transforms.Normalize(mean=[0, 0, 0], std=NO_FFCV_INV_CIFAR_STD),
     transforms.Normalize(mean=NO_FFCV_INV_CIFAR_MEAN, std=[1, ])
 ])
+
+
+def pclone(model) -> List[torch.Tensor]:
+    return [p.data.detach().clone() for p in model.parameters()]
+
+
+def listeq(l1, l2) -> bool:
+    return min((torch.eq(a, b).int().min().item() for a, b in zip(l1, l2))) == 1
+
+
+def mapeq(n2l1: Dict[str, nn.Module], n2l2: Dict[nn.Module]) -> bool:
+    assert n2l1.keys() == n2l2.keys()
+    # `all` is a function which returns True iff all elements of the iterable are True.
+    return all((listeq(n2l1[n], n2l2[n]) for n in n2l1.keys()))
+
+
+def mapneq(n2l1, n2l2):
+    # Slightly stronger than "not mapeq"
+    # check that they are ALL FALSE
+    assert n2l1.keys() == n2l2.keys()
+    return all(
+        map(
+            lambda x: not x,
+            (listeq(n2l1[n], n2l2[n]) for n in n2l1.keys())
+        ),
+    )
+
+
+def named_model_likes_clone(
+        clone_func: Callable[[Any], List[torch.Tensor]],
+        named_model_likes: List[Tuple[str, Any]],
+) -> List[torch.Tensor]:
+    return {name: clone_func(model_like) for (name, model_like) in named_model_likes}
+
+
+def named_models_clone(named_models: List[Tuple[str, nn.Module]]) -> List[nn.Module]:
+    return named_model_likes_clone(pclone, named_models)
 
 # def tensor_normalized2rgb(x: torch.Tensor):
 #     f = x.float()
