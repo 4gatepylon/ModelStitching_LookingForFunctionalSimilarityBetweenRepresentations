@@ -101,6 +101,7 @@ def print_diag_info(experiments):
     print(f"Have {len(square_exs)} square experiments")
     print("\n".join(map(lambda x: f"\t{x.name1}->{x.name2}", square_exs)))
 
+    # Squares are used for diagonals
     squares = {
         "Diagonals Vanilla": {
             "orig_orig": [ex.stitch_orig_orig_vanilla_orig_mean2_table for ex in square_exs],
@@ -122,6 +123,29 @@ def print_diag_info(experiments):
         }
     }
 
+    # Fulls is just all the statistics
+    fulls = {
+        "All Vanilla": {
+            "orig_orig": [ex.stitch_orig_orig_vanilla_orig_mean2_table for ex in experiments],
+            "orig_rand": [ex.stitch_orig_rand_vanilla_orig_mean2_table for ex in experiments],
+            "rand_orig": [ex.stitch_rand_orig_vanilla_orig_mean2_table for ex in experiments],
+            "rand_rand": [ex.stitch_rand_rand_vanilla_orig_mean2_table for ex in experiments],
+        },
+        "All Autoencoder": {
+            "orig_orig": [ex.stitch_orig_orig_autoencoder_orig_mean2_table for ex in experiments],
+            "orig_rand": [ex.stitch_orig_rand_autoencoder_orig_mean2_table for ex in experiments],
+            "rand_orig": [ex.stitch_rand_orig_autoencoder_orig_mean2_table for ex in experiments],
+            "rand_rand": [ex.stitch_rand_rand_autoencoder_orig_mean2_table for ex in experiments],
+        },
+        "All Vanilla vs. Autoencoder": {
+            "orig_orig": [ex.stitch_orig_orig_vanilla_autoencoder_mean2_table for ex in experiments],
+            "orig_rand": [ex.stitch_orig_rand_vanilla_autoencoder_mean2_table for ex in experiments],
+            "rand_orig": [ex.stitch_rand_orig_vanilla_autoencoder_mean2_table for ex in experiments],
+            "rand_rand": [ex.stitch_rand_rand_vanilla_autoencoder_mean2_table for ex in experiments],
+        }
+    }
+
+    # We turn all the tables into vectors for the diagonals
     _diagonals = {
         title: {
             name: list(map(
@@ -132,15 +156,35 @@ def print_diag_info(experiments):
         } for title, squares in squares.items()
     }
 
+    # We turn all the tables into lists (vectors)
+    _flatteneds = {
+        title: {
+            name: list(map(lambda x: combine_lists(x), f))
+            for name, f in full.items()
+        } for title, full in fulls.items()
+    }
+
+    # we combine the vectors from above
     diag = {
         title: {
             # insert into the identity lambda`not np.isnan(x)`
             name: np.array(
-                list(filter(lambda x: not np.isnan(x), combine_lists(__diags))))
+                list(filter(lambda x: not np.isnan(x) and x >= 0, combine_lists(__diags))))
             for name, __diags in _diags.items()
         }
         for title, _diags in _diagonals.items()
     }
+    flats = {
+        title: {
+            # insert into the identity lambda`not np.isnan(x)`
+            name: np.array(
+                list(filter(lambda x: np.isfinite(x) and x >= 0, combine_lists(__flat))))
+            for name, __flat in _flat.items()
+        }
+        for title, _flat in _flatteneds.items()
+    }
+
+    pp.pprint(flats)
 
     # \begin{tabular}{c c c}
     #     A & B & C \\
@@ -155,6 +199,15 @@ def print_diag_info(experiments):
                          diag["orig_rand"],
                          diag["rand_orig"],
                          diag["rand_rand"],
+                         )
+        print("")
+    print("")
+    for title, flat in flats.items():
+        print_statistics(title,
+                         flat["orig_orig"],
+                         flat["orig_rand"],
+                         flat["rand_orig"],
+                         flat["rand_rand"],
                          )
         print("")
 

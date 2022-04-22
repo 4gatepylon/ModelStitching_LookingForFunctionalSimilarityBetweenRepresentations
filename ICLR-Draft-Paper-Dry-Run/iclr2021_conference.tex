@@ -504,16 +504,30 @@ stitches will reach high accuracy on the downstream task, and then we can use th
 representations into human-interpretable images. We can visually compare them with their original images to see if
 they are in fact similar or not.
 
+\subsection*{Self-Similarity-Trained Stitch}
+It was not successful.
+
+\begin{center}
+   \begin{figure}[h!]
+      \centering
+      \caption{Naive Self-Similarity Training Tends To Fail}
+      \includegraphics[width=6.5cm]{resnet1111_1111_autoencoder.png}
+      \caption*{These are similarity matrices. The row tells you the sending layer and the column tells you the recieving layer.
+      The entry tells you the accuracy of the stitched model created by stitching between those two layers.}
+   \end{figure}
+\end{center}
+
 \subsection*{Mean2 Differences}
 \subsection*{Diagonals: Vanilla Stitches}
 We examined the diagonal of nine pairs of stitched networks: 2211 with 2211, 1211 with 1211, 
 2121 with 2121, 2111 with 2111, 2221 with 2221, 1121 with 1121, 1112 with 1112, 1111 with 1111, 
 and 1221 with 1221. We compared trained networks with random ones (and vice versa) as well as trained
 networks with the same trained network and random networks amongst eachother.\footnote{NANs were encountered for 
-Traineed to Random for both the autoencoder and vanilla stitches when comparing with the original. This probably means 
-that there were
+Traineed to Random for both the autoencoder and vanilla stitches when comparing with the original on the diagonal.
+This probably means  that there were
 very large numbers which means that some distances were too long to be computed meaning implying that
-the representations were totally, randomly, differnet.}
+the representations were totally, randomly, differnet. When we compared the entire tables, we got NANs and infinities
+for various cases with random representations.}
 
 That is to say, we measured the mean squared distance (frobenius norm) of the stitched representations for the networks
 for each of those pairs of networks, specifically for the representations that were at the same layer. This enabled us
@@ -547,13 +561,31 @@ to get a sense for whether the networks were learning the same representation or
 \end{tabular}
 
 \subsection*{All Representation Pairs: Vanilla Stitches}
-TODO
+\begin{tabular}{c c c c c}
+   Name&Minimum&Mean&Maximum&Standard Deviation\\
+   Trained to Trained&1.63e-03&4.49e-02&3.63e+00&1.37e-01\\
+   Trained to Random&1.55e-04&2.63e+05&1.78e+07&1.00e+06\\
+   Random to Trained&1.35e-02&2.21e+00&2.27e+02&1.17e+01\\
+   Random to Random&1.34e-01&7.25e+04&1.24e+07&5.94e+05\\
+\end{tabular}
 
 \subsection*{All Representation Pairs: Self-Similarity Stitches}
-TODO
+\begin{tabular}{c c c c c}
+   Name&Minimum&Mean&Maximum&Standard Deviation\\
+   Trained to Trained&5.39e-06&1.58e-02&1.32e+00&5.90e-02\\
+   Trained to Random&1.71e-07&1.06e+05&9.19e+06&4.27e+05\\
+   Random to Trained&6.32e-06&2.05e-03&1.88e-02&4.31e-03\\
+   Random to Random&1.59e-02&4.20e+04&6.90e+06&3.44e+05\\
+\end{tabular}
 
 \subsection*{All Representation Pairs: Self-Similarity Stitches vs. Vanilla Stitches}
-TODO
+\begin{tabular}{c c c c c}
+   Name&Minimum&Mean&Maximum&Standard Deviation\\
+   Trained to Trained&7.83e-04&1.98e-02&5.87e-01&3.25e-02\\
+   Trained to Random&1.54e-04&6.26e+04&5.79e+06&3.43e+05\\
+   Random to Trained&7.94e-03&2.21e+00&2.27e+02&1.17e+01\\
+   Random to Random&9.44e-02&2.12e+04&4.77e+06&2.08e+05\\
+\end{tabular}
    
 
 \subsection*{Controls}
