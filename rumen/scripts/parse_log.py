@@ -78,6 +78,118 @@ def get_or(dictionary, key, default):
         return default
 
 
+def print_statistics(title, orig_orig, orig_rand, rand_orig, rand_rand):
+    print(title)
+    print("\\begin{tabular}{c c c c c}")
+    print(f"Name&Minimum&Mean&Maximum&Standard Deviation\\\\")
+    for name, array in [
+        ("Trained to Trained", orig_orig),
+        ("Trained to Random", orig_rand),
+        ("Random to Trained", rand_orig),
+        ("Random to Random", rand_rand),
+    ]:
+        mn = float(np.min(array))
+        mx = float(np.max(array))
+        mean = float(np.mean(array))
+        stdev = float(np.std(array))
+        print(f"{name}&{mn:.2e}&{mean:.2e}&{mx:.2e}&{stdev:.2e}\\\\")
+    print("\\end{tabular}")
+
+
+def print_diag_info(experiments):
+    square_exs = [ex for ex in experiments if ex.name1 == ex.name2]
+    print(f"Have {len(square_exs)} square experiments")
+    print("\n".join(map(lambda x: f"\t{x.name1}->{x.name2}", square_exs)))
+
+    vanilla_squares = {
+        "orig_orig": [ex.stitch_orig_orig_vanilla_orig_mean2_table for ex in square_exs],
+        "orig_rand": [ex.stitch_orig_rand_vanilla_orig_mean2_table for ex in square_exs],
+        "rand_orig": [ex.stitch_rand_orig_vanilla_orig_mean2_table for ex in square_exs],
+        "rand_rand": [ex.stitch_rand_rand_vanilla_orig_mean2_table for ex in square_exs],
+    }
+    autoencoder_squares = {
+        "orig_orig": [ex.stitch_orig_orig_autoencoder_orig_mean2_table for ex in square_exs],
+        "orig_rand": [ex.stitch_orig_rand_autoencoder_orig_mean2_table for ex in square_exs],
+        "rand_orig": [ex.stitch_rand_orig_autoencoder_orig_mean2_table for ex in square_exs],
+        "rand_rand": [ex.stitch_rand_rand_autoencoder_orig_mean2_table for ex in square_exs],
+    }
+    vanilla_vs_autoencoder_squares = {
+        "orig_orig": [ex.stitch_orig_orig_vanilla_autoencoder_mean2_table for ex in square_exs],
+        "orig_rand": [ex.stitch_orig_rand_vanilla_autoencoder_mean2_table for ex in square_exs],
+        "rand_orig": [ex.stitch_rand_orig_vanilla_autoencoder_mean2_table for ex in square_exs],
+        "rand_rand": [ex.stitch_rand_rand_vanilla_autoencoder_mean2_table for ex in square_exs],
+    }
+
+    _diagonals_vanilla = {
+        name: list(map(
+            lambda table: [table[i][i+1]
+                           for i in range(0, len(table) - 1)],
+            squares,
+        )) for name, squares in vanilla_squares.items()
+    }
+
+    _diagonals_autoencoder = {
+        name: list(map(
+            lambda table: [table[i][i+1]
+                           for i in range(0, len(table) - 1)],
+            squares,
+        )) for name, squares in autoencoder_squares.items()
+    }
+
+    _diagonals_vanilla_vs_autoencoder = {
+        name: list(map(
+            lambda table: [table[i][i+1]
+                           for i in range(0, len(table) - 1)],
+            squares,
+        )) for name, squares in vanilla_vs_autoencoder_squares.items()
+    }
+
+    diag_vanilla = {
+        # insert into the identity lambda`not np.isnan(x)`
+        name: np.array(list(filter(lambda x: x, combine_lists(_diagonals))))
+        for name, _diagonals in _diagonals_vanilla.items()
+    }
+
+    diag_autoencoder = {
+        # insert into the identity lambda`not np.isnan(x)`
+        name: np.array(list(filter(lambda x: x, combine_lists(_diagonals))))
+        for name, _diagonals in _diagonals_autoencoder.items()
+    }
+
+    diag_vanilla_vs_autoencoder = {
+        # insert into the identity lambda`not np.isnan(x)`
+        name: np.array(list(filter(lambda x: x, combine_lists(_diagonals))))
+        for name, _diagonals in _diagonals_vanilla_vs_autoencoder.items()
+    }
+
+    # \begin{tabular}{c c c}
+    #     A & B & C \\
+    #     D & E & F \\
+    #     G & H & I \\
+    # \end{tabular}
+    # NOTE we found nans for each of the diagonal mean2s specifically for orig_rand
+    print("")
+    for title, diag in [
+        ("Diagonals Vanilla", diag_vanilla),
+        ("Diagonals Autoencoder", diag_autoencoder),
+        ("Diagonals Vanilla vs. Autoencoder", diag_vanilla_vs_autoencoder),
+    ]:
+        print_statistics(title,
+                         diag["orig_orig"],
+                         diag["orig_rand"],
+                         diag["rand_orig"],
+                         diag["rand_rand"],
+                         )
+        print("")
+
+
+def combine_lists(lists):
+    l = []
+    for ls in lists:
+        l += ls
+    return l
+
+
 def map_table(func, table):
     return [[func(elem) for elem in row] for row in table]
 
@@ -604,7 +716,7 @@ class MultiExperimentInfo(object):
     LOG_FOLDER = "./logs2analyze"
     HEATMAPS_FOLDER = "./heatmaps"
 
-    def __init__(self, log_folder=LOG_FOLDER, verbose=True):
+    def __init__(self, log_folder=LOG_FOLDER, verbose=True, viz=False):
         self.experiments = None
         logs = [
             os.path.join(log_folder, log) for log in os.listdir(log_folder)
@@ -661,132 +773,161 @@ class MultiExperimentInfo(object):
         if not os.path.exists(MultiExperimentInfo.HEATMAPS_FOLDER):
             os.mkdir(MultiExperimentInfo.HEATMAPS_FOLDER)
         # Store all the heatmaps in the folder
-        for experiment in self.experiments:
-            folder_name = os.path.join(
-                MultiExperimentInfo.HEATMAPS_FOLDER,
-                f"{experiment.name1}_{experiment.name2}",
-            )
-            if not os.path.exists(folder_name):
-                os.makedirs(folder_name)
-            if verbose:
-                print(
-                    f"\tHeatmaps for {experiment.name1}_{experiment.name2}")
-            for output, fname, subfolder in [
-                # Similarities by stitch accuracy
-                (
-                    experiment.stitch_orig_orig_vanilla_accs_table,
-                    "orig_orig.png",
-                    "vanilla_accs",
-                ),
-                (
-                    experiment.stitch_orig_rand_vanilla_accs_table,
-                    "orig_rand.png",
-                    "vanilla_accs",
-                ),
-                (
-                    experiment.stitch_rand_orig_vanilla_accs_table,
-                    "rand_orig.png",
-                    "vanilla_accs",
-                ),
-                (
-                    experiment.stitch_rand_rand_vanilla_accs_table,
-                    "rand_rand.png",
-                    "vanilla_accs",
-                ),
-                # Similarities by stitch accuracy of autoencoder stitch
-                (
-                    experiment.stitch_orig_orig_autoencoder_accs_table,
-                    "orig_orig.png",
-                    "autoencoder_accs",
-                ),
-                (
-                    experiment.stitch_orig_rand_autoencoder_accs_table,
-                    "orig_rand.png",
-                    "autoencoder_accs",
-                ),
-                (
-                    experiment.stitch_rand_orig_autoencoder_accs_table,
-                    "rand_orig.png",
-                    "autoencoder_accs",
-                ),
-                (
-                    experiment.stitch_rand_rand_autoencoder_accs_table,
-                    "rand_rand.png",
-                    "autoencoder_accs",
-                ),
-                # Mean2 error after training for each table for each error metric (it's a triangle)
-                # Orig Orig
-                (
-                    experiment.stitch_orig_orig_vanilla_orig_mean2_table,
-                    "orig_orig_vanilla_orig.png",
-                    "mean2",
-                ),
-                (
-                    experiment.stitch_orig_orig_vanilla_autoencoder_mean2_table,
-                    "orig_orig_vanilla_autoencoder.png",
-                    "mean2",
-                ),
-                (
-                    experiment.stitch_orig_orig_autoencoder_orig_mean2_table,
-                    "orig_orig_autoencoder_orig.png",
-                    "mean2",
-                ),
-                # Orig Rand
-                (
-                    experiment.stitch_orig_rand_vanilla_orig_mean2_table,
-                    "orig_rand_vanilla_orig.png",
-                    "mean2",
-                ),
-                (
-                    experiment.stitch_orig_rand_vanilla_autoencoder_mean2_table,
-                    "orig_rand_vanilla_autoencoder.png",
-                    "mean2",
-                ),
-                (
-                    experiment.stitch_orig_rand_autoencoder_orig_mean2_table,
-                    "orig_rand_autoencoder_orig.png",
-                    "mean2",
-                ),
-                # Rand Orig
-                (
-                    experiment.stitch_rand_orig_vanilla_orig_mean2_table,
-                    "rand_orig_vanilla_orig.png",
-                    "mean2",
-                ),
-                (
-                    experiment.stitch_rand_orig_vanilla_autoencoder_mean2_table,
-                    "rand_orig_vanilla_autoencoder.png",
-                    "mean2",
-                ),
-                (
-                    experiment.stitch_rand_orig_autoencoder_orig_mean2_table,
-                    "rand_orig_autoencoder_orig.png",
-                    "mean2",),
-                # Rand Rand
-                (
-                    experiment.stitch_rand_rand_vanilla_orig_mean2_table,
-                    "rand_rand_vanilla_orig.png",
-                    "mean2",
-                ),
-                (
-                    experiment.stitch_rand_rand_vanilla_autoencoder_mean2_table,
-                    "rand_rand_vanilla_autoencoder.png",
-                    "mean2",
-                ),
-                (
-                    experiment.stitch_rand_rand_autoencoder_orig_mean2_table,
-                    "rand_rand_autoencoder_orig.png",
-                    "mean2",
-                ),
-            ]:
-                path = os.path.join(folder_name, subfolder)
-                if not os.path.exists(path):
-                    os.mkdir(path)
-                fname = os.path.join(path, fname)
-                matrix_heatmap(output, fname)
+        if viz:
+            for experiment in self.experiments:
+                folder_name = os.path.join(
+                    MultiExperimentInfo.HEATMAPS_FOLDER,
+                    f"{experiment.name1}_{experiment.name2}",
+                )
+                if not os.path.exists(folder_name):
+                    os.makedirs(folder_name)
+                if verbose:
+                    print(
+                        f"\tHeatmaps for {experiment.name1}_{experiment.name2}")
+                for output, fname, subfolder in [
+                    # Similarities by stitch accuracy
+                    (
+                        experiment.stitch_orig_orig_vanilla_accs_table,
+                        "orig_orig.png",
+                        "vanilla_accs",
+                    ),
+                    (
+                        experiment.stitch_orig_rand_vanilla_accs_table,
+                        "orig_rand.png",
+                        "vanilla_accs",
+                    ),
+                    (
+                        experiment.stitch_rand_orig_vanilla_accs_table,
+                        "rand_orig.png",
+                        "vanilla_accs",
+                    ),
+                    (
+                        experiment.stitch_rand_rand_vanilla_accs_table,
+                        "rand_rand.png",
+                        "vanilla_accs",
+                    ),
+                    # Similarities by stitch accuracy of autoencoder stitch
+                    (
+                        experiment.stitch_orig_orig_autoencoder_accs_table,
+                        "orig_orig.png",
+                        "autoencoder_accs",
+                    ),
+                    (
+                        experiment.stitch_orig_rand_autoencoder_accs_table,
+                        "orig_rand.png",
+                        "autoencoder_accs",
+                    ),
+                    (
+                        experiment.stitch_rand_orig_autoencoder_accs_table,
+                        "rand_orig.png",
+                        "autoencoder_accs",
+                    ),
+                    (
+                        experiment.stitch_rand_rand_autoencoder_accs_table,
+                        "rand_rand.png",
+                        "autoencoder_accs",
+                    ),
+                    # Mean2 error after training for each table for each error metric (it's a triangle)
+                    # Orig Orig
+                    (
+                        experiment.stitch_orig_orig_vanilla_orig_mean2_table,
+                        "orig_orig_vanilla_orig.png",
+                        "mean2",
+                    ),
+                    (
+                        experiment.stitch_orig_orig_vanilla_autoencoder_mean2_table,
+                        "orig_orig_vanilla_autoencoder.png",
+                        "mean2",
+                    ),
+                    (
+                        experiment.stitch_orig_orig_autoencoder_orig_mean2_table,
+                        "orig_orig_autoencoder_orig.png",
+                        "mean2",
+                    ),
+                    # Orig Rand
+                    (
+                        experiment.stitch_orig_rand_vanilla_orig_mean2_table,
+                        "orig_rand_vanilla_orig.png",
+                        "mean2",
+                    ),
+                    (
+                        experiment.stitch_orig_rand_vanilla_autoencoder_mean2_table,
+                        "orig_rand_vanilla_autoencoder.png",
+                        "mean2",
+                    ),
+                    (
+                        experiment.stitch_orig_rand_autoencoder_orig_mean2_table,
+                        "orig_rand_autoencoder_orig.png",
+                        "mean2",
+                    ),
+                    # Rand Orig
+                    (
+                        experiment.stitch_rand_orig_vanilla_orig_mean2_table,
+                        "rand_orig_vanilla_orig.png",
+                        "mean2",
+                    ),
+                    (
+                        experiment.stitch_rand_orig_vanilla_autoencoder_mean2_table,
+                        "rand_orig_vanilla_autoencoder.png",
+                        "mean2",
+                    ),
+                    (
+                        experiment.stitch_rand_orig_autoencoder_orig_mean2_table,
+                        "rand_orig_autoencoder_orig.png",
+                        "mean2",),
+                    # Rand Rand
+                    (
+                        experiment.stitch_rand_rand_vanilla_orig_mean2_table,
+                        "rand_rand_vanilla_orig.png",
+                        "mean2",
+                    ),
+                    (
+                        experiment.stitch_rand_rand_vanilla_autoencoder_mean2_table,
+                        "rand_rand_vanilla_autoencoder.png",
+                        "mean2",
+                    ),
+                    (
+                        experiment.stitch_rand_rand_autoencoder_orig_mean2_table,
+                        "rand_rand_autoencoder_orig.png",
+                        "mean2",
+                    ),
+                ]:
+                    path = os.path.join(folder_name, subfolder)
+                    if not os.path.exists(path):
+                        os.mkdir(path)
+                    fname = os.path.join(path, fname)
+                    matrix_heatmap(output, fname)
         if verbose:
             print("Done!")
-        pass
+        # TODO get statistics
+        # 1. for all self-stitches get the diagonal (meam2)
+        # 2. for all non-rand stitches get the average (mean2)
+        # 3. (same for rand_rand, rand_orig, orig_rand: also get the max, min and stdev) (mean2)
+        # 4.
+        print_diag_info(self.experiments)
+
+        # tables = [[
+        #     ex.stitch_orig_orig_vanilla_accs_table,
+        #     ex.stitch_orig_rand_vanilla_accs_table,
+        #     ex.stitch_rand_orig_vanilla_accs_table,
+        #     ex.stitch_rand_rand_vanilla_accs_table,
+        #     ex.stitch_orig_orig_autoencoder_accs_table,
+        #     ex.stitch_orig_rand_autoencoder_accs_table,
+        #     ex.stitch_rand_orig_autoencoder_accs_table,
+        #     ex.stitch_rand_rand_autoencoder_accs_table,
+        #     ex.stitch_orig_orig_vanilla_orig_mean2_table,
+        #     ex.stitch_orig_orig_vanilla_autoencoder_mean2_table,
+        #     ex.stitch_orig_orig_autoencoder_orig_mean2_table,
+        #     ex.stitch_orig_rand_vanilla_orig_mean2_table,
+        #     ex.stitch_orig_rand_vanilla_autoencoder_mean2_table,
+        #     ex.stitch_orig_rand_autoencoder_orig_mean2_table,
+        #     ex.stitch_rand_orig_vanilla_orig_mean2_table,
+        #     ex.stitch_rand_orig_vanilla_autoencoder_mean2_table,
+        #     ex.stitch_rand_orig_autoencoder_orig_mean2_table,
+        #     ex.stitch_rand_rand_vanilla_orig_mean2_table,
+        #     ex.stitch_rand_rand_vanilla_autoencoder_mean2_table,
+        #     ex.stitch_rand_rand_autoencoder_orig_mean2_table,
+        # ] for ex in self.experiments]
 
 
 if __name__ == "__main__":
