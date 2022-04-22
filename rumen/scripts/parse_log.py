@@ -146,19 +146,22 @@ def print_diag_info(experiments):
 
     diag_vanilla = {
         # insert into the identity lambda`not np.isnan(x)`
-        name: np.array(list(filter(lambda x: x, combine_lists(_diagonals))))
+        name: np.array(
+            list(filter(lambda x: not np.isnan(x), combine_lists(_diagonals))))
         for name, _diagonals in _diagonals_vanilla.items()
     }
 
     diag_autoencoder = {
         # insert into the identity lambda`not np.isnan(x)`
-        name: np.array(list(filter(lambda x: x, combine_lists(_diagonals))))
+        name: np.array(
+            list(filter(lambda x: not np.isnan(x), combine_lists(_diagonals))))
         for name, _diagonals in _diagonals_autoencoder.items()
     }
 
     diag_vanilla_vs_autoencoder = {
         # insert into the identity lambda`not np.isnan(x)`
-        name: np.array(list(filter(lambda x: x, combine_lists(_diagonals))))
+        name: np.array(
+            list(filter(lambda x: not np.isnan(x), combine_lists(_diagonals))))
         for name, _diagonals in _diagonals_vanilla_vs_autoencoder.items()
     }
 
@@ -363,9 +366,26 @@ class StitchInfo(object):
         stitch_info.vanilla_acc = float(lines[1].split(" ")[-1])
         # For some reason this is the only one that was a percentage
         stitch_info.autoencoder_acc = float(lines[3].split(" ")[-1]) / 100.0
+
+        # These should all be unique
         stitch_info.vanilla_orig_mean2 = float(lines[2].split(" ")[-1])
         stitch_info.autoencoder_orig_mean2 = float(lines[4].split(" ")[-1])
         stitch_info.vanilla_autoencoder_mean2 = float(lines[5].split(" ")[-1])
+        print("\t\t\t", float(lines[2].split(" ")[-1]))
+        print("\t\t\t", float(lines[4].split(" ")[-1]))
+        print("\t\t\t", float(lines[5].split(" ")[-1]))
+
+        # Sanity test the accuracies
+        assert stitch_info.vanilla_acc != stitch_info.autoencoder_acc, "same accuracies"
+
+        # Sanity test the mean2
+        assert stitch_info.vanilla_orig_mean2 != stitch_info.autoencoder_orig_mean2,\
+            "Orig mean2 same as autoencoder mean2"
+        assert stitch_info.vanilla_orig_mean2 != stitch_info.vanilla_autoencoder_mean2,\
+            "Orig mean2 same as vanilla autoencoder mean2"
+        assert stitch_info.autoencoder_orig_mean2 != stitch_info.vanilla_autoencoder_mean2,\
+            "Autoencoder mean2 same as vanilla autoencoder mean2"
+
         return stitch_info
 
 
@@ -480,35 +500,35 @@ class ExperimentInfo(object):
 
         # Negative one since these'll be close to zero
         self.stitch_orig_orig_vanilla_orig_mean2_table = map_table(
-            lambda x: -1 if x is None else x.vanilla_autoencoder_mean2, stitch_info_table_orig_orig)
+            lambda x: -1 if x is None else x.vanilla_orig_mean2, stitch_info_table_orig_orig)
         self.stitch_orig_orig_vanilla_autoencoder_mean2_table = map_table(
             lambda x: -1 if x is None else x.vanilla_autoencoder_mean2, stitch_info_table_orig_orig)
         self.stitch_orig_orig_autoencoder_orig_mean2_table = map_table(
-            lambda x: -1 if x is None else x.vanilla_autoencoder_mean2, stitch_info_table_orig_orig)
+            lambda x: -1 if x is None else x.autoencoder_orig_mean2, stitch_info_table_orig_orig)
 
         # Negative one since these'll be close to zero
         self.stitch_orig_rand_vanilla_orig_mean2_table = map_table(
-            lambda x: -1 if x is None else x.vanilla_autoencoder_mean2, stitch_info_table_orig_rand)
+            lambda x: -1 if x is None else x.vanilla_orig_mean2, stitch_info_table_orig_rand)
         self.stitch_orig_rand_vanilla_autoencoder_mean2_table = map_table(
             lambda x: -1 if x is None else x.vanilla_autoencoder_mean2, stitch_info_table_orig_rand)
         self.stitch_orig_rand_autoencoder_orig_mean2_table = map_table(
-            lambda x: -1 if x is None else x.vanilla_autoencoder_mean2, stitch_info_table_orig_rand)
+            lambda x: -1 if x is None else x.autoencoder_orig_mean2, stitch_info_table_orig_rand)
 
         # Negative one since these'll be close to zero
         self.stitch_rand_orig_vanilla_orig_mean2_table = map_table(
-            lambda x: -1 if x is None else x.vanilla_autoencoder_mean2, stitch_info_table_rand_orig)
+            lambda x: -1 if x is None else x.vanilla_orig_mean2, stitch_info_table_rand_orig)
         self.stitch_rand_orig_vanilla_autoencoder_mean2_table = map_table(
             lambda x: -1 if x is None else x.vanilla_autoencoder_mean2, stitch_info_table_rand_orig)
         self.stitch_rand_orig_autoencoder_orig_mean2_table = map_table(
-            lambda x: -1 if x is None else x.vanilla_autoencoder_mean2, stitch_info_table_rand_orig)
+            lambda x: -1 if x is None else x.autoencoder_orig_mean2, stitch_info_table_rand_orig)
 
         # Negative one since these'll be close to zero
         self.stitch_rand_rand_vanilla_orig_mean2_table = map_table(
-            lambda x: -1 if x is None else x.vanilla_autoencoder_mean2, stitch_info_table_rand_rand)
+            lambda x: -1 if x is None else x.vanilla_orig_mean2, stitch_info_table_rand_rand)
         self.stitch_rand_rand_vanilla_autoencoder_mean2_table = map_table(
             lambda x: -1 if x is None else x.vanilla_autoencoder_mean2, stitch_info_table_rand_rand)
         self.stitch_rand_rand_autoencoder_orig_mean2_table = map_table(
-            lambda x: -1 if x is None else x.vanilla_autoencoder_mean2, stitch_info_table_rand_rand)
+            lambda x: -1 if x is None else x.autoencoder_orig_mean2, stitch_info_table_rand_rand)
 
     def parse_global_header(self, header):
         # Example:

@@ -504,6 +504,58 @@ stitches will reach high accuracy on the downstream task, and then we can use th
 representations into human-interpretable images. We can visually compare them with their original images to see if
 they are in fact similar or not.
 
+\subsection*{Mean2 Differences}
+\subsection*{Diagonals: Vanilla Stitches}
+We examined the diagonal of nine pairs of stitched networks: 2211 with 2211, 1211 with 1211, 
+2121 with 2121, 2111 with 2111, 2221 with 2221, 1121 with 1121, 1112 with 1112, 1111 with 1111, 
+and 1221 with 1221. We compared trained networks with random ones (and vice versa) as well as trained
+networks with the same trained network and random networks amongst eachother.\footnote{NANs were encountered for 
+Traineed to Random for both the autoencoder and vanilla stitches when comparing with the original. This probably means 
+that there were
+very large numbers which means that some distances were too long to be computed meaning implying that
+the representations were totally, randomly, differnet.}
+
+That is to say, we measured the mean squared distance (frobenius norm) of the stitched representations for the networks
+for each of those pairs of networks, specifically for the representations that were at the same layer. This enabled us
+to get a sense for whether the networks were learning the same representation or "hacking" eachother.
+
+\begin{tabular}{c c c c c}
+   Name&Minimum&Mean&Maximum&Standard Deviation\\
+   Trained to Trained&2.03e-03&4.41e-02&2.80e-01&6.10e-02\\
+   Trained to Random&1.27e-01&4.28e+05&4.24e+06&1.12e+06\\
+   Random to Trained&1.50e-02&3.25e-01&5.29e-01&1.56e-01\\
+   Random to Random&1.58e-01&1.26e+02&1.36e+03&2.92e+02\\
+\end{tabular}
+   
+   
+\subsection*{Diagonals: Self-Similarity Stitches}
+\begin{tabular}{c c c c c}
+   Name&Minimum&Mean&Maximum&Standard Deviation\\
+   Trained to Trained&2.15e-05&1.50e-02&1.91e-01&3.73e-02\\
+   Trained to Random&5.52e-02&7.60e+04&3.56e+05&1.26e+05\\
+   Random to Trained&3.48e-05&1.10e-03&5.91e-03&2.01e-03\\
+   Random to Random&1.73e-02&4.94e+00&6.03e+01&1.27e+01\\
+\end{tabular}
+
+\subsection*{Diagonals: Self-Similarity Stitches vs. Vanilla Stitches}
+\begin{tabular}{c c c c c}
+   Name&Minimum&Mean&Maximum&Standard Deviation\\
+   Trained to Trained&1.21e-03&2.33e-02&1.14e-01&3.89e-02\\
+   Trained to Random&2.71e-03&1.67e+05&3.67e+06&7.32e+05\\
+   Random to Trained&7.94e-03&3.23e-01&5.29e-01&1.59e-01\\
+   Random to Random&1.17e-01&1.18e+02&1.35e+03&2.86e+02\\
+\end{tabular}
+
+\subsection*{All Representation Pairs: Vanilla Stitches}
+TODO
+
+\subsection*{All Representation Pairs: Self-Similarity Stitches}
+TODO
+
+\subsection*{All Representation Pairs: Self-Similarity Stitches vs. Vanilla Stitches}
+TODO
+   
+
 \subsection*{Controls}
 As previously mentioned we used random networks to control for stitching power. Nothing particularly interesting
 came out of our controls. This was as we had hoped. A couple examples are below. The main result from the controls
