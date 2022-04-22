@@ -101,68 +101,45 @@ def print_diag_info(experiments):
     print(f"Have {len(square_exs)} square experiments")
     print("\n".join(map(lambda x: f"\t{x.name1}->{x.name2}", square_exs)))
 
-    vanilla_squares = {
-        "orig_orig": [ex.stitch_orig_orig_vanilla_orig_mean2_table for ex in square_exs],
-        "orig_rand": [ex.stitch_orig_rand_vanilla_orig_mean2_table for ex in square_exs],
-        "rand_orig": [ex.stitch_rand_orig_vanilla_orig_mean2_table for ex in square_exs],
-        "rand_rand": [ex.stitch_rand_rand_vanilla_orig_mean2_table for ex in square_exs],
-    }
-    autoencoder_squares = {
-        "orig_orig": [ex.stitch_orig_orig_autoencoder_orig_mean2_table for ex in square_exs],
-        "orig_rand": [ex.stitch_orig_rand_autoencoder_orig_mean2_table for ex in square_exs],
-        "rand_orig": [ex.stitch_rand_orig_autoencoder_orig_mean2_table for ex in square_exs],
-        "rand_rand": [ex.stitch_rand_rand_autoencoder_orig_mean2_table for ex in square_exs],
-    }
-    vanilla_vs_autoencoder_squares = {
-        "orig_orig": [ex.stitch_orig_orig_vanilla_autoencoder_mean2_table for ex in square_exs],
-        "orig_rand": [ex.stitch_orig_rand_vanilla_autoencoder_mean2_table for ex in square_exs],
-        "rand_orig": [ex.stitch_rand_orig_vanilla_autoencoder_mean2_table for ex in square_exs],
-        "rand_rand": [ex.stitch_rand_rand_vanilla_autoencoder_mean2_table for ex in square_exs],
-    }
-
-    _diagonals_vanilla = {
-        name: list(map(
-            lambda table: [table[i][i+1]
-                           for i in range(0, len(table) - 1)],
-            squares,
-        )) for name, squares in vanilla_squares.items()
+    squares = {
+        "Diagonals Vanilla": {
+            "orig_orig": [ex.stitch_orig_orig_vanilla_orig_mean2_table for ex in square_exs],
+            "orig_rand": [ex.stitch_orig_rand_vanilla_orig_mean2_table for ex in square_exs],
+            "rand_orig": [ex.stitch_rand_orig_vanilla_orig_mean2_table for ex in square_exs],
+            "rand_rand": [ex.stitch_rand_rand_vanilla_orig_mean2_table for ex in square_exs],
+        },
+        "Diagonals Autoencoder": {
+            "orig_orig": [ex.stitch_orig_orig_autoencoder_orig_mean2_table for ex in square_exs],
+            "orig_rand": [ex.stitch_orig_rand_autoencoder_orig_mean2_table for ex in square_exs],
+            "rand_orig": [ex.stitch_rand_orig_autoencoder_orig_mean2_table for ex in square_exs],
+            "rand_rand": [ex.stitch_rand_rand_autoencoder_orig_mean2_table for ex in square_exs],
+        },
+        "Diagonals Vanilla vs. Autoencoder": {
+            "orig_orig": [ex.stitch_orig_orig_vanilla_autoencoder_mean2_table for ex in square_exs],
+            "orig_rand": [ex.stitch_orig_rand_vanilla_autoencoder_mean2_table for ex in square_exs],
+            "rand_orig": [ex.stitch_rand_orig_vanilla_autoencoder_mean2_table for ex in square_exs],
+            "rand_rand": [ex.stitch_rand_rand_vanilla_autoencoder_mean2_table for ex in square_exs],
+        }
     }
 
-    _diagonals_autoencoder = {
-        name: list(map(
-            lambda table: [table[i][i+1]
-                           for i in range(0, len(table) - 1)],
-            squares,
-        )) for name, squares in autoencoder_squares.items()
+    _diagonals = {
+        title: {
+            name: list(map(
+                lambda table: [table[i][i+1]
+                               for i in range(0, len(table) - 1)],
+                squares,
+            )) for name, squares in squares.items()
+        } for title, squares in squares.items()
     }
 
-    _diagonals_vanilla_vs_autoencoder = {
-        name: list(map(
-            lambda table: [table[i][i+1]
-                           for i in range(0, len(table) - 1)],
-            squares,
-        )) for name, squares in vanilla_vs_autoencoder_squares.items()
-    }
-
-    diag_vanilla = {
-        # insert into the identity lambda`not np.isnan(x)`
-        name: np.array(
-            list(filter(lambda x: not np.isnan(x), combine_lists(_diagonals))))
-        for name, _diagonals in _diagonals_vanilla.items()
-    }
-
-    diag_autoencoder = {
-        # insert into the identity lambda`not np.isnan(x)`
-        name: np.array(
-            list(filter(lambda x: not np.isnan(x), combine_lists(_diagonals))))
-        for name, _diagonals in _diagonals_autoencoder.items()
-    }
-
-    diag_vanilla_vs_autoencoder = {
-        # insert into the identity lambda`not np.isnan(x)`
-        name: np.array(
-            list(filter(lambda x: not np.isnan(x), combine_lists(_diagonals))))
-        for name, _diagonals in _diagonals_vanilla_vs_autoencoder.items()
+    diag = {
+        title: {
+            # insert into the identity lambda`not np.isnan(x)`
+            name: np.array(
+                list(filter(lambda x: not np.isnan(x), combine_lists(__diags))))
+            for name, __diags in _diags.items()
+        }
+        for title, _diags in _diagonals.items()
     }
 
     # \begin{tabular}{c c c}
@@ -172,11 +149,7 @@ def print_diag_info(experiments):
     # \end{tabular}
     # NOTE we found nans for each of the diagonal mean2s specifically for orig_rand
     print("")
-    for title, diag in [
-        ("Diagonals Vanilla", diag_vanilla),
-        ("Diagonals Autoencoder", diag_autoencoder),
-        ("Diagonals Vanilla vs. Autoencoder", diag_vanilla_vs_autoencoder),
-    ]:
+    for title, diag in diag.items():
         print_statistics(title,
                          diag["orig_orig"],
                          diag["orig_rand"],
