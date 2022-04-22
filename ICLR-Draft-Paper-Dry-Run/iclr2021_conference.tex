@@ -54,7 +54,7 @@ This gives us insight into the properties of stitching. Namely, we find that sti
 high accuracy for intuitively different layers if those layers come earlier in the first (sender) network than in
 the second (reciever). This leads us to hypothesize that stitches are not in fact learning to match the
 representations expected by reciever layers, but instead to find representations which yield similar results.
-Exploration on this front is ongoing.
+We do some numerical analysis to check this hypothesis.
 % Previously we wanted to do modular structure.
 \end{abstract}
 
@@ -222,7 +222,7 @@ downstream machine learning tasks. However, our understanding of these represent
 deep learning interpretability research, particularly for computer vision, has helped us grok what deep neural 
 networks are learning, we do not
 know why good representations are learned, nor do we have a robust theory to characterize them. For example, we do not
-know how to compare representations.
+know how to compare representations effectively.
 
 Being unable to compare representations is a fundamental limitation because it precludes us from understanding whether
 different models are learning essentially the same thing. This is important, because one of the great hopes of the authors
@@ -232,7 +232,7 @@ we'd like it to be the case that two models' representations were the same, but 
 a ResNet18 were speaking French and a ResNet34 English, but with an effective translator we could confirm that they were
 indeed speaking the same sentence.
 
-Basically, two different representations may encode the same underlying information differnetly, and we, the authors,
+Basically, two different representations may encode the same underlying information differently, and we, the authors,
 wish to have a way to check: this so-called ``translator''. If we had such a ``translator'', and he/she were to tell
 us that, indeed, most neural networks for certain tasks (such as computer vision) learn to encode the same
 underlying information in their representations, that fact would lend credence to the suggestion that deep neural
@@ -314,11 +314,7 @@ The layers up to the sender (inclusive) we call a prefix and the layers from the
 a suffix. The transformation used is called the stitch, and it is learned\footnote{Any optimizer will do, but we use gradient descent for simplicity.}
 on a frozen prefix/suffix pair. The network formed by concatenating the sender prefix, the stitch, and the reciever
 suffix, is called the stitched network. Just like Bansal et al. we use the accuracy of the stitched network as our
-primary training task.\footnote{We will differnetiate this later, as our research progresses,
-with different tasks such as the copying task: training a stitch
-to transform the prefix's cached outputs into the suffix's expected inputs using a similarity metric like mean squared
-error. When we use input/output representations, as opposed to images classes, as our dataset and labels we refer to 
-that dataset as the representation dataset.}
+primary training task.
 
 The stitch belongs to a simple function class such as 1x1 convolutions (depthwise) or
 a linear layer. Bansal et al. pick these function classes since, if the sender and reciever networks are in the same
@@ -390,15 +386,15 @@ are not overly powerful [Bansal et al.].
 
 We train each stitch for 4 iterations. This hyperparameter was selected after much experimentation. For both
 regular training of the network and training of the stitches we use stochastic gradient descent with momentum 0.9,
-batch size 256, weight decay 0.01, learning rate 0.01, and a post-warmup cosine learning rate scheduler. More details will
-be in the appendix. These hyperparameters were also arrived at from experimentation.\footnote{We also are beginning to
-train on the copying task. This is a significantly harder task with mean squared error and we are training for 30 iterations
-using the same hyperparameters.}
+batch size 256, weight decay 0.01, learning rate 0.01, and a post-warmup cosine learning rate scheduler.
+ These hyperparameters were also arrived at from experimentation.
 
 For each stitch, we plot the accuracy on a grid based on the sending layer and the reciever layer. The layer is
-denoted by an integer which counts how many layers came before it.\footnote{We are also going to be plotting in the same
-style the difference of the expected representation from the stitch representation as well as other such values regarding
-the copying-task-trained stitches.}
+denoted by an integer which counts how many layers came before it.
+
+As a bonus we also train a set of "similarity-trained" stitches. These stitches are also used as a sort of control and
+their motivation explained more fully later. Most importantly, though, they are trained using mean squared error (and the
+same hyperparameters) to copy the expected representation of the reciever using that from the sender.
 
 \section*{Results}
 \subsection*{Preliminary Results}
@@ -417,27 +413,23 @@ Figures are below for all our results.
 
 For larger ResNets of the same shape we saw more of a diagonal pattern (akin to Bansal et al.) though, the lower left hand triangle for small
 resnets had higher
-accuracy than the top right hand triangle. 
-We are still investigating these results to understand the cause. We are considering
-whether it is possible that the stitch is not learning to emulate the expected representation but instead create another representation
-that yields the same results (i.e. high accuracy). To do this, we are comparing the representations learned from stitching
-with those which are expected using mean squared error. We are considering using metrics like Centered Kernel Alignment
-(CKA) as well. These metrics make more sense here because we are trying to test for numerical proximity of the two
-representations. We want to see whether one is numerically approximating another or simply ``behaving'' in a similar
-way. We are also looking to an alternative task: the copying task. In the copying task the stitch is trained to copy
-the expected representation through a mean squared error loss, instead of being trained to lower the task loss.
-Our first attempts at this type of stitch are inconclusive, but suggest that it is non-trivial to yield good results
-with such a loss function. Since our results are unexpected, we are in the process of reworking them to
-be more effective for what we have observed.
+accuracy than the top right hand triangle by a lot. 
+The cause for the triangle for smaller networks is mysterious. We believe that
+it is possible that the stitch is not learning to emulate the expected representation but instead create another representation
+that yields the same results (i.e. high accuracy). We are using a rough numerical estimate to understand this. Namely, we
+are using the mean squared error between the expected representation and the representation produced by the stitched network.
+We provide statistics and an analysis below. We also provide the results of a similarity-trained set of stitches which
+try to copy the expected representation. These are meant mainly to give us a sense of how close a stitch could be to the
+expected representation if it were "trying" to copy it. We find that these similarity-trained stitches are not very good
+and perhaps not that similar from the corresponding normal (sometimes called "vanilla") stitch.
 
 \begin{center}
    \begin{figure}[h!]
       \centering
       \caption{Triangle Pattern in Small ResNets}
-      \includegraphics[width=4.5cm]{resnet1111_1111.png}
-      \includegraphics[width=4.5cm]{resnet1111_2221.png}
-      \includegraphics[width=4.5cm]{resnet1112_1122.png}
-      \caption*{These are similarity matrices. The row tells you the sending layer and the column tells you the recieving layer.
+      \includegraphics[width=6.5cm]{resnet1111_1111.png}
+      \includegraphics[width=6.5cm]{resnet1112_1122.png}
+      \caption*{These are similarity matrices from sender to reciever. The row tells you the sending layer and the column tells you the recieving layer.
       The entry tells you the accuracy of the stitched model created by stitching between those two layers.}
    \end{figure}
 \end{center}
@@ -445,9 +437,31 @@ be more effective for what we have observed.
 \begin{center}
    \begin{figure}[h!]
       \centering
+      \caption{Sometimes a Diagonal in Large ResNets}
+      \includegraphics[width=8.5cm]{resnet18_resnet18_sims.png}
+      \caption*{Similariy matrix from sender to reciever.}
+   \end{figure}
+\end{center}
+
+\begin{center}
+   \begin{figure}[h!]
+      \centering
       \caption{Sometimes Triangular Pattern in Large ResNets}
-      \includegraphics[width=6.5cm]{resnet18_resnet18_sims.png}
-      \includegraphics[width=6.5cm]{resnet18_resnet34_sims.png}
+      \includegraphics[width=9.5cm]{resnet18_resnet34_sims.png}
+      \caption*{Similariy matrix from sender to reciever.}
+   \end{figure}
+\end{center}
+
+\subsection*{Controls}
+As previously mentioned we used random networks to control for stitching power. Nothing particularly interesting
+came out of our controls. This was as we had hoped. A couple examples are below in figure 5. The main result from the controls
+was that as the randomly initialized (untrained) fraction of the stitched network grew, the accuracy went down.
+
+\begin{center}
+   \begin{figure}[h!]
+      \centering
+      \caption{Triangle Pattern in Small ResNets}
+      \includegraphics[width=8.5cm]{resnet18_rand_resnet18_sims.png}
       \caption*{These are similarity matrices. The row tells you the sending layer and the column tells you the recieving layer.
       The entry tells you the accuracy of the stitched model created by stitching between those two layers.}
    \end{figure}
@@ -477,48 +491,49 @@ between the two sequences. Obviously, the trivial mapping exists between the ent
 
 Implicit in our expectations, naturally, was the assumption that there would be a \textbf{mapping} between some quantity
 in the sender and some other quantity in the reciever. It is highly unintuitive that layers in the sender are equally
-similar, and very much so, to lots of layers in the reciever. We expected each layer to have at most one to three layers
+similar (and very much so) to lots of layers in the reciever. We expected each layer to have at most one to three layers
 in the other network it was similar to. As we've seen, however, later layers tend to be similar to nearly all earlier layers
 by our stitching metric.
 
 \subsection*{What This Might Mean}
-We see three main explanations for the results: either small ResNets on CIFAR-10 are able to maintain most if not all of the image
-information throughout their processing of the image, the stitches are learning to create representations which yield high
-accuracy despite being different from their expected counterparts, or there is a bug in our experimental code. We refer to these
-options (excepting the possibility of a bug) the ``no information loss'' option and the ``hacking'' option.
+We see two main explanations for the results: small ResNets on CIFAR-10 could be able to maintain most if not all of the image
+information throughout their processing of the image and the stitches are learning to create representations which yield high
+accuracy despite being different from their expected counterparts.
 
-If we were to confirm the ``no information loss'' option it would greatly change our understanding of ResNets
-since we usually expect these networks to lose information as the image is further processed. It would be a
-very interesting finding. The ``hacking'' option on the other hand would probably weaken our belief in the method
-of stitching because we believe that stitching is a good similarity metric since it forces the stitch to emulate
-the expected sender using the actual sender's information. If the stitch is ``hacking'' the reciever, then it
-isn't actually forced to do this.
+The former option is very interesting because it upheaves our understanding of neural networks. Normally we assume that
+as data is more deeply processed in neural networks it becomes more ``high level'' and granular information is lost. If
+this were not the case it would prompt us to understand when and why that is so. The latter option is compelling mainly
+because it helps us find a limitation of stitching. In a sense it would mean that stitches are powerful enough to ``hack''
+the reciever network: to trick it into using a representation it was not expecting. If this were possible and common, then
+high stitching accuracy would not be a sign of similarity, though low stitching accuracy could be a sign of dissimilarity.
 
-We are working hard to detect any potential existing bugs, but are otherwise fascinated by these two options. As
-previously mentioned, we are using mean squared error to tell if the expected representation is in fact being emulated
-or not by the stitch and also comparing the results with an copying-task-trained stitch. However, we also have one other
-approach in mind which we believe will be very interesting. Namely, we are going to have our stitches output RGB images
-and send them into the very first layer of the reciever. The pattern we have obsereved, in which later layers can stitch
-into previous layers, implies that all layers should be able to stitch into the first layer. Thus, we hope that these
-stitches will reach high accuracy on the downstream task, and then we can use them to decode CIFAR-10 intermediate
-representations into human-interpretable images. We can visually compare them with their original images to see if
-they are in fact similar or not.
+We mainly examine the latter option by using a similarity-trained stitch and by taking statistics on the mean squared
+error (difference) of the stitches with respect to (mainly) the expected representation. A high mean squared error would
+imply that the stitch is more likely to be different, while a low mean squared error would imply that the stitch is more
+likely to be similar. It is a crude measurement, but we include it as a taste of what may be possible in the future. The
+similariy trained stitch, on the other hand, is meant to give us a sense of how close a stitch could be to the expected
+representation if that were it's only ``goal''. In both cases we use controls in the form of stitches with or between
+random networks.
 
 \subsection*{Self-Similarity-Trained Stitch}
-It was not successful.
+Below we have a heatmap of the task accuracy for the similarity-trained stitch. We found that it was not
+easy to train a stitch exclusively using mean squared error with respect to the expected representation. We suspect
+that there may be subspaces of the representation space that are far more relevant to accuracy and that by using
+mean squared error the similarity-trained stitch has to try much, much harder to get any results (which it fails
+to get here). For context, we only needed around 1 epoch to train regular, vanilla stitches to reach competitive accuracy
+with the original network and around 4 to reach nearly identical accuracy. For the similarity-trained stitch, we used 30
+epochs per stitch and have close to random accuracy.
 
 \begin{center}
    \begin{figure}[h!]
       \centering
       \caption{Naive Self-Similarity Training Tends To Fail}
-      \includegraphics[width=6.5cm]{resnet1111_1111_autoencoder.png}
-      \caption*{These are similarity matrices. The row tells you the sending layer and the column tells you the recieving layer.
-      The entry tells you the accuracy of the stitched model created by stitching between those two layers.}
+      \includegraphics[width=7.5cm]{resnet1111_1111_autoencoder.png}
+      \caption*{Similarity matrix from sender to reciever.}
    \end{figure}
 \end{center}
 
-\subsection*{Mean2 Differences}
-\subsection*{Diagonals: Vanilla Stitches}
+\subsection*{Numerical Analysis}
 We examined the diagonal of nine pairs of stitched networks: 2211 with 2211, 1211 with 1211, 
 2121 with 2121, 2111 with 2111, 2221 with 2221, 1121 with 1121, 1112 with 1112, 1111 with 1111, 
 and 1221 with 1221. We compared trained networks with random ones (and vice versa) as well as trained
@@ -533,6 +548,29 @@ That is to say, we measured the mean squared distance (frobenius norm) of the st
 for each of those pairs of networks, specifically for the representations that were at the same layer. This enabled us
 to get a sense for whether the networks were learning the same representation or "hacking" eachother.
 
+We also computed the same statistics on the set of all stitches to see if the diagonal was any different. We focused
+on the diagonal because due to Bansal et. al. we have more confidence in it corresponding to a true emulation of the
+expected representation.
+
+What we tended to find was that for random networks the mean squared distance was high and for trained networks it was
+low. It tended to be around two orders of magnitude lower for the similarity-trained stitch, which is expected, but the
+similarity trained stitch does not seem to be further from the expected representation than the vanilla stitch is from it
+(in ``Self-Similarity Stitches vs. Vanilla Stitches''). The specifics (tables) are in the appendix.
+   
+\section*{Conclusion}
+It appears that stitching does not behave for different architectures exactly as we had hoped, though it does not seem
+to be generating representations altogether different from those that were expected. We hypothesize that in some cases
+stitches may be able to ``hack'' the reciever by learning to give it novel representations which nonetheless yield high
+accuracy. However, it appears that stitches do not deviate, numerically, that much from the expected representation on
+average. Most likely, there are subspaces in the representation space more important than others and the vanilla stitch
+is able to optimize them, potentially at the expense of others, thus yielding slightly higher mean squared error with
+respect to the expected representation than is possible using a purely mean squared error trained stitch. We see this
+by training such a stitch (the ``Self-Similarity'' stitch). In line with this conclusion, the similarity stitch struggles
+to reach high accuracy, probably because it is to ``diversified'' and does not have information about what subspaces
+matter more for the downstream task.
+
+\section*{Appendix}
+\subsection*{Diagonals: Vanilla Stitches}
 \begin{tabular}{c c c c c}
    Name&Minimum&Mean&Maximum&Standard Deviation\\
    Trained to Trained&2.03e-03&4.41e-02&2.80e-01&6.10e-02\\
@@ -540,8 +578,6 @@ to get a sense for whether the networks were learning the same representation or
    Random to Trained&1.50e-02&3.25e-01&5.29e-01&1.56e-01\\
    Random to Random&1.58e-01&1.26e+02&1.36e+03&2.92e+02\\
 \end{tabular}
-   
-   
 \subsection*{Diagonals: Self-Similarity Stitches}
 \begin{tabular}{c c c c c}
    Name&Minimum&Mean&Maximum&Standard Deviation\\
@@ -550,7 +586,6 @@ to get a sense for whether the networks were learning the same representation or
    Random to Trained&3.48e-05&1.10e-03&5.91e-03&2.01e-03\\
    Random to Random&1.73e-02&4.94e+00&6.03e+01&1.27e+01\\
 \end{tabular}
-
 \subsection*{Diagonals: Self-Similarity Stitches vs. Vanilla Stitches}
 \begin{tabular}{c c c c c}
    Name&Minimum&Mean&Maximum&Standard Deviation\\
@@ -559,7 +594,6 @@ to get a sense for whether the networks were learning the same representation or
    Random to Trained&7.94e-03&3.23e-01&5.29e-01&1.59e-01\\
    Random to Random&1.17e-01&1.18e+02&1.35e+03&2.86e+02\\
 \end{tabular}
-
 \subsection*{All Representation Pairs: Vanilla Stitches}
 \begin{tabular}{c c c c c}
    Name&Minimum&Mean&Maximum&Standard Deviation\\
@@ -568,7 +602,6 @@ to get a sense for whether the networks were learning the same representation or
    Random to Trained&1.35e-02&2.21e+00&2.27e+02&1.17e+01\\
    Random to Random&1.34e-01&7.25e+04&1.24e+07&5.94e+05\\
 \end{tabular}
-
 \subsection*{All Representation Pairs: Self-Similarity Stitches}
 \begin{tabular}{c c c c c}
    Name&Minimum&Mean&Maximum&Standard Deviation\\
@@ -577,7 +610,6 @@ to get a sense for whether the networks were learning the same representation or
    Random to Trained&6.32e-06&2.05e-03&1.88e-02&4.31e-03\\
    Random to Random&1.59e-02&4.20e+04&6.90e+06&3.44e+05\\
 \end{tabular}
-
 \subsection*{All Representation Pairs: Self-Similarity Stitches vs. Vanilla Stitches}
 \begin{tabular}{c c c c c}
    Name&Minimum&Mean&Maximum&Standard Deviation\\
@@ -586,29 +618,6 @@ to get a sense for whether the networks were learning the same representation or
    Random to Trained&7.94e-03&2.21e+00&2.27e+02&1.17e+01\\
    Random to Random&9.44e-02&2.12e+04&4.77e+06&2.08e+05\\
 \end{tabular}
-   
-
-\subsection*{Controls}
-As previously mentioned we used random networks to control for stitching power. Nothing particularly interesting
-came out of our controls. This was as we had hoped. A couple examples are below. The main result from the controls
-was that as the randomly initialized (untrained) fraction of the stitched network grew, the accuracy went down.
-
-\begin{center}
-   \begin{figure}[h!]
-      \centering
-      \caption{Triangle Pattern in Small ResNets}
-      \includegraphics[width=4.5cm]{resnet18_rand_resnet18_sims.png}
-      \includegraphics[width=4.5cm]{resnet18_rand_resnet34_sims.png}
-      \caption*{These are similarity matrices. The row tells you the sending layer and the column tells you the recieving layer.
-      The entry tells you the accuracy of the stitched model created by stitching between those two layers.}
-   \end{figure}
-\end{center}
-
-\section*{Conclusion}
-It appears that stitching does not behave for different architectures exactly as we had hoped. We are investigating, but
-the options which seem most likely right now are that either ResNets keep more information as they process images than
-had been previously believed, or stitches are able to ``hack'' their recievers rendering them questionable as a similarity
-metric.
 
 % \section{Experimental Setup}
 % % Notational notes for myself:
