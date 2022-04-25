@@ -315,9 +315,9 @@ class LayerLabel(object):
         # NOTE his is a quick hack to be able to avoid -> conv1 for the old resnet
         # avoid sending into conv1 because old resnet does not support
         # avoid sending into fc because old resnet does it differently
-        labels2 = labels2[1:1]
-        assert len(labels1) == height
-        assert len(labels2) == width
+        labels2 = labels2[1:-1]
+        assert len(labels1) == height, f"Expected height {height}, but got {len(labels1)}"
+        assert len(labels2) == width, f"Expected length {width}, but got {len(labels2)}"
         idx2label = {
             (i, j): (labels1[i], labels2[j]) for i in range(height) for j in range(width)
         }

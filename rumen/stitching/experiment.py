@@ -1,22 +1,36 @@
 
 # Enables type annotations using enclosing classes
 from __future__ import annotations
+print("Importing utility from cifar")
 from cifar import pclone, mapeq, mapneq, flattened_table
+print("Import visualizer")
 from visualizer import Visualizer
+print("Import trainer and hyperparameters")
 from trainer import Trainer, Hyperparams
+print("Import ResnetGenerator")
 from resnet.resnet_generator import ResnetGenerator
+print("Import Loaders")
 from loaders import Loaders
+print("Import RepShape")
 from rep_shape import RepShape
+print("Import identity from resnet_utils for ease of use")
 from resnet.resnet_utils import Identity
+print("Resnet and BasicBlock")
 from resnet.resnet import Resnet, BasicBlock
+print("Import Layer Label")
 from layer_label import LayerLabel
+print("Import Dataloader from torch")
 from torch.utils.data import DataLoader
+print("Import stitched resnet")
 from stitched_resnet import StitchedResnet
+print("Import table utility (just map)")
 from table import Table
+print("Importing numpy, random and torch")
 import numpy as np
 import random
 import torch.nn as nn
 import torch
+print("Importing Typing")
 from typing import (
     NoReturn,
     Any,
@@ -30,9 +44,10 @@ from typing import (
 from typing_extensions import (
     ParamSpec,
 )
-
+print("Importing extra torch things: autocase and functional as F")
 from torch.cuda.amp import autocast
 import torch.nn.functional as F
+print("Importing os, unittest and PrettyPrinter")
 import os
 
 import unittest
@@ -279,11 +294,11 @@ class Experiment(object):
         def train_with_info(st: StitchedResnet):
             print(f"\tTraining on stitch {st.send_label} -> {st.recv_label}")
             st.freeze()
-            acc = Trainer.train_loop(args, st, train_loader, test_loader) \
-                if st.send_label.isBlock() and \
-                st.send_label.getBlockset() in [1, 2, 3, 4] \
-                and st.recv_label - 1 == st.send_label \
-                else 0.0
+            acc = Trainer.train_loop(args, st, train_loader, test_loader)# \
+            # if st.send_label.isBlock() and \
+            # st.send_label.getBlockset() in [1, 2, 3, 4] \
+            # and st.recv_label - 1 == st.send_label \
+            # else 0.0
             print(f"\tGot acc {acc}")
             return acc
 
