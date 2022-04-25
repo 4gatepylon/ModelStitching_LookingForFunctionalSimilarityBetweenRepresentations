@@ -83,13 +83,32 @@ class StitchedResnet(nn.Module):
         # Pool and flatten should only happen for MSE losses (otherwise we don't, since
         # we want the full tensor `representation`)
         with autocast():
+            # NOTE this is all a quick hack to enable backwards compatibility with the old resnet
+            assert not self.send_label.isOutput() and not self.send_label.isInput()
+            assert not self.recv_label.isOutput() and not self.recv_label.isInput()
+            assert not self.recv_label.isConv1() and not self.recv_label.isFc()
+            send_label_txt = \
+                "conv1" if self.send_label.isConv1() else \
+                (self.send_label.getBlockset(), self.send_label.getBlock())
+            recv_label_txt = \
+                "conv1" if self.recv_label.isConv1() else \
+                (self.recv_label.getBlockset(), self.recv_label.getBlock())
+
             h = self.sender.outfrom_forward(
-                x, self.send_label, pool_and_flatten=False)
+                x,
+                send_label_txt,
+                # Apply post if the recieve label is FC because it needs
+                apply_post=False,  # We just don't stitch
+                # pool_and_flatten=False,
+            )
             # print(f"\t\t\tstitch gets shape {h.shape}")
             h = self.stitch(h)
             # print("\t\t\t\done")
             h = self.reciever.into_forward(
-                h, self.recv_label, pool_and_flatten=self.recv_label.isFc())
+                h,
+                recv_label_txt,
+                # pool_and_flatten=self.recv_label.isFc(),
+            )
         return h
 
     @staticmethod

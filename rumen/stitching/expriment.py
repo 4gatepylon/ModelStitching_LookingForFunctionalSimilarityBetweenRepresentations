@@ -1,6 +1,35 @@
 
 # Enables type annotations using enclosing classes
 from __future__ import annotations
+from cifar import pclone, mapeq, mapneq, flattened_table
+from visualizer import Visualizer
+from trainer import Trainer, Hyperparams
+from resnet.resnet_generator import ResnetGenerator
+from loaders import Loaders
+from rep_shape import RepShape
+from resnet.resnet_utils import Identity
+from resnet.resnet import Resnet, BasicBlock
+from layer_label import LayerLabel
+from torch.utils.data import DataLoader
+from stitched_resnet import StitchedResnet
+from table import Table
+import numpy as np
+import random
+import torch.nn as nn
+import torch
+from typing import (
+    NoReturn,
+    Any,
+    Callable,
+    Union,
+    Dict,
+    List,
+    Tuple,
+    TypeVar,
+)
+from typing_extensions import (
+    ParamSpec,
+)
 
 from torch.cuda.amp import autocast
 import torch.nn.functional as F
@@ -12,38 +41,9 @@ from pprint import PrettyPrinter
 pp = PrettyPrinter(indent=2)
 
 # Enables more interesting type annotations
-from typing_extensions import (
-    ParamSpec,
-)
-from typing import (
-    NoReturn,
-    Any,
-    Callable,
-    Union,
-    Dict,
-    List,
-    Tuple,
-    TypeVar,
-)
 
-import torch
-import torch.nn as nn
-import random
-import numpy as np
 
 # Utility that I have written
-from table import Table
-from stitched_resnet import StitchedResnet
-from torch.utils.data import DataLoader
-from layer_label import LayerLabel
-from resnet.resnet import Resnet, BasicBlock
-from resnet.resnet_utils import Identity
-from rep_shape import RepShape
-from loaders import Loaders
-from resnet.resnet_generator import ResnetGenerator
-from trainer import Trainer, Hyperparams
-from visualizer import Visualizer
-from cifar import pclone, mapeq, mapneq, flattened_table
 
 T = TypeVar('T')
 G = TypeVar('G')
@@ -69,6 +69,7 @@ def choose_product(possibles: List[T], length: int) -> List[List[T]]:
         for remainder in remainders:
             combinations.append(remainder + [possible])
     return combinations
+
 
 def sanity_test_stitches_ptrs(data_ptrs):
     assert len(data_ptrs) > 0, "should have at least some data pointers"
@@ -236,14 +237,14 @@ class Experiment(object):
         print("Generating debugging tests to make sure that models weights did NOT change")
         DEBUG_ORIG_MODELS_PARAMS =\
             {
-                name : pclone(model)\
+                name: pclone(model)
                 for name, model in named_models
             }
         DEBUG_ORIG_STITCHES_PARAMS =\
             {
                 # Table of stitches -> Table of lists of torch.Tensors -> List of Lists of torch.Tensors
                 # -> List of torch.Tensors.
-                model_pair : flattened_table(flattened_table(
+                model_pair: flattened_table(flattened_table(
                     Table.mappedTable(pclone, table),
                 ))\
                 for model_pair, table in stitched_nets.items()
@@ -251,15 +252,18 @@ class Experiment(object):
         DEBUG_ORIG_DATA_PTRS = {
             # Table of stitches -> table of lists if data pointers for each param -> list of
             # lists of data pointers -> list of data pointers
-            model_pair : flattened_table(flattened_table(
-                Table.mappedTable(lambda st: list(map(lambda p: p.data_ptr(), st.parameters())), table),
+            model_pair: flattened_table(flattened_table(
+                Table.mappedTable(lambda st: list(
+                    map(lambda p: p.data_ptr(), st.parameters())), table),
             ))\
             for model_pair, table in stitched_nets.items()
         }
-        
+
         # Check that for each model the data pointers are unique for each stitch
-        assert all(map(sanity_test_stitches_ptrs, DEBUG_ORIG_DATA_PTRS.values()))
-        assert len(DEBUG_ORIG_DATA_PTRS.keys()) == 1, "does not yet supported > 1 model"
+        assert all(map(sanity_test_stitches_ptrs,
+                       DEBUG_ORIG_DATA_PTRS.values()))
+        assert len(DEBUG_ORIG_DATA_PTRS.keys()
+                   ) == 1, "does not yet supported > 1 model"
         # IN the future when we have more models, we will want to check that the pointers are
         # NOT the same across models but ARE the same within models
 
@@ -267,9 +271,11 @@ class Experiment(object):
         assert len(list(DEBUG_ORIG_MODELS_PARAMS.items())) > 0
         assert type(list(DEBUG_ORIG_MODELS_PARAMS.items())[0][1]) == list
         assert len(list(DEBUG_ORIG_MODELS_PARAMS.items())[0][1]) > 0
-        assert type(list(DEBUG_ORIG_MODELS_PARAMS.items())[0][1][0]) == torch.Tensor
+        assert type(list(DEBUG_ORIG_MODELS_PARAMS.items())
+                    [0][1][0]) == torch.Tensor
 
         print(f"There are {len(idx2labels)} pairs")
+
         def train_with_info(st: StitchedResnet):
             print(f"\tTraining on stitch {st.send_label} -> {st.recv_label}")
             st.freeze()
@@ -296,7 +302,7 @@ class Experiment(object):
             os.mkdir(Experiment.SIMS_FOLDER)
         if not os.path.exists(Experiment.HEATMAPS_FOLDER):
             os.mkdir(Experiment.HEATMAPS_FOLDER)
-        
+
         print("Saving sims and heatmaps")
         for (model1_name, model2_name), vanilla_sim_table in vanilla_sims.items():
             sim_path = os.path.join(
@@ -313,14 +319,14 @@ class Experiment(object):
         print("Sanity testing that models weights did NOT change and stitches' weights did")
         DEBUG_NEW_MODELS_PARAMS =\
             {
-                name : pclone(model)\
+                name: pclone(model)
                 for name, model in named_models
             }
         DEBUG_NEW_STITCHES_PARAMS =\
             {
                 # Table of stitches -> Table of lists of torch.Tensors -> List of Lists of torch.Tensors
                 # -> List of torch.Tensors.
-                model_pair : flattened_table(flattened_table(
+                model_pair: flattened_table(flattened_table(
                     Table.mappedTable(pclone, table),
                 ))\
                 for model_pair, table in stitched_nets.items()
@@ -331,10 +337,11 @@ class Experiment(object):
         assert mapneq(DEBUG_ORIG_STITCHES_PARAMS, DEBUG_NEW_STITCHES_PARAMS)
         print("OK!")
 
+
 if __name__ == "__main__":
     file_pair = "resnet_1111.pt", "resnet_1111.pt"
     hyps = Hyperparams()
     hyps.epochs = 40
     Experiment.pretrain(hyps)
-    hyps.epochs = 1 # NOTE should be bigger
+    hyps.epochs = 1  # NOTE should be bigger
     Experiment.stitchtrain(hyps, file_pair)

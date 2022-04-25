@@ -305,13 +305,19 @@ class LayerLabel(object):
         num_layers2: int = LayerLabel.numLayers(R2)
 
         height = num_layers1 - 1
-        width = num_layers2
+        width = num_layers2 - 2
 
         # all of R1, except FC sends INTO all of R2
         labels1: List[LayerLabel] = LayerLabel.labels(R1)
         labels1.pop()
 
         labels2: List[LayerLabel] = LayerLabel.labels(R2)
+        # NOTE his is a quick hack to be able to avoid -> conv1 for the old resnet
+        # avoid sending into conv1 because old resnet does not support
+        # avoid sending into fc because old resnet does it differently
+        labels2 = labels2[1:1]
+        assert len(labels1) == height
+        assert len(labels2) == width
         idx2label = {
             (i, j): (labels1[i], labels2[j]) for i in range(height) for j in range(width)
         }
