@@ -22,7 +22,6 @@ from resnet.block import (
     Bottleneck,
 )
 
-
 class Resnet(nn.Module):
     def __init__(
             self,
@@ -61,19 +60,16 @@ class Resnet(nn.Module):
         self.bn1 = norm_layer(self.inplanes)
         self.relu = nn.ReLU(inplace=True)
         # self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)   # CIFAR10 modification
-        self.layer1 = self._make_layer(block, 64, layers[0])
-        self.layer2 = self._make_layer(
-            block, 128, layers[1], stride=2, dilate=replace_stride_with_dilation[0])
-        self.layer3 = self._make_layer(
-            block, 256, layers[2], stride=2, dilate=replace_stride_with_dilation[1])
-        self.layer4 = self._make_layer(
-            block, 512, layers[3], stride=2, dilate=replace_stride_with_dilation[2])
+        # NOTE that default stride for _make_layer is 1 and default dilation is False
+        # NOTE that _make_layer has side effects
+        depths = [64, 128, 256, 512]
+        strides = [1, 2, 2, 2]
+        dilations = [False, replace_stride_with_dilation[0], replace_stride_with_dilation[1], replace_stride_with_dilation[2]]
 
-        # TODO add state to keep track of
-        # - whether to flatten going out
-        # - whether to go in or go out (vent into vs out from)
-        self.blocksets = nn.Sequential(
-            self.layer1, self.layer2, self.layer3, self.layer4)
+        self.blocksets = nn.Sequential(*[
+            self._make_layer(block, depths[i], layers[i], stride=strides[i], dilate=dilations[i])\
+            for i in range(4)
+        ])
         assert len(self.blocksets) == 4, \
             "The number of blocksets should be 4, got {}".format(
                 len(self.blocksets))
@@ -151,13 +147,21 @@ class Resnet(nn.Module):
         elif vent.isBlock():
             # Resnets vent every time so that we can shorten our code
             blockset, block = vent.getBlockset(), vent.getBlock()
-            xp = self.blocksets[blockset-1][block:](x)
-            if blockset < LayerLabel.BLOCKSET_MAX:
-                xp = self.blocksets[blockset:](xp)
-            a = self.avgpool(xp)
-            f = torch.flatten(a, 1)
-            y = self.fc(f)
-            return y
+            assert blockset >= 1
+            assert blockset <= 4
+            assert block < 4
+            assert block >= 0
+            assert len(self.blocksets) == LayerLabel.BLOCKSET_MAX
+            assert LayerLabel.BLOCKSET_MAX == 4
+
+            if block < len(self.blocksets[blockset - 1]):
+                x = self.blocksets[blockset - 1][block:](x)
+            if blockset < len(self.blocksets):
+                x = self.blocksets[blockset:](x)
+            x = self.avgpool(x)
+            x = torch.flatten(x, 1)
+            x = self.fc(x)
+            return x
         elif vent.isFc():
             if pool_and_flatten:
                 x = self.avgpool(x)
@@ -172,7 +176,10 @@ class Resnet(nn.Module):
         # Special case to deal with the fact that sometimes we need to apply maxpool
         if vent.isConv1():
             # Are you sure we don't want to use the RELU? NOTE
-            return self.conv1(x)
+            x = self.conv1(x)
+            # x = self.bn1(x)
+            # x = self.relu(x)
+            return x
         elif vent.isFc():
             return self.forward(x)
         elif vent.isOutput():
@@ -184,7 +191,7 @@ class Resnet(nn.Module):
 
         # When you want to flatten it in th end (and avgpool) you first do
         # the rest of the network, then you apply those transformations.
-        if blockset == 4 and block + 1 == len(self.layer4) and pool_and_flatten:
+        if blockset == 4 and block + 1 == self.blocksets[-1] and pool_and_flatten:
             x = self.outfrom_forward(x, vent, pool_and_flatten=False)
             x = torch.flatten(self.avgpool(x), 1)
             return x
@@ -194,9 +201,14 @@ class Resnet(nn.Module):
         x = self.bn1(x)
         x = self.relu(x)
         # NOTE we always take vent+1 because lists are exclusive in python
-        x = self.blocksets[:blockset-1](x)
-        y = self.blocksets[blockset-1][:block + 1](x)
-        return y
+        assert blockset >= 1
+        assert blockset <= 4
+        assert block >= 0
+        assert block < 4
+        y = self.blocksets[:blockset-1](x)
+        # assert bool((y == x if blockset == 1 else y != x).int().min().item())
+        z = self.blocksets[blockset-1][:block + 1](y)
+        return z
 
     def forward(self, x: Tensor):
         x = self.conv1(x)
@@ -204,10 +216,7 @@ class Resnet(nn.Module):
         x = self.relu(x)
         # x = self.maxpool(x)   # CIFAR10 modification
 
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
+        x = self.blocksets(x)
 
         x = self.avgpool(x)
         x = torch.flatten(x, 1)

@@ -73,8 +73,6 @@ class StitchGenerator(object):
                     )
                 else:
                     ratio = recv_height // send_height
-                    print(
-                        f"Giving it scale factor {ratio} from shape to {send_shape} -> {recv_shape}")
                     return nn.Sequential(
                         nn.Upsample(
                             scale_factor=ratio,

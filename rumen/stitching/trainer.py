@@ -120,12 +120,8 @@ class Trainer(object):
                 with autocast():
                     h = images
                     h = model(h)
-                    # print(h.shape)
                     preds = h.argmax(dim=1)
-                    # print(preds[0])
-                    # print(labels[0])
                     total_correct = (preds == labels).sum().cpu().item()
-                    # print(total_correct)
                     total_num += h.shape[0]
 
         return total_correct / total_num
@@ -184,7 +180,9 @@ class Trainer(object):
             # epoch
             # NOTE that enumerate's start changes the starting index
             for it, (inputs, y) in enumerate(train_loader, start=(e - 1) * len(train_loader)):
-                #print(f"iteration {it}")
+                # TODO not sure why it's so slow sometimes, but it seems to need to "Warm up"
+                # ... I've never seen this before ngl
+                # print(f"\t\t\titeration {it}")
                 # adjust
                 adjust_learning_rate(epochs=epochs,
                                      warmup_epochs=args.warmup,

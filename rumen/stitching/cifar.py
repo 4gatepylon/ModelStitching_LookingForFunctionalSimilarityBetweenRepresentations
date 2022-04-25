@@ -43,13 +43,13 @@ def listeq(l1, l2) -> bool:
     return min((torch.eq(a, b).int().min().item() for a, b in zip(l1, l2))) == 1
 
 
-def mapeq(n2l1: Dict[str, nn.Module], n2l2: Dict[nn.Module]) -> bool:
+def mapeq(n2l1: Dict[str, List[nn.Module]], n2l2: Dict[str, List[nn.Module]]) -> bool:
     assert n2l1.keys() == n2l2.keys()
     # `all` is a function which returns True iff all elements of the iterable are True.
     return all((listeq(n2l1[n], n2l2[n]) for n in n2l1.keys()))
 
 
-def mapneq(n2l1, n2l2):
+def mapneq(n2l1: Dict[str, List[nn.Module]], n2l2: Dict[str, List[nn.Module]]):
     # Slightly stronger than "not mapeq"
     # check that they are ALL FALSE
     assert n2l1.keys() == n2l2.keys()
@@ -60,16 +60,11 @@ def mapneq(n2l1, n2l2):
         ),
     )
 
-
-def named_model_likes_clone(
-        clone_func: Callable[[Any], List[torch.Tensor]],
-        named_model_likes: List[Tuple[str, Any]],
-) -> List[torch.Tensor]:
-    return {name: clone_func(model_like) for (name, model_like) in named_model_likes}
-
-
-def named_models_clone(named_models: List[Tuple[str, nn.Module]]) -> List[nn.Module]:
-    return named_model_likes_clone(pclone, named_models)
+def flattened_table(l: List[List[Any]]) -> List[Any]:
+    vec = []
+    for row in l:
+        vec += row
+    return vec
 
 # def tensor_normalized2rgb(x: torch.Tensor):
 #     f = x.float()

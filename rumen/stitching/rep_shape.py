@@ -135,7 +135,6 @@ class RepShape(object):
         # NOTE that the shape the reciever should get is that which the layer before it outputs
         send_shape: RepShape = RepShape.label2outputRepShape(send)
         recv_shape: RepShape = RepShape.label2outputRepShape(recv - 1)
-        print(f"Shapes from {send} -> {recv} are {send_shape} -> {recv_shape}")
         return (send_shape, recv_shape)
 
 

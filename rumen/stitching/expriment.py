@@ -8,6 +8,9 @@ import os
 
 import unittest
 
+from pprint import PrettyPrinter
+pp = PrettyPrinter(indent=2)
+
 # Enables more interesting type annotations
 from typing_extensions import (
     ParamSpec,
@@ -40,7 +43,7 @@ from loaders import Loaders
 from resnet.resnet_generator import ResnetGenerator
 from trainer import Trainer, Hyperparams
 from visualizer import Visualizer
-from cifar import named_models_clone, named_model_likes_clone, pclone, mapeq, mapneq
+from cifar import pclone, mapeq, mapneq, flattened_table
 
 T = TypeVar('T')
 G = TypeVar('G')
@@ -67,196 +70,14 @@ def choose_product(possibles: List[T], length: int) -> List[List[T]]:
             combinations.append(remainder + [possible])
     return combinations
 
-
-# def choose_unordered_subset(items: List[T], k: int) -> List[T]:
-#     """ All unordered subsets (as lists) of `items`` of size `k`. The `choose` function is a helper. """
-#     def choose(items: List[T], k: int, index: int) -> List[T]:
-#         if len(items) - index < k:
-#             return []
-#         elif k == 1:
-#             return [[items[i]] for i in range(len(items) - index, len(items), 1)]
-#         else:
-#             not_choosing: List[List[T]] = choose(items, k, index=index + 1)
-#             choosing: List[List[T]] = choose(items, k - 1, index=index + 1)
-#             for choice in choosing:
-#                 choice.append(items[index])
-#             return not_choosing + choosing
-#     return choose(items, k, 0)
-
-
-# def all_net_pairs():
-#     combinations = choose_product([1, 2], 4)
-#     assert len(combinations) == 16
-#     mapping = {}
-#     num = 1
-#     for i in range(16):
-#         for j in range(16):
-#             mapping[num] = (
-#                 "resnet"+"".join(map(lambda c: str(c), combinations[i]))+".pt",
-#                 "resnet"+"".join(map(lambda c: str(c), combinations[j]))+".pt"
-#             )
-#             num += 1
-#     return mapping, num
-
-
-# class PairExp(object):
-#     """ A part of an experiment that is for a pair of networks """
-
-#     def __init__(
-#             self: PairExp,
-#             layers1: List[int],
-#             layers2: List[int],
-#     ) -> NoReturn:
-#         # TODO
-#         # 1. load the networks
-#         # 2. load the random networks (controls)
-#         # 3. create the stitch table
-#         # 4. create the stitched network table
-#         # 5. (below) use those tables and the traininer to
-#         #    get the similarities
-#         self.send_recv_sims = Table.mappedTable(None, None)
-#         self.send_rand_recv_sims = Table.mappedTable(None, None)
-#         self.send_recv_rand_sims = Table.mappedTable(None, None)
-#         self.send_rand_recv_rand_sims = Table.mappedTable(None, None)
-
-#     # TODO change the naming and actually use/test
-
-#     @staticmethod
-#     def mean2_multiple_stitches(
-#         sender: Resnet,
-#         reciever: Resnet,
-#         stitch_tables: List[List[List[nn.Module]]],
-#         labels: List[List[Tuple[LayerLabel, LayerLabel]]],
-#         train_loader: DataLoader,
-#     ) -> Tuple[Dict[Tuple[int, int], List[List[float]]], List[List[List[float]]]]:
-#         """
-#         Given a list of stitch tables, return the mean2 difference between
-#         every pair of stitches pointwise for every pair of stitch tables (on the sender)
-#         as well as the list of mean2 differences between each table in the stitch_tables
-#         and the original network's expected representation (that of the reciever, output
-#         from the layer before that recieving the stitch). The dictionary keys are the
-#         indices of the labels list, while indices of the list of tables (comparing with
-#         original network) correspond to the indices in the stitch tables.
-
-#         Example Usage:
-#         mean2_multiple_stitches(
-#             sender,
-#             reciever,
-#             [vanilla_stitches, sim_stitches],
-#             labels,
-#             train_loader,
-#         )
-#         """
-
-#         # 1. compare 2 stitches
-#         #    - sender => sender, reciever => sender
-#         #    - send_stitch is the stitch, recv_stitch is the other stitch
-#         # 2. compare original with OG
-#         #    - sender => sender, reciever => reciever
-#         #    - send_stitch is the stitch
-#         #    - recv_stitch is an identity function
-
-#         # Choose all stitches and compare them to the original
-#         identity = Identity()
-#         identity_stitch_table: List[List[nn.Module]] = \
-#             [[identity for _ in range(len(stitch_tables[0]))]
-#              for _ in range(len(stitch_tables))]
-
-#         mean2_original: List[List[List[float]]] = [
-#             PairExp.mean2_model_model(
-#                 sender,
-#                 reciever,
-#                 stitch_table,
-#                 identity_stitch_table,
-#                 labels,
-#                 train_loader,
-#             )
-#             for stitch_table in stitch_tables
-#         ]
-
-#         # Choose all unordered pairs of stitches and compare them
-#         stitch_pairs: List[List[List[List[nn.Module]]]] = \
-#             choose_unordered_subset(stitch_tables, 2)
-#         stitch_indices: List[List[int]] = \
-#             choose_unordered_subset(list(range(len(stitch_tables))), 2)
-
-#         mean2_stitches: Dict[Tuple[int, int], List[List[float]]] = {}
-#         for stitch_pair, index_pair in zip(stitch_pairs, stitch_indices):
-#             stitch_table1, stitch_table2 = stitch_pair
-#             index1, index2 = index_pair
-#             mean2_table = PairExp.mean2_model_model(
-#                 sender,
-#                 sender,
-#                 stitch_table1,
-#                 stitch_table2,
-#                 labels,
-#                 train_loader,
-#             )
-#             mean2_stitches[(index1, index2)] = mean2_table
-#         return (mean2_stitches, mean2_original)
-
-#     @ staticmethod
-#     def mean2_model_model(
-#         sender: Resnet,
-#         reciever: Resnet,
-#         send_stitches: List[List[nn.Module]],
-#         recv_stitches: List[List[nn.Module]],
-#         labels: List[List[Tuple[LayerLabel, LayerLabel]]],
-#         train_loader: DataLoader
-#     ) -> List[List[float]]:
-#         assert len(labels) > 0
-#         assert len(labels) == len(send_stitches)
-#         assert len(labels) == len(recv_stitches)
-#         assert len(labels[0]) > 0
-#         assert len(labels[0]) == len(send_stitches[0])
-#         assert len(labels[0]) == len(recv_stitches[0])
-
-#         mean2_table: List[List[float]] = [
-#             [0.0 for _ in range(len(labels[0]))] for _ in range(len(labels))]
-
-#         for i in range(len(labels)):
-#             for j in range(len(labels[i])):
-#                 send_label, recv_label = labels[i][j]
-#                 send_stitch, recv_stitch = send_stitches[i][j], recv_stitches[i][j]
-#                 mean2_table[i][j] = PairExp.mean2_model_diff(
-#                     send_stitch,
-#                     recv_stitch,
-#                     sender,
-#                     reciever,
-#                     send_label,
-#                     recv_label,
-#                     train_loader,
-#                 )
-#         return mean2_table
-
-#     @staticmethod
-#     def mean2_layer_layer(
-#             send_stitch: nn.Module,
-#             recv_stitch: nn.Module,
-#             sender: Resnet,
-#             reciever: Resnet,
-#             send_label: LayerLabel,
-#             recv_label: LayerLabel,
-#             train_loader: DataLoader,
-#     ) -> float:
-#         num_images = len(train_loader)
-#         total = 0.0
-#         recv_label = recv_label - 1
-#         for x, _ in train_loader:
-#             with autocast():
-#                 # TODO autocase and should we `pool_and_flatten``
-#                 sent = sender.outfrom_forward(x, send_label)
-#                 recv = reciever.outfrom_forward(x, recv_label)
-
-#                 sent_stitch = send_stitch(sent)
-#                 recv_stitch = recv_stitch(recv)
-
-#                 diff = (sent_stitch - recv_stitch).pow(2).mean()
-#                 total += diff.cpu().item()
-#             pass
-#         # Average over the number of images
-#         total /= num_images
-#         return total
+def sanity_test_stitches_ptrs(data_ptrs):
+    assert len(data_ptrs) > 0, "should have at least some data pointers"
+    assert len(data_ptrs) > 1, "should have >1 stitches' data pointers"
+    sane = True
+    for i in range(len(data_ptrs)):
+        for j in range(i+1, len(data_ptrs)):
+            sane = sane and data_ptrs[i] != data_ptrs[j]
+    return sane
 
 
 class Experiment(object):
@@ -284,6 +105,10 @@ class Experiment(object):
         # combinations = choose_product([1, 2], 4)
         combinations = [[1, 1, 1, 1]]
 
+        print(f"Storing resnets in {Experiment.RESNETS_FOLDER}")
+        if not os.path.exists(Experiment.RESNETS_FOLDER):
+            os.mkdir(Experiment.RESNETS_FOLDER)
+
         print("Training all combinations")
         for combination in combinations:
             comb_name = "".join(map(str, combination))
@@ -295,7 +120,6 @@ class Experiment(object):
                 print(f"Skipping {fname}")
                 continue
             else:
-
                 # NOT pretrained and NO progress bar (these aren't supported anyways)
                 model = ResnetGenerator.generate(
                     f"resnet_{comb_name}",
@@ -333,9 +157,6 @@ class Experiment(object):
         numbers2 = list(map(int, file2.split(".")[0][-4:]))
         name1 = "resnet_" + "".join(map(str, numbers1))
         name2 = "resnet_" + "".join(map(str, numbers2))
-        output_folder = f"sims_{name1}_{name2}"
-        if not os.path.exists(output_folder):
-            os.mkdir(output_folder)
         file1 = os.path.join(Experiment.RESNETS_FOLDER, file1)
         file2 = os.path.join(Experiment.RESNETS_FOLDER, file2)
 
@@ -369,6 +190,9 @@ class Experiment(object):
                 print(f"Loaded pretrained model {pretrained_file}")
                 model.load_state_dict(torch.load(pretrained_file))
 
+        print("Here is A Model (the first one)")
+        print(models[0])
+
         print("Getting loaders for FFCV")
         train_loader, test_loader = Loaders.get_loaders_ffcv(args)
 
@@ -382,11 +206,11 @@ class Experiment(object):
         print("Generating table of labels")
         def iden(x, y): return (x, y)
         labels, idx2labels = LayerLabel.generateTable(iden, numbers1, numbers2)
-        print("***************** labels *******************")
-        print(labels)
-        print("************** *idx2labels *****************")
-        print(idx2labels)
-        print("********************************************")
+        # print("***************** labels *******************")
+        # print(labels)
+        # print("************** *idx2labels *****************")
+        # print(idx2labels)
+        # print("********************************************")
 
         print("Generating pairs of networks to stitch")
         named_models = list(zip(names, models))
@@ -410,27 +234,52 @@ class Experiment(object):
         }
 
         print("Generating debugging tests to make sure that models weights did NOT change")
-
-        def pclone_stitchedResnet_table(stitched_net):
-            return Table.mappedTable(
-                lambda stitched_resnet: pclone(stitched_resnet.stitch),
-                stitched_net,
-            )
-
         DEBUG_ORIG_MODELS_PARAMS =\
-            named_models_clone(named_models)
+            {
+                name : pclone(model)\
+                for name, model in named_models
+            }
         DEBUG_ORIG_STITCHES_PARAMS =\
-            named_model_likes_clone(
-                pclone_stitchedResnet_table,
-                stitched_nets.items(),
-            )
+            {
+                # Table of stitches -> Table of lists of torch.Tensors -> List of Lists of torch.Tensors
+                # -> List of torch.Tensors.
+                model_pair : flattened_table(flattened_table(
+                    Table.mappedTable(pclone, table),
+                ))\
+                for model_pair, table in stitched_nets.items()
+            }
+        DEBUG_ORIG_DATA_PTRS = {
+            # Table of stitches -> table of lists if data pointers for each param -> list of
+            # lists of data pointers -> list of data pointers
+            model_pair : flattened_table(flattened_table(
+                Table.mappedTable(lambda st: list(map(lambda p: p.data_ptr(), st.parameters())), table),
+            ))\
+            for model_pair, table in stitched_nets.items()
+        }
+        
+        # Check that for each model the data pointers are unique for each stitch
+        assert all(map(sanity_test_stitches_ptrs, DEBUG_ORIG_DATA_PTRS.values()))
+        assert len(DEBUG_ORIG_DATA_PTRS.keys()) == 1, "does not yet supported > 1 model"
+        # IN the future when we have more models, we will want to check that the pointers are
+        # NOT the same across models but ARE the same within models
 
-        print(f"There are {idx2labels} pairs")
+        # Debugging the debugger
+        assert len(list(DEBUG_ORIG_MODELS_PARAMS.items())) > 0
+        assert type(list(DEBUG_ORIG_MODELS_PARAMS.items())[0][1]) == list
+        assert len(list(DEBUG_ORIG_MODELS_PARAMS.items())[0][1]) > 0
+        assert type(list(DEBUG_ORIG_MODELS_PARAMS.items())[0][1][0]) == torch.Tensor
 
+        print(f"There are {len(idx2labels)} pairs")
         def train_with_info(st: StitchedResnet):
             print(f"\tTraining on stitch {st.send_label} -> {st.recv_label}")
             st.freeze()
-            return Trainer.train_loop(args, st, train_loader, test_loader)
+            acc = Trainer.train_loop(args, st, train_loader, test_loader) \
+                if st.send_label.isBlock() and \
+                st.send_label.getBlockset() in [1, 2, 3, 4] \
+                and st.recv_label - 1 == st.send_label \
+                else 0.0
+            print(f"\tGot acc {acc}")
+            return acc
 
         print("Training stitches")
         vanilla_sims: Dict[Tuple[str, str], List[List[float]]] = {
@@ -442,38 +291,50 @@ class Experiment(object):
             for (model1_name, model2_name), stitched_nets_table in stitched_nets.items()
         }
 
+        print("Creating sims and heatmaps folder if necessary")
         if not os.path.exists(Experiment.SIMS_FOLDER):
             os.mkdir(Experiment.SIMS_FOLDER)
         if not os.path.exists(Experiment.HEATMAPS_FOLDER):
             os.mkdir(Experiment.HEATMAPS_FOLDER)
+        
+        print("Saving sims and heatmaps")
         for (model1_name, model2_name), vanilla_sim_table in vanilla_sims.items():
             sim_path = os.path.join(
                 Experiment.SIMS_FOLDER, f"{model1_name}_{model2_name}_sims.pt")
             heat_path = os.path.join(
                 Experiment.HEATMAPS_FOLDER, f"{model1_name}_{model2_name}_heatmaps.png")
+            print(f"Saving tensor to {sim_path}")
             torch.save(torch.tensor(vanilla_sim_table), sim_path)
 
             # Note might be nice to not have to save and then re-load
+            print(f"Visualizing at {heat_path}")
             Visualizer.matrix_heatmap(sim_path, heat_path)
 
         print("Sanity testing that models weights did NOT change and stitches' weights did")
         DEBUG_NEW_MODELS_PARAMS =\
-            named_models_clone(named_models)
+            {
+                name : pclone(model)\
+                for name, model in named_models
+            }
         DEBUG_NEW_STITCHES_PARAMS =\
-            named_model_likes_clone(
-                pclone_stitchedResnet_table,
-                stitched_nets.items(),
-            )
+            {
+                # Table of stitches -> Table of lists of torch.Tensors -> List of Lists of torch.Tensors
+                # -> List of torch.Tensors.
+                model_pair : flattened_table(flattened_table(
+                    Table.mappedTable(pclone, table),
+                ))\
+                for model_pair, table in stitched_nets.items()
+            }
 
         # NO models should have changed and ALL stitches should have changed
         assert mapeq(DEBUG_ORIG_MODELS_PARAMS, DEBUG_NEW_MODELS_PARAMS)
         assert mapneq(DEBUG_ORIG_STITCHES_PARAMS, DEBUG_NEW_STITCHES_PARAMS)
-
+        print("OK!")
 
 if __name__ == "__main__":
     file_pair = "resnet_1111.pt", "resnet_1111.pt"
     hyps = Hyperparams()
     hyps.epochs = 40
     Experiment.pretrain(hyps)
-    hyps.epochs = 4
+    hyps.epochs = 1 # NOTE should be bigger
     Experiment.stitchtrain(hyps, file_pair)

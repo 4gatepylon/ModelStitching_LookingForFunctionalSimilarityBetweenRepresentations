@@ -20,6 +20,7 @@ from warnings import warn
 
 FFCV_AVAIL = True
 try:
+    print("Trying to import FFCV")
     from ffcv.writer import (
         DatasetWriter,
     )
@@ -51,6 +52,7 @@ try:
         IntField,
         RGBImageField,
     )
+    print("Success!")
 except:
     FFCV_AVAIL = False
     warn("WARNING: FFCV is not available, getting ffcv loaders may not run")
