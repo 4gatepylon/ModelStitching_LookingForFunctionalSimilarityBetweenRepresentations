@@ -97,7 +97,7 @@ class StitchedResnet(nn.Module):
             nets: Tuple[Resnet, Resnet],
             send_label: LayerLabel,
             recv_label: LayerLabel,
-            pool_and_flatten: Optional[bool] = False) -> StitchedResnet:
+    ) -> StitchedResnet:
         #print(f"send label is {send_label} and recv_label is {recv_label}")
         shapes = RepShape.stitchShapes(send_label, recv_label)
         stitch: nn.Module = StitchGenerator.generate(shapes)

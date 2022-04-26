@@ -79,6 +79,25 @@ def sanity_test_stitches_ptrs(data_ptrs):
             sane = sane and data_ptrs[i] != data_ptrs[j]
     return sane
 
+def sanity_test_model_outfrom_into(model, number, loader):
+    labels = LayerLabel.labels(number)
+    sane = True
+    model.eval()
+    # For every pair of layers make sure that if you outut from one and input into the next one it works
+    for i in range(0, len(labels) - 1):
+        out_label = labels[i]
+        in_label = labels[i+1]
+        for _input, _ in loader:
+            with torch.no_grad():
+                with autocast():
+                    _intermediate = model.outfrom_forward(_input, out_label)
+                    _output = model.into_forward(_intermediate, in_label, pool_and_flatten=True)
+                    _exp_output = model(_input)
+                    # If the output is not equal to the expected output
+                    if (_output == _exp_output).int().min() != 1:
+                        sane = False
+    return sane
+
 
 class Experiment(object):
     RESNETS_FOLDER = "../../pretrained_resnets/"
@@ -183,6 +202,7 @@ class Experiment(object):
                 num_classes=10,
             ) for name, number in zip(names, numbers)
         ]
+
         print(f"Using device {device}")
         for (model, pretrained_file) in zip(models, pretrained_files):
             model.to(device)
@@ -202,15 +222,25 @@ class Experiment(object):
             acc = Trainer.evaluate(model, test_loader)
             assert acc > lo
             assert acc < hi
+        
+        print("Sanity testing that the outfrom and into forwards work")
+        assert all(map(
+            lambda model_number: sanity_test_model_outfrom_into(
+                model_number[0],
+                model_number[1],
+                train_loader,
+            ), 
+            zip(models, numbers),
+        ))
 
         print("Generating table of labels")
         def iden(x, y): return (x, y)
         labels, idx2labels = LayerLabel.generateTable(iden, numbers1, numbers2)
         # print("***************** labels *******************")
-        # print(labels)
+        # pp.pprint(labels)
         # print("************** *idx2labels *****************")
-        # print(idx2labels)
-        # print("********************************************")
+        # pp.pprint(idx2labels)
+        # print("********************************************\n")
 
         print("Generating pairs of networks to stitch")
         named_models = list(zip(names, models))
@@ -226,12 +256,14 @@ class Experiment(object):
                         (model1, model2),
                         labels_tuple[0],
                         labels_tuple[1],
-                        pool_and_flatten=False,
                     ).to(device),
                     labels,
             )
             for (model1_name, model1), (model2_name, model2) in pairs
         }
+        print("***************** labels *******************")
+        pp.pprint(stitched_nets) # hopefully not nn.Module big print?
+        print("********************************************\n")
 
         print("Generating debugging tests to make sure that models weights did NOT change")
         DEBUG_ORIG_MODELS_PARAMS =\

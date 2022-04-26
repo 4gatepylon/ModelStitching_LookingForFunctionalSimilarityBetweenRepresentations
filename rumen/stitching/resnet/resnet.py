@@ -192,9 +192,11 @@ class Resnet(nn.Module):
         # When you want to flatten it in th end (and avgpool) you first do
         # the rest of the network, then you apply those transformations.
         if blockset == 4 and block + 1 == self.blocksets[-1] and pool_and_flatten:
-            x = self.outfrom_forward(x, vent, pool_and_flatten=False)
-            x = torch.flatten(self.avgpool(x), 1)
-            return x
+            # Pool and flatten should only be used right now for the into_forward
+            raise NotImplementedError
+            # x = self.outfrom_forward(x, vent, pool_and_flatten=False)
+            # x = torch.flatten(self.avgpool(x), 1)
+            # return x
 
         # Normal case
         x = self.conv1(x)
