@@ -76,8 +76,9 @@ class StitchedResnet(nn.Module):
         self.reciever.eval()
 
     def freeze(self: StitchedResnet) -> NoReturn:
-        self.freeze_sender()
-        self.freeze_reciever()
+        # self.freeze_sender()
+        # self.freeze_reciever()
+        pass #TODO see if this changes anything
 
     def forward(self: StitchedResnet, x: torch.Tensor) -> torch.Tensor:
         # Pool and flatten should only happen for MSE losses (otherwise we don't, since

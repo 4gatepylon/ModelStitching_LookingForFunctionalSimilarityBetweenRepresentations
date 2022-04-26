@@ -191,6 +191,10 @@ class Trainer(object):
 
         eval_acc = Trainer.evaluate(model, test_loader)
 
+        # Nothing should change here (otherwise maybe the weights changed when
+        # we did not want them to)
+        assert Trainer.evaluate(model, test_loader) == eval_acc
+
         return eval_acc
 
 

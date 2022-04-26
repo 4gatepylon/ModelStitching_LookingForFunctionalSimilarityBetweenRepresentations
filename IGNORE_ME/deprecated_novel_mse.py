@@ -187,3 +187,14 @@
 #         # Average over the number of images
 #         total /= num_images
 #         return total
+
+# def choose_product(possibles: List[Any], length: int) -> List[List[Any]]:
+#     """ All ordered subsequences of length `length` of where each element is in `possibles` """
+#     if (length == 1):
+#         return [[x] for x in possibles]
+#     combinations = []
+#     for possible in possibles:
+#         remainders = choose_product(length - 1, possibles)
+#         for remainder in remainders:
+#             combinations.append(remainder + [possible])
+#     return combinations

@@ -13,10 +13,6 @@ import unittest
 from pprint import PrettyPrinter
 pp = PrettyPrinter(indent=2)
 
-# Enables more interesting type annotations
-from typing_extensions import (
-    ParamSpec,
-)
 from typing import (
     NoReturn,
     Any,
@@ -25,7 +21,6 @@ from typing import (
     Dict,
     List,
     Tuple,
-    TypeVar,
 )
 
 import torch
@@ -47,31 +42,6 @@ from trainer import Trainer, Hyperparams
 from visualizer import Visualizer
 from cifar import pclone, mapeq, mapneq, flattened_table
 
-T = TypeVar('T')
-G = TypeVar('G')
-P = ParamSpec('P')
-
-
-def fix_seed(seed):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-
-
-def choose_product(possibles: List[T], length: int) -> List[List[T]]:
-    """ All ordered subsequences of length `length` of where each element is in `possibles` """
-    if (length == 1):
-        return [[x] for x in possibles]
-    combinations = []
-    for possible in possibles:
-        remainders = choose_product(length - 1, possibles)
-        for remainder in remainders:
-            combinations.append(remainder + [possible])
-    return combinations
-
 def sanity_test_stitches_ptrs(data_ptrs):
     assert len(data_ptrs) > 0, "should have at least some data pointers"
     assert len(data_ptrs) > 1, "should have >1 stitches' data pointers"
@@ -86,7 +56,6 @@ def sanity_test_model_outfrom_into(model, number, loader):
     labels = LayerLabel.labels(number)
     assert len(labels) >= 5
     sane = True
-    model.eval()
     # For every pair of layers make sure that if you outut from one and input into the next one it works
     for i in range(0, len(labels) - 1):
         out_label = labels[i]
@@ -102,6 +71,36 @@ def sanity_test_model_outfrom_into(model, number, loader):
                     if (_output == _exp_output).int().min() != 1:
                         sane = False
                         if this_is_sane:
+                            warn(f"Sanity failed for {out_label} -> {in_label}")
+                            warn(f"Got {_output}\n")
+                            warn(f"Expected {_exp_output}\n")
+                            warn(f"Cutting off at first occurence for brevity")
+                        this_is_sane = False
+    return sane
+
+# Basically copied from above, but makes sure that the stitched resnet is not bused
+def sanity_test_model_outfrom_into_stitched_resnet(model, number, loader):
+    labels = LayerLabel.labels(number)
+    assert len(labels) >= 5
+    sane = True
+    # For every pair of layers make sure that if you outut from one and input into the next one it works
+    for i in range(0, len(labels) - 1):
+        out_label = labels[i]
+        in_label = labels[i+1]
+        stitch = Identity()
+        stitched_resnet = StitchedResnet(model, model, stitch, out_label, in_label)
+        stitched_resnet.freeze()
+        this_is_sane = True
+        for _input, _ in loader:
+            with torch.no_grad():
+                with autocast():
+                    _output = stitched_resnet(_input)
+                    _exp_output = model(_input)
+                    # If the output is not equal to the expected output
+                    if (_output == _exp_output).int().min() != 1:
+                        sane = False
+                        if this_is_sane:
+                            warn(f"Stitched Resnet:")
                             warn(f"Sanity failed for {out_label} -> {in_label}")
                             warn(f"Got {_output}\n")
                             warn(f"Expected {_exp_output}\n")
@@ -132,7 +131,6 @@ class Experiment(object):
         print(f"Using device: {device}")
 
         print("Generating combinations")
-        # combinations = choose_product([1, 2], 4)
         combinations = [[1, 1, 1, 1]]
 
         print(f"Storing resnets in {Experiment.RESNETS_FOLDER}")
@@ -244,6 +242,16 @@ class Experiment(object):
             zip(models, numbers),
         ))
 
+        print("Sanity testing that stitched resnet with stitch=identity works like model")
+        assert all(map(
+            lambda model_number: sanity_test_model_outfrom_into_stitched_resnet(
+                model_number[0],
+                model_number[1],
+                train_loader,
+            ),
+            zip(models, numbers),
+        ))
+
         print("Generating table of labels")
         def iden(x, y): return (x, y)
         labels, idx2labels = LayerLabel.generateTable(iden, numbers1, numbers2)
@@ -287,9 +295,15 @@ class Experiment(object):
             )
             for (model1_name, model1), (model2_name, model2) in pairs
         }
-        # print("***************** labels *******************")
-        # pp.pprint(stitched_nets) # nn.Module too big to print nicely...
-        # print("********************************************\n")
+        print("***************** labels *******************")
+        for sn_name, sn_table in stitched_nets.items():
+            print(f"{sn_name}")
+            for row in sn_table:
+                for sn in row:
+                    print(f"{sn.send_label} -> {sn.recv_label}")
+                    print(sn.stitch)
+                    print("")
+        print("********************************************\n")
 
         print("Generating debugging tests to make sure that models weights did NOT change")
         DEBUG_ORIG_MODELS_PARAMS =\
@@ -387,6 +401,9 @@ class Experiment(object):
         # NO models should have changed and ALL stitches should have changed
         assert mapeq(DEBUG_ORIG_MODELS_PARAMS, DEBUG_NEW_MODELS_PARAMS)
         assert mapneq(DEBUG_ORIG_STITCHES_PARAMS, DEBUG_NEW_STITCHES_PARAMS)
+
+        print("Sanity testing that model has retained good accuracy")
+        assert Trainer.evaluate(models[0], train_loader) > 0.9
         print("OK!")
 
 if __name__ == "__main__":
@@ -394,5 +411,5 @@ if __name__ == "__main__":
     hyps = Hyperparams()
     hyps.epochs = 40
     Experiment.pretrain(hyps)
-    hyps.epochs = 1 # NOTE should be bigger
+    hyps.epochs = 10 # NOTE should be bigger
     Experiment.stitchtrain(hyps, file_pair)

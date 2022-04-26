@@ -313,7 +313,7 @@ class LayerLabel(object):
 
         labels2: List[LayerLabel] = LayerLabel.labels(R2)
         idx2label = {
-            (i, j): (labels1[i], labels2[j]) for i in range(height) for j in range(width)
+            (i, j): (labels1[i], labels2[j]) for j in range(width) for i in range(height)
         }
         return [[constructor(*idx2label[(i, j)]) for j in range(width)] for i in range(height)], idx2label
 
