@@ -177,11 +177,11 @@ class Trainer(object):
                 with autocast():
                     h = inputs
                     h = model(h)
-                    print(h)
-                    print(y)
+                    #print(h)
+                    #print(y)
                     # TODO modularize this out to enable sim training
                     loss = F.cross_entropy(h, y)
-                    print(loss)
+                    #print(loss)
 
                 scaler.scale(loss).backward()
                 scaler.step(optimizer)

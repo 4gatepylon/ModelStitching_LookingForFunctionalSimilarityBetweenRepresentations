@@ -173,6 +173,9 @@ class Resnet(nn.Module):
             raise ValueError(f"Not input, conv1, fc, or block: {vent}")
 
     def outfrom_forward(self, x: Tensor, vent: LayerLabel, pool_and_flatten: bool = False):
+        if pool_and_flatten:
+            raise NotImplementedError
+        
         # Special case to deal with the fact that sometimes we need to apply maxpool
         if vent.isConv1():
             # Are you sure we don't want to use the RELU? NOTE
@@ -192,11 +195,9 @@ class Resnet(nn.Module):
         # When you want to flatten it in th end (and avgpool) you first do
         # the rest of the network, then you apply those transformations.
         if blockset == 4 and block + 1 == self.blocksets[-1] and pool_and_flatten:
-            # Pool and flatten should only be used right now for the into_forward
-            raise NotImplementedError
-            # x = self.outfrom_forward(x, vent, pool_and_flatten=False)
-            # x = torch.flatten(self.avgpool(x), 1)
-            # return x
+            x = self.outfrom_forward(x, vent, pool_and_flatten=False)
+            x = torch.flatten(self.avgpool(x), 1)
+            return x
 
         # Normal case
         x = self.conv1(x)

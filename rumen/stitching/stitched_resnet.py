@@ -82,15 +82,18 @@ class StitchedResnet(nn.Module):
     def forward(self: StitchedResnet, x: torch.Tensor) -> torch.Tensor:
         # Pool and flatten should only happen for MSE losses (otherwise we don't, since
         # we want the full tensor `representation`)
-            h = self.sender.outfrom_forward(x, self.send_label)
-            # print(f"\t\t\tstitch gets shape {h.shape}")
-            h = self.stitch(h)
-            # print("\t\t\t\done")
-            h = self.reciever.into_forward(
-                h, 
-                self.recv_label, 
-                pool_and_flatten=self.recv_label.isFc(),
-            )
+        h = self.sender.outfrom_forward(
+            x,
+            self.send_label,
+        )
+        # print(f"\t\t\tstitch gets shape {h.shape}")
+        h = self.stitch(h)
+        # print("\t\t\t\done")
+        h = self.reciever.into_forward(
+            h, 
+            self.recv_label,
+            pool_and_flatten=self.recv_label.isFc(),
+        )
         return h
 
     @staticmethod
@@ -122,6 +125,8 @@ class MockResnet(nn.Module):
         vent: LayerLabel,
         pool_and_flatten: bool = False,
     ) -> torch.Tensor:
+        if pool_and_flatten:
+            raise NotImplementedError
         if vent.isInput():
             return x
         elif vent.isConv1():
@@ -137,6 +142,7 @@ class MockResnet(nn.Module):
         self: MockResnet,
         x: torch.Tensor,
         vent: LayerLabel,
+        pool_and_flatten: bool = False,
     ) -> torch.Tensor:
         if vent.isInput():
             raise Exception("Can't go into input in into_forward")
