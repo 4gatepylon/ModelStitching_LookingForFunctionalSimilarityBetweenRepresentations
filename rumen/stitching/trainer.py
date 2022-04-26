@@ -208,3 +208,10 @@ class Trainer(object):
         eval_acc = Trainer.evaluate(model, test_loader)
 
         return eval_acc
+
+# TODO
+class TrainerTester(unittest.TestCase):
+    pass
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)
