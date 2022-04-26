@@ -178,10 +178,13 @@ class Resnet(nn.Module):
         
         # Special case to deal with the fact that sometimes we need to apply maxpool
         if vent.isConv1():
-            # Are you sure we don't want to use the RELU? NOTE
+            # We make the choice to do bn1 and relu because the into_forward
+            # from above does not do them. This is probably the better behavior
+            # because otherwise it would be equivalent to stitching from the
+            # input (image space).
             x = self.conv1(x)
-            # x = self.bn1(x)
-            # x = self.relu(x)
+            x = self.bn1(x)
+            x = self.relu(x)
             return x
         elif vent.isFc():
             return self.forward(x)

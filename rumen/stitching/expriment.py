@@ -6,6 +6,8 @@ from torch.cuda.amp import autocast
 import torch.nn.functional as F
 import os
 
+from warnings import warn
+
 import unittest
 
 from pprint import PrettyPrinter
@@ -77,16 +79,19 @@ def sanity_test_stitches_ptrs(data_ptrs):
     for i in range(len(data_ptrs)):
         for j in range(i+1, len(data_ptrs)):
             sane = sane and data_ptrs[i] != data_ptrs[j]
+
     return sane
 
 def sanity_test_model_outfrom_into(model, number, loader):
     labels = LayerLabel.labels(number)
+    assert len(labels) >= 5
     sane = True
     model.eval()
     # For every pair of layers make sure that if you outut from one and input into the next one it works
     for i in range(0, len(labels) - 1):
         out_label = labels[i]
         in_label = labels[i+1]
+        this_is_sane = True
         for _input, _ in loader:
             with torch.no_grad():
                 with autocast():
@@ -96,6 +101,12 @@ def sanity_test_model_outfrom_into(model, number, loader):
                     # If the output is not equal to the expected output
                     if (_output == _exp_output).int().min() != 1:
                         sane = False
+                        if this_is_sane:
+                            warn(f"Sanity failed for {out_label} -> {in_label}")
+                            warn(f"Got {_output}\n")
+                            warn(f"Expected {_exp_output}\n")
+                            warn(f"Cutting off at first occurence for brevity")
+                        this_is_sane = False
     return sane
 
 
@@ -241,6 +252,20 @@ class Experiment(object):
         # print("************** *idx2labels *****************")
         # pp.pprint(idx2labels)
         # print("********************************************\n")
+        print("Sanity checking numbers of labels")
+        assert len(idx2labels) == len(labels) * len(labels[0])
+        assert LayerLabel.numLayers(numbers1) - 1 == len(labels)
+        assert LayerLabel.numLayers(numbers2) == len(labels[0])
+        print("Sanity checking that labels grow by 1 along columns")
+        assert all(map(
+            lambda row: all(((row[i][1] == row[i + 1][1] - 1) for i in range(len(row) - 1))), 
+            labels,
+        ))
+        print("Sanity checking that labels grow by 1 along rows(transposed)")
+        assert all(map(
+            lambda row: all(((row[i][0] == row[i + 1][0] - 1) for i in range(len(row) - 1))), 
+            Table.transposed(labels),
+        ))
 
         print("Generating pairs of networks to stitch")
         named_models = list(zip(names, models))
@@ -249,6 +274,7 @@ class Experiment(object):
             raise NotImplementedError("Only stitching model1 with model2")
 
         print("Generating stitches for each pair of layers for each pair of models")
+        assert len(pairs) == 1, "Does not support stitching more than one pair yet"
         stitched_nets: Dict[Tuple[str, str], List[List[StitchedResnet]]] = {
             (model1_name, model2_name):
                 Table.mappedTable(
@@ -261,9 +287,9 @@ class Experiment(object):
             )
             for (model1_name, model1), (model2_name, model2) in pairs
         }
-        print("***************** labels *******************")
-        pp.pprint(stitched_nets) # hopefully not nn.Module big print?
-        print("********************************************\n")
+        # print("***************** labels *******************")
+        # pp.pprint(stitched_nets) # nn.Module too big to print nicely...
+        # print("********************************************\n")
 
         print("Generating debugging tests to make sure that models weights did NOT change")
         DEBUG_ORIG_MODELS_PARAMS =\
@@ -305,11 +331,11 @@ class Experiment(object):
         def train_with_info(st: StitchedResnet):
             print(f"\tTraining on stitch {st.send_label} -> {st.recv_label}")
             st.freeze()
-            acc = Trainer.train_loop(args, st, train_loader, test_loader) \
-                if st.send_label.isBlock() and \
-                st.send_label.getBlockset() in [1, 2, 3, 4] \
-                and st.recv_label - 1 == st.send_label \
-                else 0.0
+            acc = Trainer.train_loop(args, st, train_loader, test_loader)# \
+            # if st.send_label.isBlock() and \
+            # st.send_label.getBlockset() in [1, 2, 3, 4] \
+            # and st.recv_label - 1 == st.send_label \
+            # else 0.0
             print(f"\tGot acc {acc}")
             return acc
 

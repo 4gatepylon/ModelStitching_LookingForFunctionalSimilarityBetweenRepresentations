@@ -27,6 +27,10 @@ class Table(object):
     @staticmethod
     def mappedTable(transform: Callable[[T], G], table: List[List[T]]) -> List[List[G]]:
         return [[transform(x) for x in row] for row in table]
+    
+    @staticmethod
+    def transposed(table: List[List[T]]) -> List[List[T]]:
+        return [[table[j][i] for  j in range(len(table))] for i in range(len(table[0]))]
 
 class TableTester(unittest.TestCase):
     def test_mappedTable(self):
@@ -44,6 +48,22 @@ class TableTester(unittest.TestCase):
         mapped_is = Table.mappedTable(lambda x: x * x, table)
 
         self.assertEqual(mapped_is, mapped_should_be)
+    
+    def test_transposed(self):
+        table = [
+            [1, 2, 3],
+            [4, 5, 6],
+            [7, 8, 9],
+        ]
+        transposed_should_be = [
+            [1, 4, 7],
+            [2, 5, 8],
+            [3, 6, 9],
+        ]
+
+        transposed_is = Table.transposed(table)
+
+        self.assertEqual(transposed_is, transposed_should_be)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
