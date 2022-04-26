@@ -26,6 +26,8 @@ import torch.nn.functional as F
 from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import Dataset, DataLoader
 
+from cifar import pclone, listeq
+
 import time
 import math
 
@@ -126,28 +128,6 @@ class Trainer(object):
 
         return total_correct / total_num
 
-    # @staticmethod
-    # def adjust_learning_rate(
-    #     epochs: int,
-    #     warmup_epochs: int,
-    #     base_lr: int,
-    #     optimizer: Any,
-    #     loader: DataLoader,
-    #     step: int,
-    # ) -> NoReturn:
-    #     max_steps = epochs * len(loader)
-    #     warmup_steps = warmup_epochs * len(loader)
-    #     if step < warmup_steps:
-    #         lr = base_lr * step / warmup_steps
-    #     else:
-    #         step -= warmup_steps
-    #         max_steps -= warmup_steps
-    #         q = 0.5 * (1 + math.cos(math.pi * step / max_steps))
-    #         end_lr = 0
-    #         lr = base_lr * q + end_lr * (1 - q)
-    #     for param_group in optimizer.param_groups:
-    #         param_group['lr'] = lr
-
     @staticmethod
     def train_loop(
         args: Any,
@@ -156,6 +136,7 @@ class Trainer(object):
         test_loader: DataLoader,
         parameters: Optional[List[torch.Tensor]] = None,
         epochs: Optional[int] = None,
+        verbose: bool = True,
     ) -> int:
         # None signifies do all parameters (we might finetune single layers an that will speed up training)
         if parameters is None:
@@ -174,8 +155,8 @@ class Trainer(object):
         start = time.time()
         epochs = args.epochs if epochs is None else epochs
         for e in range(1, epochs + 1):
-            print(
-                f"\t\t starting on epoch {e} for {len(train_loader)} iterations")
+            if verbose:
+                print(f"\t\t starting on epoch {e} for {len(train_loader)} iterations")
             model.train()
             # epoch
             # NOTE that enumerate's start changes the starting index
@@ -196,22 +177,61 @@ class Trainer(object):
                 with autocast():
                     h = inputs
                     h = model(h)
+                    print(h)
+                    print(y)
                     # TODO modularize this out to enable sim training
                     loss = F.cross_entropy(h, y)
+                    print(loss)
 
                 scaler.scale(loss).backward()
                 scaler.step(optimizer)
                 scaler.update()
-
-            print(f'\t\tepoch: {e} | time: {time.time() - start:.3f}')
+            if verbose:
+                print(f'\t\tepoch: {e} | time: {time.time() - start:.3f}')
 
         eval_acc = Trainer.evaluate(model, test_loader)
 
         return eval_acc
 
-# TODO
+
+# Very similar to that one in loaders, but here we just need somewhere we can predict the optimum for
+class MockDataset(Dataset):
+    NUM_SAMPLES = 100
+    Xs = [torch.rand(2)*10 for _ in range(NUM_SAMPLES)]
+    Ys = [torch.tensor(0) for _ in range(NUM_SAMPLES)]
+
+    def __init__(self):
+        self.X_Y = list(zip(MockDataset.Xs, MockDataset.Ys))
+
+    def __len__(self):
+        return len(self.X_Y)
+
+    def __getitem__(self, idx):
+        return self.X_Y[idx]
+
+# TODO this does not seem to properly learn
 class TrainerTester(unittest.TestCase):
-    pass
+    def test_train_loop(self):
+        # Get hyperparameters with bsz = 1
+        hyps = Hyperparams.forTesting()
+        hyps.epochs = 100
+
+        # Should be converging to [1, 0]
+        model = nn.Linear(2, 1, bias = False)
+        original_params = pclone(model)
+
+        test_loader = DataLoader(MockDataset(), batch_size=hyps.bsz)
+        train_loader = DataLoader(MockDataset(), batch_size=hyps.bsz)
+        acc = Trainer.train_loop(hyps, model, train_loader, test_loader, verbose=False)
+        self.assertTrue(acc > 0.0)
+
+        optimum_weights = torch.tensor([1, 0]).float()
+        original_dist = torch.dist(original_params[0], optimum_weights, p=2)
+        new_dist = torch.dist(model.weight, optimum_weights, p=2)
+
+        # Ascertain that the weights change and that they get better
+        self.assertFalse(listeq(original_params, list(model.parameters())))
+        self.assertTrue(new_dist < original_dist)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

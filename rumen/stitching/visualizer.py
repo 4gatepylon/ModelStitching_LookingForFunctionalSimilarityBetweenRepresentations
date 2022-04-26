@@ -4,6 +4,9 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 
+import os
+
+import unittest
 
 class Visualizer(object):
     """ Class to encapsulate our visualization methods."""
@@ -45,3 +48,30 @@ class Visualizer(object):
     @staticmethod
     def images(model: nn.Module, test_loader: DataLoader, output_folder: str):
         raise NotImplementedError
+
+class VisualizerTester(unittest.TestCase):
+    def test_matrix_heatmap(self):
+        # Ideally this would be set up using a testing folder
+        # and would involve a fixture to do preparation beforehand
+        # but this is probably good enough for now.
+        test_file = "__tmp.pt"
+        test_output = "__tmp.png"
+        self.assertFalse(os.path.exists(test_file))
+        self.assertFalse(os.path.exists(test_output))
+
+        tensor = torch.Tensor([[0.25,0.5,0.25], [0.25,0.5,0.25], [0.25,0.5,0.25]])
+        torch.save(tensor, test_file)
+        Visualizer.matrix_heatmap(test_file, test_output)
+
+        # There is no good way to test other than visually
+        # NOTE in the future we may want to have a more robust
+        # testing infrastructure!
+
+        self.assertTrue(os.path.exists(test_file))
+        self.assertTrue(os.path.exists(test_output))
+        os.remove(test_file)
+        os.remove(test_output)
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)

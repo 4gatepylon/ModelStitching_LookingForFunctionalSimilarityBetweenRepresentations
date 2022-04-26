@@ -1,6 +1,6 @@
 # Overview
 Here we have a relatively modular and well-tested stitching library. It is the `stitching` module that you import
-things from by doing `from stitching.abc.py import xyz` for some `abc`  and `xyz` of your choice. To unit test this library simply run `python -m unittest discover -v -s . -p "*.py"` from within the `stitching` directory.
+things from by doing `from stitching.abc.py import xyz` for some `abc`  and `xyz` of your choice. To unit test this library simply run `python -m unittest discover -v -s . -p "*.py"` (probably make an alias, on my stystem it's `stest`) from within the `stitching` directory.
 
 Where possible, I created classes (objects) to execute shared functionality and maintain shared state. All objects that group methods, and especially that maintain state, are unit tested. For example, you will find a `LayerLabel` class that basically creates utility for us to tell `ResNets` when to prematurely stop, it tells us what pairs of layers are being compared, etcetera. There is in this file a `TestLayerLabel` that unittests all the non-trivial functions of the class. In general, every single class will have a corresponding unit tester in the same file. I try to seperate classes to one per file to avoid bloat.
 

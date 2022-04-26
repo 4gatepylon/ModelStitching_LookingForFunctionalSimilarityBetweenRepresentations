@@ -82,14 +82,15 @@ class StitchedResnet(nn.Module):
     def forward(self: StitchedResnet, x: torch.Tensor) -> torch.Tensor:
         # Pool and flatten should only happen for MSE losses (otherwise we don't, since
         # we want the full tensor `representation`)
-        with autocast():
-            h = self.sender.outfrom_forward(
-                x, self.send_label, pool_and_flatten=False)
+            h = self.sender.outfrom_forward(x, self.send_label)
             # print(f"\t\t\tstitch gets shape {h.shape}")
             h = self.stitch(h)
             # print("\t\t\t\done")
             h = self.reciever.into_forward(
-                h, self.recv_label, pool_and_flatten=self.recv_label.isFc())
+                h, 
+                self.recv_label, 
+                pool_and_flatten=self.recv_label.isFc(),
+            )
         return h
 
     @staticmethod
