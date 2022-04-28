@@ -423,8 +423,10 @@ def stitchtrain(args):
     print("Getting loaders for FFCV")
     train_loader, test_loader = get_loaders(args)
 
-    acc = evaluate(model, test_loader)
-    print("Model Original Accuracy: {}".format(acc))
+    acc1 = evaluate(model1, test_loader)
+    acc2 = evaluate(model2, test_loader)
+    print("Model 1 Original Accuracy: {}".format(acc1))
+    print("Model 2 Original Accuracy: {}".format(acc2))
 
     print("Creating Tables, padding with None (and zero) to make it square")
     labels = ["input", "conv1"] + [(i, 0) for i in range(1,5)] + ["fc", "output"]
