@@ -74,7 +74,7 @@ def num_labels(numbers):
     return 2 + 2 + sum(numbers)
 
 # NOTE: tick labels for y before x because y is the sender
-def matrix_heatmap(input_file_name: str, output_file_name: str, tick_lables_y=None, tick_labels_x=None):
+def matrix_heatmap(input_file_name: str, output_file_name: str, tick_labels_y=None, tick_labels_x=None):
         mat = torch.load(input_file_name)
         assert type(mat) == torch.Tensor or type(mat) == np.ndarray
         if type(mat) == torch.Tensor:
@@ -429,13 +429,14 @@ def stitchtrain(numbers1, numbers2, control, args):
         model1s[i] = model1s[i].cuda()
         model2s[i] = model2s[i].cuda()
     
+    print(f"Loading from {_file1} and {_file2}")
     model1s[0].load_state_dict(torch.load(_file1))
     model2s[0].load_state_dict(torch.load(_file2))
     
     print("Getting loaders for FFCV")
     train_loader, test_loader = get_loaders(args)
 
-    print("Ensuring accuracies are reasonable (>0.9 for trained, <0.2)".format(acc))
+    print("Ensuring accuracies are reasonable (>0.9 for trained, <0.2)")
     assert evaluate(model1s[0], test_loader) > 0.9
     assert evaluate(model2s[0], test_loader) > 0.9
     if control:
@@ -449,16 +450,18 @@ def stitchtrain(numbers1, numbers2, control, args):
     # because it's purely informational and everyone shares the same
     # functionality in this regard.
     print("Creating Tables, padding with None (and zero) to make it square")
-    labels1 = ["input", "conv1"] + [(i, j) for j in range(0, len(numbers1[i])) for i in range(1,5)] + ["fc", "output"]
-    labels2 = ["input", "conv1"] + [(i, j) for j in range(0, len(numbers2[i])) for i in range(1,5)] + ["fc", "output"]
+    labels1 = ["input", "conv1"] + [(i, j) for j in range(0, numbers1[i]) for i in range(1,5)] + ["fc", "output"]
+    labels2 = ["input", "conv1"] + [(i, j) for j in range(0, numbers2[i]) for i in range(1,5)] + ["fc", "output"]
     layerlabels = [
         [(labels1[i], labels2[j]) for j in range(len(labels2))] \
         for i in range(len(labels1))
     ]
-    num_lables1 = num_labels(labels1)
-    num_lables2 = num_labels(labels2)
+    num_labels1 = num_labels(numbers1)
+    num_labels2 = num_labels(numbers2)
     assert num_labels1 == len(labels1)
     assert num_labels2 == len(labels2)
+
+    print("Creating stitches")
 
     # 1x1 or 2x2 table of stitch table
     all_stitches = [
@@ -475,11 +478,13 @@ def stitchtrain(numbers1, numbers2, control, args):
                 ] \
                 for row in layerlabels
             ] \
-            for _ in range(model2s)
+            for _ in range(len(model2s))
             # Table ends here
         ] \
         for _ in range(len(model1s))
     ]
+
+    print("Initializing simlarities to zero")
     
     # 1x1 or 2x2 table of stitch table
     all_sims = [
@@ -499,22 +504,19 @@ def stitchtrain(numbers1, numbers2, control, args):
         for _ in range(len(model1s))
     ]
 
+    print("Sanity checking lengths")
+
     # Make sure the number of rows is always num_labels1
     assert len(layerlabels) == num_labels1
-    assert len(max(all_stitches, key=len)) == num_labels1 and \
-           len(min(all_stitches, key=len)) == num_labels1
-    assert len(max(all_sims, key=len)) == num_labels1 and \
-           len(min(all_sims, key=len)) == num_labels1
+    assert len(all_stitches[0][0]) == num_labels1
+    assert len(all_sims[0][0]) == num_labels1
 
     # Make sure the number of columns is always num_labels2
-    assert len(max(layerlabels, key=len)) == num_labels2 and \
-           len(min(layerlabels, key=len)) == num_labels2
-    assert \
-        max(all_stitches, key=lambda stitches: len(max(stitchs, key=len))) == num_labels2 and \
-        min(all_stitches, key=lambda stitches: len(min(stitchs, key=len))) == num_labels2
-    assert \
-        max(all_sims, key=lambda sims: len(max(sims, key=len))) == num_labels2 and \
-        min(all_sims, key=lambda sims: len(min(sims, key=len))) == num_labels2
+    # NOTE we only check the first one since the comprehension should be
+    # the same forall...
+    assert max(map(len, layerlabels)) == num_labels2 and min(map(len, layerlabels)) == num_labels2
+    assert max(map(len, all_stitches[0][0])) == num_labels2 and min(map(len, all_stitches[0][0])) == num_labels2
+    assert max(map(len, all_sims[0][0])) == num_labels2 and min(map(len, all_sims[0][0])) == num_labels2
 
     print("Training Tables")
     for m1 in range(len(model1s)):
@@ -534,20 +536,23 @@ def stitchtrain(numbers1, numbers2, control, args):
                     # None is used to signify that this is not supported/stitchable
                     if stitches[i][j]:
                         print("*************************")
-                        ORIGINAL_PARAMS = pclone(model)
+                        ORIGINAL_PARAMS_1 = pclone(model1)
+                        ORIGINAL_PARAMS_2 = pclone(model2)
                     
                         send_label, recv_label = layerlabels[i][j]
                         print(f"Training {send_label} to {recv_label}")
                         stitch = stitches[i][j]
                         stitch = stitch.cuda()
                         print(stitch)
-                        stitched_resnet = make_stitched_resnet(model, stitch, send_label, recv_label)
+                        stitched_resnet = make_stitched_resnet(model1, model2, stitch, send_label, recv_label)
                         acc = train_loop(args, stitched_resnet, train_loader, test_loader)
                         print(acc)
                         sims[i][j] = acc
 
-                        NEW_PARAMS = pclone(model)
-                        assert listeq(ORIGINAL_PARAMS, NEW_PARAMS)
+                        NEW_PARAMS_1 = pclone(model1)
+                        NEW_PARAMS_2 = pclone(model2)
+                        assert listeq(ORIGINAL_PARAMS_1, NEW_PARAMS_1)
+                        assert listeq(ORIGINAL_PARAMS_2, NEW_PARAMS_2)
                         print("*************************\n")
             print("Saving similarities")
             if not os.path.exists(SIMS_FOLDER):
@@ -574,7 +579,7 @@ class Args:
         # Training Hyperparams
         self.bsz = 256   # Batch Size
         self.lr = 0.01   # Learning Rate
-        self.warmup = 10  # Warmup epochs
+        self.warmup = 10 # Warmup epochs
         self.epochs = 1  # Total epochs
         self.wd = 0.01   # Weight decay
         self.dataset = "cifar10"
