@@ -393,42 +393,59 @@ def make_stitch(send_label, recv_label):
 # 2. does NOT use controls (i.e. random networks) since
 #    we've more or less used them before and want to get
 #    a quick sanity test batch of results
-def stitchtrain(numbers1, numbers2, args):
+def stitchtrain(numbers1, numbers2, control, args):
+    if control:
+        raise NotImplementedError
     name1 = f"resnet_{"".join(map(str, numbers1))}"
     name2 = f"resnet_{"".join(map(str, numbers2))}"
     _file1 = os.path.join(RESNETS_FOLDER, f"{name1}.pt")
     _file2 = os.path.join(RESNETS_FOLDER, f"{name2}.pt")
 
     print("Loading Models and moving to Cuda")
-    model1 = make_resnet(
+    # NOTE that be convention we store the model that is pretrained in [0]
+    # and the control (one that is not trained at all) in [1]
+    model1s = [make_resnet(
         name1,
         BasicBlock,
         numbers1,
         False,
         False,
         num_classes=10,
-    )
-    model2 = make_resnet(
+    ) for _ in range(2 if control else 1)]
+    model2s = [make_resnet(
         name2,
         BasicBlock,
         numbers2,
         False,
         False,
         num_classes=10,
-    )
-    model1 = model1.cuda()
-    model2 = model2.cuda()
-    model1.load_state_dict(torch.load(_file1))
-    model2.load_state_dict(torch.load(_file2))
+    ) for _ in range(2 if control else 1)]
+    
+    assert len(model1s) == 1 or len(model1s) == 2
+    assert len(model1s) == len(model2s)
+    for i in range(len(model1s)):
+        model1s[i] = model1s[i].cuda()
+        model2s[i] = model2s[i].cuda()
+    
+    model1s[0].load_state_dict(torch.load(_file1))
+    model2s[0].load_state_dict(torch.load(_file2))
     
     print("Getting loaders for FFCV")
     train_loader, test_loader = get_loaders(args)
 
-    acc = evaluate(model, test_loader)
-    print("Model Original Accuracy: {}".format(acc))
+    print("Ensuring accuracies are reasonable (>0.9 for trained, <0.2)".format(acc))
+    assert evaluate(model1s[0], test_loader) > 0.9
+    assert evaluate(model2s[0], test_loader) > 0.9
+    if control:
+        assert evaluate(model1s[1], test_loader) < 0.2
+        assert evaluate(model2s[1], test_loader) < 0.2
+    
 
     # Everyone recieves, but not everyone sends
     # We do it this way for maximal simplicity
+    # NOTE that layerlabels is just a table (not a table of tables)
+    # because it's purely informational and everyone shares the same
+    # functionality in this regard.
     print("Creating Tables, padding with None (and zero) to make it square")
     labels1 = ["input", "conv1"] + [(i, j) for j in range(0, len(numbers1[i])) for i in range(1,5)] + ["fc", "output"]
     labels2 = ["input", "conv1"] + [(i, j) for j in range(0, len(numbers2[i])) for i in range(1,5)] + ["fc", "output"]
@@ -441,67 +458,102 @@ def stitchtrain(numbers1, numbers2, args):
     assert num_labels1 == len(labels1)
     assert num_labels2 == len(labels2)
 
-    stitches = [
+    # 1x1 or 2x2 table of stitch table
+    all_stitches = [
         [
-            make_stitch(labels[0], labels[1]) \
-            # Do not support stitching into input because nothing goes into input
-            # Do not support stitching from output because output does not have an output
-            # Do not support stitching from fc because matching shapes is hard
-            if (labels[1] != "input" and labels[0] != "fc" and labels[0] != "output") else None \
-            for labels in row
+            # Here we have the stitch table for that pair of models
+            [
+                [
+                    make_stitch(labels[0], labels[1]) \
+                    # Do not support stitching into input because nothing goes into input
+                    # Do not support stitching from output because output does not have an output
+                    # Do not support stitching from fc because matching shapes is hard
+                    if (labels[1] != "input" and labels[0] != "fc" and labels[0] != "output") else None \
+                    for labels in row
+                ] \
+                for row in layerlabels
+            ] \
+            for _ in range(model2s)
+            # Table ends here
         ] \
-        for row in layerlabels
+        for _ in range(len(model1s))
     ]
-    sims = [
-        # 0.0 as default signifies "infinitely far away" or "no similarity"
-        # because we couldn't stitch at all.
-        [0.0 for _ in range(num_labels2)] \
-        for _ in range(num_labels1)
+    
+    # 1x1 or 2x2 table of stitch table
+    all_sims = [
+        [
+            # Here we have the sims table for that pair of models
+            [
+                # 0.0 as default signifies "infinitely far away" or "no similarity"
+                # because we couldn't stitch at all.
+                [
+                    0.0 for _ in range(num_labels2)
+                ] \
+                for _ in range(num_labels1)
+            ] \
+            for _ in range(len(model2s))
+            # Table ends here
+        ] \
+        for _ in range(len(model1s))
     ]
 
-    # Make sure all the lengths are correct
+    # Make sure the number of rows is always num_labels1
     assert len(layerlabels) == num_labels1
-    assert len(stitches) == num_labels1
-    assert len(sims) == num_labels1
-    assert max((len(l) for l in layerlabels)) == num_labels2
-    assert max((len(l) for l in stitches)) == num_labels2
-    assert max((len(l) for l in sims)) == num_labels2
-    assert min((len(l) for l in layerlabels)) == num_labels2
-    assert min((len(l) for l in stitches)) == num_labels2
-    assert min((len(l) for l in sims)) == num_labels2
+    assert len(max(all_stitches, key=len)) == num_labels1 and len(min(all_stitches, key=len)) == num_labels1
+    assert len(max(all_sims, key=len)) == num_labels1 and len(min(all_sims, key=len)) == num_labels1
 
-    print("Training Table")
-    for i in range(num_labels1):
-        for j in range(num_labels2):
-            # None is used to signify that this is not supported/stitchable
-            if stitches[i][j]:
-                print("*************************")
-                ORIGINAL_PARAMS = pclone(model)
-            
-                send_label, recv_label = layerlabels[i][j]
-                print(f"Training {send_label} to {recv_label}")
-                stitch = stitches[i][j]
-                stitch = stitch.cuda()
-                print(stitch)
-                stitched_resnet = make_stitched_resnet(model, stitch, send_label, recv_label)
-                acc = train_loop(args, stitched_resnet, train_loader, test_loader)
-                print(acc)
-                sims[i][j] = acc
+    # Make sure the number of columns is always num_labels2
+    assert len(max(layerlabels, key=len)) == num_labels2 and len(min(layerlabels, key=len)) == num_labels2
+    assert \
+        max(all_stitches, key=lambda stitches: len(max(stitchs, key=len))) == num_labels2 and
+        min(all_stitches, key=lambda stitches: len(min(stitchs, key=len))) == num_labels2
+    assert \
+        max(all_sims, key=lambda sims: len(max(sims, key=len))) == num_labels2 and
+        min(all_sims, key=lambda sims: len(min(sims, key=len))) == num_labels2
 
-                NEW_PARAMS = pclone(model)
-                assert listeq(ORIGINAL_PARAMS, NEW_PARAMS)
-                print("*************************\n")
+    print("Training Tables")
+    for m1 in range(len(model1s)):
+        for m2 in range(len(model2s)):
+            m1_name = f"{name1}{"_rand" if m1 == 1 else ""}"
+            m2_name = f"{name2}{"_rand" if m2 == 1 else ""}"
+            model1 = model1s[m1]
+            model2 = model2s[m2]
+            # We have tables of sims and stitches (1x1 or 2x2) to
+            # easily deal with the fact that we have controls
+            sims = all_sims[m1][m2]
+            stitches = all_stitches[m1][m2]
+            for i in range(num_labels1):
+                for j in range(num_labels2):
+                    # None is used to signify that this is not supported/stitchable
+                    if stitches[i][j]:
+                        print("*************************")
+                        ORIGINAL_PARAMS = pclone(model)
+                    
+                        send_label, recv_label = layerlabels[i][j]
+                        print(f"Training {send_label} to {recv_label}")
+                        stitch = stitches[i][j]
+                        stitch = stitch.cuda()
+                        print(stitch)
+                        stitched_resnet = make_stitched_resnet(model, stitch, send_label, recv_label)
+                        acc = train_loop(args, stitched_resnet, train_loader, test_loader)
+                        print(acc)
+                        sims[i][j] = acc
 
-
-    print("Saving similarities")
-    if not os.path.exists(SIMS_FOLDER):
-        os.mkdir(SIMS_FOLDER)
-    if not os.path.exists(HEATMAPS_FOLDER):
-        os.mkdir(HEATMAPS_FOLDER)
-    sim_path = os.path.join(SIMS_FOLDER, f"{name1}_{name2}_sims.pt")
-    heat_path = os.path.join(HEATMAPS_FOLDER, f"{name1}_{name2}_heatmaps.png")
-    torch.save(torch.tensor(sims), sim_path)
-    matrix_heatmap(sim_path, heat_path, tick_labels_y=labels1, tick_labels_x=labels2)
+                        NEW_PARAMS = pclone(model)
+                        assert listeq(ORIGINAL_PARAMS, NEW_PARAMS)
+                        print("*************************\n")
+            print("Saving similarities")
+            if not os.path.exists(SIMS_FOLDER):
+                os.mkdir(SIMS_FOLDER)
+            if not os.path.exists(HEATMAPS_FOLDER):
+                os.mkdir(HEATMAPS_FOLDER)
+            sim_path = os.path.join(SIMS_FOLDER, f"{m1_name}_{m2_name}_sims.pt")
+            heat_path = os.path.join(HEATMAPS_FOLDER, f"{m1_name}_{m2_name}_heatmaps.png")
+            torch.save(torch.tensor(sims), sim_path)
+            matrix_heatmap(sim_path, heat_path, tick_labels_y=labels1, tick_labels_x=labels2)
+            # NOTE 2x long to differentiate between model regular/control pairs
+            print("**************************************************\n")
+    print("Done\n")
 
 class Args:
     def __init__(self):
@@ -524,6 +576,7 @@ if __name__ == "__main__":
     # NOTE: 1111 -> ResNet10, 2222 -> ResNet18
 
     args = Args()
+    # Worth avoiding the 256 pairs since we probably get a lot of the same
     number_pairs = [
         # Try Identity 1111 -> 1111
         ([1,1,1,1], [1,1,1,1]),
@@ -555,6 +608,6 @@ if __name__ == "__main__":
 
     for pair in number_pairs:
         print(f"Training {pair[0]} to {pair[1]}")
-        stitchtrain(pair[0], pair[1], args)
-        # NOTE 2x long star to denote breakpoint between pairs
-        print("**************************************************\n")
+        stitchtrain(pair[0], pair[1], False, args)
+        # NOTE 4x long star to denote breakpoint between pairs
+        print("****************************************************************************************************\n")

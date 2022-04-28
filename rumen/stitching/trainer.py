@@ -25,9 +25,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import Dataset, DataLoader
-
-from mega_resnet import resnet
-
 from cifar import pclone, listeq
 
 import time
