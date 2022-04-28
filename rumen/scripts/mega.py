@@ -74,7 +74,7 @@ def num_labels(numbers):
     return 2 + 2 + sum(numbers)
 
 # NOTE: tick labels for y before x because y is the sender
-def matrix_heatmap(input_file_name: str, output_file_name: str, tick_lables_y=None, tick_labels_x=None):
+def matrix_heatmap(input_file_name: str, output_file_name: str, tick_labels_y=None, tick_labels_x=None):
         mat = torch.load(input_file_name)
         assert type(mat) == torch.Tensor or type(mat) == np.ndarray
         if type(mat) == torch.Tensor:
@@ -91,7 +91,7 @@ def matrix_heatmap(input_file_name: str, output_file_name: str, tick_lables_y=No
             assert len(tick_labels_y) == mat_height
         else:
             tick_labels_y = yticks
-        if tick_labels_x
+        if tick_labels_x:
             assert len(tick_labels_x) == mat_width
         else:
             tick_labels_x = xticks
@@ -393,33 +393,22 @@ def make_stitch(send_label, recv_label):
 # 2. does NOT use controls (i.e. random networks) since
 #    we've more or less used them before and want to get
 #    a quick sanity test batch of results
-def stitchtrain(numbers1, numbers2, args):
-    name1 = f"resnet_{"".join(map(str, numbers1))}"
-    name2 = f"resnet_{"".join(map(str, numbers2))}"
-    _file1 = os.path.join(RESNETS_FOLDER, f"{name1}.pt")
-    _file2 = os.path.join(RESNETS_FOLDER, f"{name2}.pt")
+def stitchtrain(args):
+    name = f"resnet_1111"
+    numbers = [1, 1, 1, 1]
+    _file = os.path.join(RESNETS_FOLDER, f"{name}.pt")
 
     print("Loading Models and moving to Cuda")
-    model1 = make_resnet(
-        name1,
+    model = make_resnet(
+        name,
         BasicBlock,
-        numbers1,
+        numbers,
         False,
         False,
         num_classes=10,
     )
-    model2 = make_resnet(
-        name2,
-        BasicBlock,
-        numbers2,
-        False,
-        False,
-        num_classes=10,
-    )
-    model1 = model1.cuda()
-    model2 = model2.cuda()
-    model1.load_state_dict(torch.load(_file1))
-    model2.load_state_dict(torch.load(_file2))
+    model = model.cuda()
+    model.load_state_dict(torch.load(_file))
     
     print("Getting loaders for FFCV")
     train_loader, test_loader = get_loaders(args)
@@ -427,19 +416,16 @@ def stitchtrain(numbers1, numbers2, args):
     acc = evaluate(model, test_loader)
     print("Model Original Accuracy: {}".format(acc))
 
-    # Everyone recieves, but not everyone sends
-    # We do it this way for maximal simplicity
     print("Creating Tables, padding with None (and zero) to make it square")
-    labels1 = ["input", "conv1"] + [(i, j) for j in range(0, len(numbers1[i])) for i in range(1,5)] + ["fc", "output"]
-    labels2 = ["input", "conv1"] + [(i, j) for j in range(0, len(numbers2[i])) for i in range(1,5)] + ["fc", "output"]
+    labels = ["input", "conv1"] + [(i, 0) for i in range(1,5)] + ["fc", "output"]
     layerlabels = [
-        [(labels1[i], labels2[j]) for j in range(len(labels2))] \
-        for i in range(len(labels1))
+        [(labels[i], labels[j]) for j in range(len(labels))] \
+        for i in range(len(labels))
     ]
-    num_lables1 = num_labels(labels1)
-    num_lables2 = num_labels(labels2)
-    assert num_labels1 == len(labels1)
-    assert num_labels2 == len(labels2)
+    num_labels = 8
+    assert len(labels) == 8
+    assert len(layer_labels) == 8
+    assert max(map(len, layer_labels)) == 8 and min(map(len, layer_labels)) == 8
 
     stitches = [
         [
@@ -455,24 +441,24 @@ def stitchtrain(numbers1, numbers2, args):
     sims = [
         # 0.0 as default signifies "infinitely far away" or "no similarity"
         # because we couldn't stitch at all.
-        [0.0 for _ in range(num_labels2)] \
-        for _ in range(num_labels1)
+        [0.0 for _ in range(num_labels)] \
+        for _ in range(num_labels)
     ]
 
     # Make sure all the lengths are correct
-    assert len(layerlabels) == num_labels1
-    assert len(stitches) == num_labels1
-    assert len(sims) == num_labels1
-    assert max((len(l) for l in layerlabels)) == num_labels2
-    assert max((len(l) for l in stitches)) == num_labels2
-    assert max((len(l) for l in sims)) == num_labels2
-    assert min((len(l) for l in layerlabels)) == num_labels2
-    assert min((len(l) for l in stitches)) == num_labels2
-    assert min((len(l) for l in sims)) == num_labels2
+    assert len(layerlabels) == num_labels
+    assert len(stitches) == num_labels
+    assert len(sims) == num_labels
+    assert max((len(l) for l in layerlabels)) == num_labels
+    assert max((len(l) for l in stitches)) == num_labels
+    assert max((len(l) for l in sims)) == num_labels
+    assert min((len(l) for l in layerlabels)) == num_labels
+    assert min((len(l) for l in stitches)) == num_labels
+    assert min((len(l) for l in sims)) == num_labels
 
     print("Training Table")
-    for i in range(num_labels1):
-        for j in range(num_labels2):
+    for i in range(num_labels):
+        for j in range(num_labels):
             # None is used to signify that this is not supported/stitchable
             if stitches[i][j]:
                 print("*************************")
@@ -498,8 +484,8 @@ def stitchtrain(numbers1, numbers2, args):
         os.mkdir(SIMS_FOLDER)
     if not os.path.exists(HEATMAPS_FOLDER):
         os.mkdir(HEATMAPS_FOLDER)
-    sim_path = os.path.join(SIMS_FOLDER, f"{name1}_{name2}_sims.pt")
-    heat_path = os.path.join(HEATMAPS_FOLDER, f"{name1}_{name2}_heatmaps.png")
+    sim_path = os.path.join(SIMS_FOLDER, f"{name}_{name}_sims.pt")
+    heat_path = os.path.join(HEATMAPS_FOLDER, f"{name}_{name}_heatmaps.png")
     torch.save(torch.tensor(sims), sim_path)
     matrix_heatmap(sim_path, heat_path, tick_labels_y=labels1, tick_labels_x=labels2)
 
@@ -521,40 +507,5 @@ class Args:
         self.dataset = "cifar10"
 
 if __name__ == "__main__":
-    # NOTE: 1111 -> ResNet10, 2222 -> ResNet18
-
     args = Args()
-    number_pairs = [
-        # Try Identity 1111 -> 1111
-        ([1,1,1,1], [1,1,1,1]),
-        # Try identity 2211 -> 2211 and 1122 -> 1122
-        ([2,2,1,1], [2,2,1,1]),
-        ([1,1,2,2], [1,1,2,2]),
-        # Try 1111 -> 111 with a single 2 somewhere
-        ([1,1,1,1], [1,1,1,2]),
-        ([1,1,1,1], [1,1,2,1]),
-        ([1,1,1,1], [1,2,1,1]),
-        ([1,1,1,1], [2,1,1,1]),
-        # Try 1111 -> increasing 2's from the right
-        ([1,1,1,1], [1,1,2,2]),
-        ([1,1,1,1], [1,2,2,2]),
-        ([1,1,1,1], [2,2,2,2]),
-        # Try 1111 -> increasing 2's from the left
-        ([1,1,1,1], [2,2,1,1]),
-        ([1,1,1,1], [2,2,2,1]),
-        ([1,1,1,1], [2,2,2,2]),
-        # Try the previous 2 experiments flipped
-        ([1,1,2,2], [1,1,1,1]),
-        ([1,2,2,2], [1,1,1,1]),
-        ([2,2,2,2], [1,1,1,1]),
-        # ...
-        ([2,2,1,1], [1,1,1,1]),
-        ([2,2,2,1], [1,1,1,1]),
-        ([2,2,2,2], [1,1,1,1]),
-    ]
-
-    for pair in number_pairs:
-        print(f"Training {pair[0]} to {pair[1]}")
-        stitchtrain(pair[0], pair[1], args)
-        # NOTE 2x long star to denote breakpoint between pairs
-        print("**************************************************\n")
+    stitchtrain(args)
