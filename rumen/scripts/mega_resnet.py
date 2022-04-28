@@ -385,5 +385,5 @@ class StitchedResnet(nn.Module):
         )
         return h
 
-def make_stitched_resnet(model, stitch, send_label, recv_label):
-    return StitchedResnet(model, model, stitch, send_label, recv_label)
+def make_stitched_resnet(model1, model2, stitch, send_label, recv_label):
+    return StitchedResnet(model1, model2, stitch, send_label, recv_label)

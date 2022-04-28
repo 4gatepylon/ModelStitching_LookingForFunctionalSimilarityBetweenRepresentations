@@ -399,7 +399,7 @@ def stitchtrain(args):
     _file = os.path.join(RESNETS_FOLDER, f"{name}.pt")
 
     print("Loading Models and moving to Cuda")
-    model = make_resnet(
+    model1 = make_resnet(
         name,
         BasicBlock,
         numbers,
@@ -407,8 +407,18 @@ def stitchtrain(args):
         False,
         num_classes=10,
     )
-    model = model.cuda()
-    model.load_state_dict(torch.load(_file))
+    model2 = make_resnet(
+        name,
+        BasicBlock,
+        numbers,
+        False,
+        False,
+        num_classes=10,
+    )
+    model1 = model1.cuda()
+    model2 = model2.cuda()
+    model1.load_state_dict(torch.load(_file))
+    model2.load_state_dict(torch.load(_file))
     
     print("Getting loaders for FFCV")
     train_loader, test_loader = get_loaders(args)
@@ -424,8 +434,8 @@ def stitchtrain(args):
     ]
     num_labels = 8
     assert len(labels) == 8
-    assert len(layer_labels) == 8
-    assert max(map(len, layer_labels)) == 8 and min(map(len, layer_labels)) == 8
+    assert len(layerlabels) == 8
+    assert max(map(len, layerlabels)) == 8 and min(map(len, layerlabels)) == 8
 
     stitches = [
         [
@@ -462,20 +472,23 @@ def stitchtrain(args):
             # None is used to signify that this is not supported/stitchable
             if stitches[i][j]:
                 print("*************************")
-                ORIGINAL_PARAMS = pclone(model)
+                ORIGINAL_PARAMS_1 = pclone(model1)
+                ORIGINAL_PARAMS_2 = pclone(model2)
             
                 send_label, recv_label = layerlabels[i][j]
                 print(f"Training {send_label} to {recv_label}")
                 stitch = stitches[i][j]
                 stitch = stitch.cuda()
                 print(stitch)
-                stitched_resnet = make_stitched_resnet(model, stitch, send_label, recv_label)
+                stitched_resnet = make_stitched_resnet(model1, model2, stitch, send_label, recv_label)
                 acc = train_loop(args, stitched_resnet, train_loader, test_loader)
                 print(acc)
                 sims[i][j] = acc
 
-                NEW_PARAMS = pclone(model)
-                assert listeq(ORIGINAL_PARAMS, NEW_PARAMS)
+                NEW_PARAMS_1 = pclone(model1)
+                NEW_PARAMS_2 = pclone(model2)
+                assert listeq(ORIGINAL_PARAMS_1, NEW_PARAMS_1)
+                assert listeq(ORIGINAL_PARAMS_2, NEW_PARAMS_2)
                 print("*************************\n")
 
 
@@ -487,7 +500,7 @@ def stitchtrain(args):
     sim_path = os.path.join(SIMS_FOLDER, f"{name}_{name}_sims.pt")
     heat_path = os.path.join(HEATMAPS_FOLDER, f"{name}_{name}_heatmaps.png")
     torch.save(torch.tensor(sims), sim_path)
-    matrix_heatmap(sim_path, heat_path, tick_labels_y=labels1, tick_labels_x=labels2)
+    matrix_heatmap(sim_path, heat_path, tick_labels_y=labels, tick_labels_x=labels)
 
 class Args:
     def __init__(self):
@@ -502,7 +515,7 @@ class Args:
         self.bsz = 256   # Batch Size
         self.lr = 0.01   # Learning Rate
         self.warmup = 10  # Warmup epochs
-        self.epochs = 7  # Total epochs
+        self.epochs = 1  # Total epochs
         self.wd = 0.01   # Weight decay
         self.dataset = "cifar10"
 
