@@ -606,6 +606,12 @@ if __name__ == "__main__":
         ([2,2,2,2], [1,1,1,1]),
     ]
 
+    # Use this for interactive debugging as possible
+    test = True
+    if test:
+        number_pairs = [number_pairs[0]]
+    
+    # Experiment set
     for pair in number_pairs:
         print(f"Training {pair[0]} to {pair[1]}")
         stitchtrain(pair[0], pair[1], False, args)
