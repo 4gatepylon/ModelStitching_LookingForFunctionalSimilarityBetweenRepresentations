@@ -411,5 +411,8 @@ if __name__ == "__main__":
     hyps = Hyperparams()
     hyps.epochs = 40
     Experiment.pretrain(hyps)
-    hyps.epochs = 10 # NOTE should be bigger
-    Experiment.stitchtrain(hyps, file_pair)
+    # TODO fix stitchtrain - it is very unclear, but for some reason
+    # stitchtrain is not properly able to reach the accuracies that we
+    # expect on the first rows' diagonals.
+    # hyps.epochs = 10 # NOTE should be bigger
+    # Experiment.stitchtrain(hyps, file_pair)

@@ -30,11 +30,11 @@ class BasicBlock(nn.Module):
             inplanes: int,
             planes: int,
             stride: int = 1,
-            downsample: Optional[nn.Module] = None,
+            downsample = None,
             groups: int = 1,
             base_width: int = 64,
             dilation: int = 1,
-            norm_layer: Optional[Callable[..., nn.Module]] = None,
+            norm_layer = None,
     ) -> None:
         super().__init__()
         if norm_layer is None:
@@ -87,11 +87,11 @@ class Bottleneck(nn.Module):
             inplanes: int,
             planes: int,
             stride: int = 1,
-            downsample: Optional[nn.Module] = None,
+            downsample = None,
             groups: int = 1,
             base_width: int = 64,
             dilation: int = 1,
-            norm_layer: Optional[Callable[..., nn.Module]] = None,
+            norm_layer = None,
     ) -> None:
         super().__init__()
         if norm_layer is None:
@@ -133,14 +133,14 @@ class Bottleneck(nn.Module):
 class Resnet(nn.Module):
     def __init__(
             self,
-            block: Type[Union[BasicBlock, Bottleneck]],
-            layers: List[int],
+            block,
+            layers,
             num_classes: int = 10,
             zero_init_residual: bool = False,
             groups: int = 1,
             width_per_group: int = 64,
-            replace_stride_with_dilation: Optional[List[bool]] = None,
-            norm_layer: Optional[Callable[..., nn.Module]] = None,
+            replace_stride_with_dilation = None,
+            norm_layer = None,
     ) -> None:
         super().__init__()
         if norm_layer is None:
@@ -208,7 +208,7 @@ class Resnet(nn.Module):
 
     def _make_layer(
             self,
-            block: Type[Union[BasicBlock, Bottleneck]],
+            block,
             planes: int,
             blocks: int,  # This is layers[i] if this is the [i]th size layers
             stride: int = 1,
@@ -360,13 +360,14 @@ class StitchedResnet(nn.Module):
         self.recv_label = recv_label
         self.stitch = stitch
 
-        sender.eval()
-        reciever.eval()
-        for p in self.sender.parameters():
-            p.requires_grad = False
+        # TODO why does this break things?
+        # sender.eval()
+        # reciever.eval()
+        # for p in self.sender.parameters():
+        #     p.requires_grad = False
         
-        for p in self.reciever.parameters():
-            p.requires_grad = False
+        # for p in self.reciever.parameters():
+        #     p.requires_grad = False
     
     def parameters(self):
         return self.stitch.parameters()
@@ -380,9 +381,9 @@ class StitchedResnet(nn.Module):
         h = self.reciever.into_forward(
             h, 
             self.recv_label,
-            pool_and_flatten=self.recv_label.isFc(),
+            pool_and_flatten=self.recv_label == "fc",
         )
         return h
 
 def make_stitched_resnet(model, stitch, send_label, recv_label):
-    return StitchedResnet(sender, sender, stitch, send_label, recv_label)
+    return StitchedResnet(model, model, stitch, send_label, recv_label)
