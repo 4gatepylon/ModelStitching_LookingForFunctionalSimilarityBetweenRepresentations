@@ -91,7 +91,7 @@ def matrix_heatmap(input_file_name: str, output_file_name: str, tick_lables_y=No
             assert len(tick_labels_y) == mat_height
         else:
             tick_labels_y = yticks
-        if tick_labels_x
+        if tick_labels_x:
             assert len(tick_labels_x) == mat_width
         else:
             tick_labels_x = xticks
@@ -396,8 +396,10 @@ def make_stitch(send_label, recv_label):
 def stitchtrain(numbers1, numbers2, control, args):
     if control:
         raise NotImplementedError
-    name1 = f"resnet_{"".join(map(str, numbers1))}"
-    name2 = f"resnet_{"".join(map(str, numbers2))}"
+    _n1 = "".join(map(str, numbers1))
+    _n2 = "".join(map(str, numbers2))
+    name1 = f"resnet_{_n1}"
+    name2 = f"resnet_{_n2}"
     _file1 = os.path.join(RESNETS_FOLDER, f"{name1}.pt")
     _file2 = os.path.join(RESNETS_FOLDER, f"{name2}.pt")
 
@@ -499,23 +501,28 @@ def stitchtrain(numbers1, numbers2, control, args):
 
     # Make sure the number of rows is always num_labels1
     assert len(layerlabels) == num_labels1
-    assert len(max(all_stitches, key=len)) == num_labels1 and len(min(all_stitches, key=len)) == num_labels1
-    assert len(max(all_sims, key=len)) == num_labels1 and len(min(all_sims, key=len)) == num_labels1
+    assert len(max(all_stitches, key=len)) == num_labels1 and \
+           len(min(all_stitches, key=len)) == num_labels1
+    assert len(max(all_sims, key=len)) == num_labels1 and \
+           len(min(all_sims, key=len)) == num_labels1
 
     # Make sure the number of columns is always num_labels2
-    assert len(max(layerlabels, key=len)) == num_labels2 and len(min(layerlabels, key=len)) == num_labels2
+    assert len(max(layerlabels, key=len)) == num_labels2 and \
+           len(min(layerlabels, key=len)) == num_labels2
     assert \
-        max(all_stitches, key=lambda stitches: len(max(stitchs, key=len))) == num_labels2 and
+        max(all_stitches, key=lambda stitches: len(max(stitchs, key=len))) == num_labels2 and \
         min(all_stitches, key=lambda stitches: len(min(stitchs, key=len))) == num_labels2
     assert \
-        max(all_sims, key=lambda sims: len(max(sims, key=len))) == num_labels2 and
+        max(all_sims, key=lambda sims: len(max(sims, key=len))) == num_labels2 and \
         min(all_sims, key=lambda sims: len(min(sims, key=len))) == num_labels2
 
     print("Training Tables")
     for m1 in range(len(model1s)):
         for m2 in range(len(model2s)):
-            m1_name = f"{name1}{"_rand" if m1 == 1 else ""}"
-            m2_name = f"{name2}{"_rand" if m2 == 1 else ""}"
+            _r1 = "_rand" if m1 == 1 else ""
+            _r2 = "_rand" if m2 == 1 else ""
+            m1_name = f"{name1}{_r1}"
+            m2_name = f"{name2}{_r2}"
             model1 = model1s[m1]
             model2 = model2s[m2]
             # We have tables of sims and stitches (1x1 or 2x2) to
@@ -568,7 +575,7 @@ class Args:
         self.bsz = 256   # Batch Size
         self.lr = 0.01   # Learning Rate
         self.warmup = 10  # Warmup epochs
-        self.epochs = 7  # Total epochs
+        self.epochs = 1  # Total epochs
         self.wd = 0.01   # Weight decay
         self.dataset = "cifar10"
 
