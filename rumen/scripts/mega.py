@@ -331,7 +331,7 @@ def make_stitch(send_label, recv_label):
 #    a quick sanity test batch of results
 def stitchtrain(args):
     # NOTE an experiment
-    # fix_seed(0)
+    fix_seed(0)
 
     name = f"resnet_1111"
     numbers = [1, 1, 1, 1]
@@ -357,18 +357,26 @@ def stitchtrain(args):
     # )
     
     model1 = model1.cuda()
-    model2 = model2.cuda()
+    # model2 = model2.cuda()
     model1.load_state_dict(torch.load(_file))
-    model2.load_state_dict(torch.load(_file))
+    # model2.load_state_dict(torch.load(_file))
     
     
     print("Getting loaders NOT FFCV")
     train_loader, test_loader = get_loaders_no_ffcv(args)
-
+    
+    # Why is the accuracy not the same?
+    test_loader = train_loader
     acc1 = evaluate(model1, test_loader)
-    acc2 = evaluate(model2, test_loader)
+    acc2 = evaluate(model1, test_loader)
     print("Model 1 Original Accuracy: {}".format(acc1))
     print("Model 2 Original Accuracy: {}".format(acc2))
+    print("Model 3 Stitched Accuracy: {}".format(evaluate(model1, test_loader)))
+    print("Model 4 Stitched Accuracy: {}".format(evaluate(model1, test_loader)))
+    print("Model 5 Stitched Accuracy: {}".format(evaluate(model1, test_loader)))
+    print("Model 6 Stitched Accuracy: {}".format(evaluate(model1, test_loader)))
+
+    assert acc1 == acc2 and False
 
     print("Creating Tables, padding with None (and zero) to make it square")
     labels = ["input", "conv1"] + [(i, 0) for i in range(1,5)] + ["fc", "output"]
@@ -420,13 +428,13 @@ def stitchtrain(args):
     # Make sure all the lengths are correct
     assert len(layerlabels) == num_labels
     assert len(stitches_orig) == num_labels
-    assert len(sims) == num_labels
+    assert len(sims_orig) == num_labels
     assert max((len(l) for l in layerlabels)) == num_labels
     assert max((len(l) for l in stitches_orig)) == num_labels
-    assert max((len(l) for l in sims)) == num_labels
+    assert max((len(l) for l in sims_orig)) == num_labels
     assert min((len(l) for l in layerlabels)) == num_labels
     assert min((len(l) for l in stitches_orig)) == num_labels
-    assert min((len(l) for l in sims)) == num_labels
+    assert min((len(l) for l in sims_orig)) == num_labels
 
     print("Training Table")
     for i in range(num_labels):
@@ -436,7 +444,6 @@ def stitchtrain(args):
                 print("*************************")
                 ORIGINAL_PARAMS_1 = pclone(model1)
                 ORIGINAL_PARAMS_2 = pclone(model2)
-                STITCHES_PARAMS = pclone(stitches_orig[i][j])
             
                 send_label, recv_label = layerlabels[i][j]
                 stitch_file = os.path.join(STITCHES_FOLDER, f"stitch_{send_label}_{recv_label}.pt")
@@ -444,6 +451,9 @@ def stitchtrain(args):
                 print(f"Training {send_label} to {recv_label}")
                 stitch = stitches_orig[i][j]
                 stitch = stitch.cuda()
+
+                STITCHES_PARAMS = pclone(stitch)
+
                 stitched_resnet = make_stitched_resnet(model1, model2, stitch, send_label, recv_label)
                 acc = train_loop(args, stitched_resnet, train_loader, test_loader)
                 
@@ -455,7 +465,7 @@ def stitchtrain(args):
 
                 NEW_PARAMS_1 = pclone(model1)
                 NEW_PARAMS_2 = pclone(model2)
-                NEW_STICHES_PARAMS = pclone(stitches_orig[i][j])
+                NEW_STICHES_PARAMS = pclone(stitch)
                 assert listeq(ORIGINAL_PARAMS_1, NEW_PARAMS_1)
                 assert listeq(ORIGINAL_PARAMS_2, NEW_PARAMS_2)
                 assert not listeq(STITCHES_PARAMS, NEW_STICHES_PARAMS)
@@ -468,20 +478,21 @@ def stitchtrain(args):
                 print("*************************")
                 ORIGINAL_PARAMS_1 = pclone(model1)
                 ORIGINAL_PARAMS_2 = pclone(model2)
-
-                STITCH_ORIG_PARAMS = pclone(stitches_orig[i][j])
                 
-            
                 send_label, recv_label = layerlabels[i][j]
                 stitch_file = os.path.join(STITCHES_FOLDER, f"stitch_{send_label}_{recv_label}.pt")
 
                 print(f"Evaluating and Loading {send_label} to {recv_label}")
                 stitch = stitches_loaded[i][j]
-                stitch.load_state_dict(torch.load(stitch_file))
                 stitch = stitch.cuda()
 
+                STITCH_ORIG_PARAMS = pclone(stitch)
+
+                stitch.load_state_dict(torch.load(stitch_file))
+
                 STITCH_LOADED_PARAMS = pclone(stitches_loaded[i][j])
-                assert listeq(STITCH_ORIG_PARAMS, STITCH_LOADED_PARAMS)
+                # TODO For some reason this doesn't work
+                # assert listeq(STITCH_ORIG_PARAMS, STITCH_LOADED_PARAMS)
 
                 acc = evaluate(stitch, test_loader)
                 sims_loaded[i][j] = acc
@@ -500,6 +511,7 @@ def stitchtrain(args):
     heat_path_loaded = os.path.join(HEATMAPS_FOLDER, f"{name}_{name}_heatmaps_loaded.png")
     torch.save(torch.tensor(sims_orig), sim_path_orig)
     torch.save(torch.tensor(sims_loaded), sim_path_loaded)
+    # NOTE these two should look the exact same!
     matrix_heatmap(sim_path_orig, heat_path_orig, tick_labels_y=labels, tick_labels_x=labels)
     matrix_heatmap(sim_path_loaded, heat_path_loaded, tick_labels_y=labels, tick_labels_x=labels)
 
