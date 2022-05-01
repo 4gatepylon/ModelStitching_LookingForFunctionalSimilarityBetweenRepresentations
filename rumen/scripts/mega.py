@@ -444,7 +444,7 @@ def make_stitch(send_label, recv_label):
 # 2. does NOT use controls (i.e. random networks) since
 #    we've more or less used them before and want to get
 #    a quick sanity test batch of results
-def stitchtrain(args, two_models=False, load_stitch=False):
+def stitchtrain(args):
     # NOTE an experiment
     # fix_seed(0)
 
@@ -462,15 +462,14 @@ def stitchtrain(args, two_models=False, load_stitch=False):
         num_classes=10,
     )
     model2 = model1
-    if two_models:
-        model2 = make_resnet(
-            name,
-            BasicBlock,
-            numbers,
-            False,
-            False,
-            num_classes=10,
-        )
+    # model2 = make_resnet(
+    #     name,
+    #     BasicBlock,
+    #     numbers,
+    #     False,
+    #     False,
+    #     num_classes=10,
+    # )
     
     model1 = model1.cuda()
     model2 = model2.cuda()
@@ -497,7 +496,7 @@ def stitchtrain(args, two_models=False, load_stitch=False):
     assert len(layerlabels) == 8
     assert max(map(len, layerlabels)) == 8 and min(map(len, layerlabels)) == 8
 
-    stitches = [
+    stitches_orig = [
         [
             make_stitch(labels[0], labels[1]) \
             # Do not support stitching into input because nothing goes into input
@@ -508,60 +507,100 @@ def stitchtrain(args, two_models=False, load_stitch=False):
         ] \
         for row in layerlabels
     ]
-    sims = [
+
+    # For when we load weights
+    stitches_loaded = [
+        [
+            make_stitch(labels[0], labels[1]) \
+            if (labels[1] != "input" and labels[0] != "fc" and labels[0] != "output") else None \
+            for labels in row
+        ] \
+        for row in layerlabels
+    ]
+
+    sims_orig = [
         # 0.0 as default signifies "infinitely far away" or "no similarity"
         # because we couldn't stitch at all.
         [0.0 for _ in range(num_labels)] \
         for _ in range(num_labels)
     ]
 
+    # Similarities for when you re-load the weights
+    sims_loaded = [
+        [0.0 for _ in range(num_labels)] \
+        for _ in range(num_labels)
+    ]
+
+
     # Make sure all the lengths are correct
     assert len(layerlabels) == num_labels
-    assert len(stitches) == num_labels
+    assert len(stitches_orig) == num_labels
     assert len(sims) == num_labels
     assert max((len(l) for l in layerlabels)) == num_labels
-    assert max((len(l) for l in stitches)) == num_labels
+    assert max((len(l) for l in stitches_orig)) == num_labels
     assert max((len(l) for l in sims)) == num_labels
     assert min((len(l) for l in layerlabels)) == num_labels
-    assert min((len(l) for l in stitches)) == num_labels
+    assert min((len(l) for l in stitches_orig)) == num_labels
     assert min((len(l) for l in sims)) == num_labels
 
     print("Training Table")
     for i in range(num_labels):
         for j in range(num_labels):
             # None is used to signify that this is not supported/stitchable
-            if stitches[i][j]:
+            if stitches_orig[i][j]:
                 print("*************************")
                 ORIGINAL_PARAMS_1 = pclone(model1)
                 ORIGINAL_PARAMS_2 = pclone(model2)
+                STITCHES_PARAMS = pclone(stitches_orig[i][j])
             
                 send_label, recv_label = layerlabels[i][j]
                 stitch_file = os.path.join(STITCHES_FOLDER, f"stitch_{send_label}_{recv_label}.pt")
 
                 print(f"Training {send_label} to {recv_label}")
-                stitch = stitches[i][j]
-                # If we already have a stitch, just load it and evaluate it for the acc
-                # Else retrain it (noting that train loop does evaluate at the end)
-                if load_stitch:
-                    stitch.load_state_dict(torch.load(stitch_file))
-                # ...
+                stitch = stitches_orig[i][j]
                 stitch = stitch.cuda()
                 stitched_resnet = make_stitched_resnet(model1, model2, stitch, send_label, recv_label)
-                acc = evaluate(stitched_resnet, test_loader) \
-                    if load_stitch else \
-                    train_loop(args, stitched_resnet, train_loader, test_loader)
-                # ...
+                acc = train_loop(args, stitched_resnet, train_loader, test_loader)
+                
                 print(acc)
-                sims[i][j] = acc
+                sims_orig[i][j] = acc
 
                 # Save the stitch if this was a training run
-                if not load_stitch:
-                    torch.save(stitch.state_dict(), stitch_file)
+                torch.save(stitch.state_dict(), stitch_file)
 
                 NEW_PARAMS_1 = pclone(model1)
                 NEW_PARAMS_2 = pclone(model2)
+                NEW_STICHES_PARAMS = pclone(stitches_orig[i][j])
                 assert listeq(ORIGINAL_PARAMS_1, NEW_PARAMS_1)
                 assert listeq(ORIGINAL_PARAMS_2, NEW_PARAMS_2)
+                assert not listeq(STITCHES_PARAMS, NEW_STICHES_PARAMS)
+                print("*************************\n")
+
+    print("Evaluating Table From Loaded Stitch")
+    for i in range(num_labels):
+        for j in range(num_labels):
+            if stitches_loaded[i][j]:
+                print("*************************")
+                ORIGINAL_PARAMS_1 = pclone(model1)
+                ORIGINAL_PARAMS_2 = pclone(model2)
+
+                STITCH_ORIG_PARAMS = pclone(stitches_orig[i][j])
+                
+            
+                send_label, recv_label = layerlabels[i][j]
+                stitch_file = os.path.join(STITCHES_FOLDER, f"stitch_{send_label}_{recv_label}.pt")
+
+                print(f"Evaluating and Loading {send_label} to {recv_label}")
+                stitch = stitches_loaded[i][j]
+                stitch.load_state_dict(torch.load(stitch_file))
+                stitch = stitch.cuda()
+
+                STITCH_LOADED_PARAMS = pclone(stitches_loaded[i][j])
+                assert listeq(STITCH_ORIG_PARAMS, STITCH_LOADED_PARAMS)
+
+                acc = evaluate(stitch, test_loader)
+                sims_loaded[i][j] = acc
+                print(acc)
                 print("*************************\n")
 
 
@@ -570,10 +609,14 @@ def stitchtrain(args, two_models=False, load_stitch=False):
         os.mkdir(SIMS_FOLDER)
     if not os.path.exists(HEATMAPS_FOLDER):
         os.mkdir(HEATMAPS_FOLDER)
-    sim_path = os.path.join(SIMS_FOLDER, f"{name}_{name}_sims_load_stitch_{load_state_dict}_two_models_{two_models}.pt")
-    heat_path = os.path.join(HEATMAPS_FOLDER, f"{name}_{name}_heatmaps_load_stitch_{load_state_dict}_two_models_{two_models}.png")
-    torch.save(torch.tensor(sims), sim_path)
-    matrix_heatmap(sim_path, heat_path, tick_labels_y=labels, tick_labels_x=labels)
+    sim_path_orig = os.path.join(SIMS_FOLDER, f"{name}_{name}_sims_orig.pt") 
+    sim_path_loaded = os.path.join(SIMS_FOLDER, f"{name}_{name}_sims_loaded.pt")
+    heat_path_orig = os.path.join(HEATMAPS_FOLDER, f"{name}_{name}_heatmaps_orig.png")
+    heat_path_loaded = os.path.join(HEATMAPS_FOLDER, f"{name}_{name}_heatmaps_loaded.png")
+    torch.save(torch.tensor(sims_orig), sim_path_orig)
+    torch.save(torch.tensor(sims_loaded), sim_path_loaded)
+    matrix_heatmap(sim_path_orig, heat_path_orig, tick_labels_y=labels, tick_labels_x=labels)
+    matrix_heatmap(sim_path_loaded, heat_path_loaded, tick_labels_y=labels, tick_labels_x=labels)
 
 class Args:
     def __init__(self):
