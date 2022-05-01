@@ -526,6 +526,9 @@ def stitchtrain(args, two_models=False, load_stitch=False):
     assert min((len(l) for l in stitches)) == num_labels
     assert min((len(l) for l in sims)) == num_labels
 
+    if not os.path.exists(STITCHES_FOLDER):
+        os.mkdir(STITCHES_FOLDER)
+
     print("Training Table")
     for i in range(num_labels):
         for j in range(num_labels):
@@ -570,8 +573,8 @@ def stitchtrain(args, two_models=False, load_stitch=False):
         os.mkdir(SIMS_FOLDER)
     if not os.path.exists(HEATMAPS_FOLDER):
         os.mkdir(HEATMAPS_FOLDER)
-    sim_path = os.path.join(SIMS_FOLDER, f"{name}_{name}_sims_load_stitch_{load_state_dict}_two_models_{two_models}.pt")
-    heat_path = os.path.join(HEATMAPS_FOLDER, f"{name}_{name}_heatmaps_load_stitch_{load_state_dict}_two_models_{two_models}.png")
+    sim_path = os.path.join(SIMS_FOLDER, f"{name}_{name}_sims_load_stitch_{load_stitch}_two_models_{two_models}.pt")
+    heat_path = os.path.join(HEATMAPS_FOLDER, f"{name}_{name}_heatmaps_load_stitch_{load_stitch}_two_models_{two_models}.png")
     torch.save(torch.tensor(sims), sim_path)
     matrix_heatmap(sim_path, heat_path, tick_labels_y=labels, tick_labels_x=labels)
 
@@ -594,4 +597,11 @@ class Args:
 
 if __name__ == "__main__":
     args = Args()
-    stitchtrain(args)
+    # Create regular stitches (one model) then load them once into
+    # a single model (should give a 2nd diagonal) and then into a
+    # pair of models (unknown what will happen)
+    stitchtrain(args, two_models=False, load_stitch=False)
+    stitchtrain(args, two_models=False, load_stitch=True)
+    stitchtrain(args, two_models=True, load_stitch=True)
+    # Retrain and confirm that we get a triangle (i.e. code isn't buggy)
+    stitchtrain(args, two_models=True, load_stitch=False)
