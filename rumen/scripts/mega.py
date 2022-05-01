@@ -1,38 +1,6 @@
 # A Massive script to try and do the entire stitching experiment (in its simplest possible form)
 # without any external context.
 
-from ffcv.writer import (
-    DatasetWriter,
-)
-from ffcv.transforms.common import (
-    Squeeze,
-)
-from ffcv.transforms import (
-    RandomHorizontalFlip,
-    Cutout,
-    RandomTranslate,
-    Convert,
-    ToDevice,
-    ToTensor,
-    ToTorchImage,
-)
-from ffcv.pipeline.operation import (
-    Operation,
-)
-from ffcv.loader import (
-    Loader,
-    OrderOption,
-)
-from ffcv.fields.decoders import (
-    IntDecoder,
-    SimpleRGBImageDecoder,
-    RandomResizedCropRGBImageDecoder,
-)
-from ffcv.fields import (
-    IntField,
-    RGBImageField,
-)
-
 import os
 import time
 import random
@@ -58,16 +26,16 @@ HEATMAPS_FOLDER = "../../heatmaps/"
 STITCHES_FOLDER = "../../stitches/"
 
 # Loaders folders
-FFCV_FOLDER = "../../data_ffcv/"
+# FFCV_FOLDER = "../../data_ffcv/"
 NO_FFCV_FOLDER = "../../data_no_ffcv/"
-MISC_FFCV_FOLDER = "../tmp/"
+# MISC_FFCV_FOLDER = "../tmp/"
 
-FFCV_CIFAR_MEAN = [125.307, 122.961, 113.8575]
-FFCV_CIFAR_STD = [51.5865, 50.847, 51.255]
+# FFCV_CIFAR_MEAN = [125.307, 122.961, 113.8575]
+# FFCV_CIFAR_STD = [51.5865, 50.847, 51.255]
 NO_FFCV_CIFAR_MEAN = [0.1307, ]
 NO_FFCV_CIFAR_STD = [0.3081, ]
-FFCV_NORMALIZE_TRANSFORM = torchvision.transforms.Normalize(
-    FFCV_CIFAR_MEAN, FFCV_CIFAR_STD)
+# FFCV_NORMALIZE_TRANSFORM = torchvision.transforms.Normalize(
+#     FFCV_CIFAR_MEAN, FFCV_CIFAR_STD)
 
 def fix_seed(seed):
     random.seed(seed)
@@ -165,89 +133,6 @@ def get_loaders_no_ffcv(args):
 
         return train_loader, test_loader
 
-def get_loaders_ffcv(args):
-    num_of_points = 50000
-    split = [int(num_of_points * args.fraction),
-                int(num_of_points * (1 - args.fraction))]
-
-    dataset_class = torchvision.datasets.CIFAR10 if (
-        args.dataset == 'cifar10') else torchvision.datasets.CIFAR100
-    finetune_file = os.path.join(
-        MISC_FFCV_FOLDER, f"finetune_{args.dataset}_{args.fraction}_train_data.beton")
-    if not os.path.exists(finetune_file):
-        train_data = dataset_class(
-            FFCV_FOLDER, train=True, download=True
-        )
-        train_data = torch.utils.data.random_split(train_data, split)[0]
-        train_writer = DatasetWriter(finetune_file, {
-            'image': RGBImageField(),
-            'label': IntField()
-        })
-        train_writer.from_indexed_dataset(train_data)
-
-    label_pipeline: List[Operation] = [
-        IntDecoder(),
-        ToTensor(),
-        ToDevice('cuda:0'),
-        Squeeze(),
-    ]
-
-    image_pipeline_train: List[Operation] = [
-        SimpleRGBImageDecoder(),
-        RandomHorizontalFlip(),
-        RandomTranslate(padding=2, fill=tuple(map(int, FFCV_CIFAR_MEAN))),
-        Cutout(4, tuple(map(int, FFCV_CIFAR_MEAN))),
-        ToTensor(),
-        ToDevice('cuda:0', non_blocking=True),
-        ToTorchImage(),
-        Convert(torch.float16),
-        FFCV_NORMALIZE_TRANSFORM
-    ]
-    train_loader = Loader(finetune_file,
-                            batch_size=args.bsz,
-                            num_workers=args.num_workers,
-                            order=OrderOption.RANDOM,
-                            os_cache=True,
-                            drop_last=True,
-                            pipelines={
-                                'image': image_pipeline_train,
-                                'label': label_pipeline,
-                            })
-
-    test_data_file = os.path.join(
-        MISC_FFCV_FOLDER, f"{args.dataset}_test_data.beton")
-    if not os.path.exists(test_data_file):
-        test_data = dataset_class(
-            FFCV_FOLDER, train=False, download=True
-        )
-
-        test_writer = DatasetWriter(test_data_file, {
-            'image': RGBImageField(),
-            'label': IntField()
-        })
-        test_writer.from_indexed_dataset(test_data)
-
-    image_pipeline_test: List[Operation] = [
-        SimpleRGBImageDecoder(),
-        ToTensor(),
-        ToDevice('cuda:0', non_blocking=True),
-        ToTorchImage(),
-        Convert(torch.float16),
-        torchvision.transforms.Normalize(FFCV_CIFAR_MEAN, FFCV_CIFAR_STD)
-    ]
-
-    test_loader = Loader(test_data_file,
-                            batch_size=2048,
-                            num_workers=args.num_workers,
-                            order=OrderOption.SEQUENTIAL,
-                            os_cache=True,
-                            drop_last=False,
-                            pipelines={
-                                'image': image_pipeline_test,
-                                'label': label_pipeline,
-                            })
-    return train_loader, test_loader
-
 def adjust_learning_rate(
     epochs,
     warmup_epochs,
@@ -278,7 +163,7 @@ def evaluate(model, test_loader):
 
         with torch.no_grad():
             with autocast():
-                # NOTE cuda is for ffcv
+                # NOTE cuda is for not ffcv
                 labels = labels.cuda()
                 h = images.cuda()
                 h = model(h)
@@ -329,7 +214,7 @@ def train_loop(
             optimizer.zero_grad(set_to_none=True)
 
             with autocast():
-                # NOTE this is for ffcv
+                # NOTE this is for not ffcv
                 y = outputs.cuda()
                 h = inputs.cuda()
                 h = model(h)
@@ -477,7 +362,7 @@ def stitchtrain(args):
     model2.load_state_dict(torch.load(_file))
     
     
-    print("Getting loaders for FFCV")
+    print("Getting loaders NOT FFCV")
     train_loader, test_loader = get_loaders_no_ffcv(args)
 
     acc1 = evaluate(model1, test_loader)
@@ -620,13 +505,6 @@ def stitchtrain(args):
 
 class Args:
     def __init__(self):
-        # FFCV Number of workers for loading
-        self.fccv_num_workers: int = 1
-        self.num_workers = 1
-
-        # Used by FFCV for train/test split
-        self.fraction = 1.0
-
         # Training Hyperparams
         self.bsz = 256   # Batch Size
         self.lr = 0.01   # Learning Rate
