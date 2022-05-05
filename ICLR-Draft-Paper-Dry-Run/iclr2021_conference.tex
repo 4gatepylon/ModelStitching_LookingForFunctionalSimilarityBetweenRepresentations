@@ -143,9 +143,13 @@ such ``modifications.'' However, the transformation, which we call the stitch, i
 from a downstream task like classification. It may not be necessary that two representations be ``similar,'' either
 numerically or intuitively, for the stitched model to reach high task accuracy.
 
-Our paper seeks to tackle these two questions. Firstly, we expand stitching in a simple way to be able to compare
+Our paper seeks to tackle these two questions. Firstly, we extend stitching in a simple way to be able to compare
 different layers of different Resnets.  Secondly, we analyse whether different neural networks learning similar
-representations. Lastly, we analyse whether stitching is a good metric in these cases using a simple numerical test.
+representations. Lastly, we analyse whether stitching is a good metric in these cases using a simple numerical test. We
+find that our simple extension of stitching yields unexpectedly high similarity for layers we thought should be different.
+This result holds true, empirically, for all small simple ResNets on CIFAR-10, varied by their random seed. This motivates
+us to understand whether our stitches are actually behaving in the way we expect numerically. Our numerical test is not
+fully conclusive, but suggests that not all stitches may be doing what we thought.
 
 \section{Stitching}
 \label{Stitching}
