@@ -110,7 +110,7 @@ def sanity_test_model_outfrom_into_stitched_resnet(model, number, loader):
 
 
 class Experiment(object):
-    RESNETS_FOLDER = "../../pretrained_resnets/"
+    RESNETS_FOLDER = "../../pretrained_resnets_no_ffcv/"
     SIMS_FOLDER = "../../sims/"
     HEATMAPS_FOLDER = "../../heatmaps/"
 
@@ -125,7 +125,7 @@ class Experiment(object):
         the resnets folder.
         """
         print("Getting FFCV loaders")
-        train_loader, test_loader = Loaders.get_loaders_ffcv(args)
+        train_loader, test_loader = Loaders.get_loaders_no_ffcv(args)
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         print(f"Using device: {device}")

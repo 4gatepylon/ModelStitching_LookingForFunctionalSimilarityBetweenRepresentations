@@ -26,8 +26,6 @@ import torch.nn.functional as F
 from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import Dataset, DataLoader
 
-from mega_resnet import resnet
-
 from cifar import pclone, listeq
 
 import time
@@ -117,12 +115,15 @@ class Trainer(object):
         # NOTE used to be for layer in model
         model.eval()
 
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         for _, (images, labels) in enumerate(test_loader):
             total_correct, total_num = 0., 0.
 
             with torch.no_grad():
                 with autocast():
-                    h = images
+                    # NOTE this is not necessary if you use ffcv
+                    labels = labels.to(device)
+                    h = images.to(device)
                     h = model(h)
                     preds = h.argmax(dim=1)
                     total_correct = (preds == labels).sum().cpu().item()
@@ -156,13 +157,14 @@ class Trainer(object):
 
         start = time.time()
         epochs = args.epochs if epochs is None else epochs
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         for e in range(1, epochs + 1):
             if verbose:
                 print(f"\t\t starting on epoch {e} for {len(train_loader)} iterations")
             model.train()
             # epoch
             # NOTE that enumerate's start changes the starting index
-            for it, (inputs, y) in enumerate(train_loader, start=(e - 1) * len(train_loader)):
+            for it, (inputs, outputs) in enumerate(train_loader, start=(e - 1) * len(train_loader)):
                 # TODO not sure why it's so slow sometimes, but it seems to need to "Warm up"
                 # ... I've never seen this before ngl
                 # print(f"\t\t\titeration {it}")
@@ -177,7 +179,9 @@ class Trainer(object):
                 optimizer.zero_grad(set_to_none=True)
 
                 with autocast():
-                    h = inputs
+                    # NOTE .to should not be necessary for ffcv
+                    y = outputs.to(device)
+                    h = inputs.to(device)
                     h = model(h)
                     #print(h)
                     #print(y)
@@ -195,7 +199,8 @@ class Trainer(object):
 
         # Nothing should change here (otherwise maybe the weights changed when
         # we did not want them to)
-        assert Trainer.evaluate(model, test_loader) == eval_acc
+        eval_acc2 = Trainer.evaluate(model, test_loader)
+        assert eval_acc2 == eval_acc, f"{eval_acc} != {eval_acc2}"
 
         return eval_acc
 

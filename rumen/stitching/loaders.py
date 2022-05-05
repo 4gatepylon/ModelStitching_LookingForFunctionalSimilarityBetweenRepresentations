@@ -176,9 +176,9 @@ class Loaders(object):
             transforms.Normalize(NO_FFCV_CIFAR_MEAN, NO_FFCV_CIFAR_STD)
         ])
 
-        dataset1 = datasets.MNIST(
+        dataset1 = datasets.CIFAR10(
             Loaders.NO_FFCV_FOLDER, train=True, download=True, transform=transform)
-        dataset2 = datasets.MNIST(
+        dataset2 = datasets.CIFAR10(
             Loaders.NO_FFCV_FOLDER, train=False, transform=transform)
 
         train_loader = DataLoader(dataset1, **train_kwargs)

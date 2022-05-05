@@ -35,6 +35,7 @@ from ffcv.fields import (
 
 import os
 import time
+import random
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -42,6 +43,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
+from torchvision import datasets
+from torch.utils.data import DataLoader
 from torch.cuda.amp import GradScaler, autocast
 
 from mega_resnet import BasicBlock
@@ -52,15 +55,28 @@ from mega_resnet import make_stitched_resnet
 RESNETS_FOLDER = "../../pretrained_resnets/"
 SIMS_FOLDER = "../../sims/"
 HEATMAPS_FOLDER = "../../heatmaps/"
+STITCHES_FOLDER = "../../stitches/"
 
 # Loaders folders
 FFCV_FOLDER = "../../data_ffcv/"
+NO_FFCV_FOLDER = "../../data_no_ffcv/"
 MISC_FFCV_FOLDER = "../tmp/"
 
 FFCV_CIFAR_MEAN = [125.307, 122.961, 113.8575]
 FFCV_CIFAR_STD = [51.5865, 50.847, 51.255]
+NO_FFCV_CIFAR_MEAN = [0.1307, ]
+NO_FFCV_CIFAR_STD = [0.3081, ]
 FFCV_NORMALIZE_TRANSFORM = torchvision.transforms.Normalize(
     FFCV_CIFAR_MEAN, FFCV_CIFAR_STD)
+
+
+def fix_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
 
 def pclone(model):
@@ -122,7 +138,41 @@ def matrix_heatmap(input_file_name: str, output_file_name: str, tick_labels_y=No
     plt.clf()
 
 
-def get_loaders(args):
+def get_loaders_no_ffcv(args):
+    use_cuda = torch.cuda.is_available()
+    train_batch_size = args.bsz
+    test_batch_size = 2048
+
+    device = torch.device("cuda" if use_cuda else "cpu")
+
+    train_kwargs = {'batch_size': train_batch_size}
+    test_kwargs = {'batch_size': test_batch_size}
+    if use_cuda:
+        cuda_kwargs = {'num_workers': 1,
+                       'pin_memory': True}
+        train_kwargs.update(cuda_kwargs)
+        test_kwargs.update(cuda_kwargs)
+    train_kwargs['shuffle'] = True
+    test_kwargs['shuffle'] = True
+
+    transform = torchvision.transforms.Compose([
+        torchvision.transforms.ToTensor(),
+        torchvision.transforms.Normalize(
+            NO_FFCV_CIFAR_MEAN, NO_FFCV_CIFAR_STD)
+    ])
+
+    dataset1 = datasets.CIFAR10(
+        NO_FFCV_FOLDER, train=True, download=True, transform=transform)
+    dataset2 = datasets.CIFAR10(
+        NO_FFCV_FOLDER, train=False, transform=transform)
+
+    train_loader = DataLoader(dataset1, **train_kwargs)
+    test_loader = DataLoader(dataset2, **test_kwargs)
+
+    return train_loader, test_loader
+
+
+def get_loaders_ffcv(args):
     num_of_points = 50000
     split = [int(num_of_points * args.fraction),
              int(num_of_points * (1 - args.fraction))]
@@ -237,7 +287,9 @@ def evaluate(model, test_loader):
 
         with torch.no_grad():
             with autocast():
-                h = images
+                # NOTE cuda is for ffcv
+                labels = labels.cuda()
+                h = images.cuda()
                 h = model(h)
                 preds = h.argmax(dim=1)
                 total_correct = (preds == labels).sum().cpu().item()
@@ -273,7 +325,7 @@ def train_loop(
         model.train()
         # epoch
         # NOTE that enumerate's start changes the starting index
-        for it, (inputs, y) in enumerate(train_loader, start=(e - 1) * len(train_loader)):
+        for it, (inputs, outputs) in enumerate(train_loader, start=(e - 1) * len(train_loader)):
             # TODO not sure why it's so slow sometimes, but it seems to need to "Warm up"
             # ... I've never seen this before ngl
             # print(f"\t\t\titeration {it}")
@@ -288,7 +340,9 @@ def train_loop(
             optimizer.zero_grad(set_to_none=True)
 
             with autocast():
-                h = inputs
+                # NOTE this is for ffcv
+                y = outputs.cuda()
+                h = inputs.cuda()
                 h = model(h)
                 # print(h)
                 # print(y)
@@ -407,7 +461,10 @@ def make_stitch(send_label, recv_label):
 #    a quick sanity test batch of results
 
 
-def stitchtrain(args):
+def stitchtrain(args, two_models=False, load_stitch=False):
+    # NOTE an experiment
+    fix_seed(0)
+
     name = f"resnet_1111"
     numbers = [1, 1, 1, 1]
     _file = os.path.join(RESNETS_FOLDER, f"{name}.pt")
@@ -421,21 +478,24 @@ def stitchtrain(args):
         False,
         num_classes=10,
     )
-    model2 = make_resnet(
-        name,
-        BasicBlock,
-        numbers,
-        False,
-        False,
-        num_classes=10,
-    )
+    model2 = model1
+    if two_models:
+        model2 = make_resnet(
+            name,
+            BasicBlock,
+            numbers,
+            False,
+            False,
+            num_classes=10,
+        )
+
     model1 = model1.cuda()
     model2 = model2.cuda()
     model1.load_state_dict(torch.load(_file))
     model2.load_state_dict(torch.load(_file))
 
-    print("Getting loaders for FFCV")
-    train_loader, test_loader = get_loaders(args)
+    print("Getting loaders NOT for FFCV")
+    train_loader, test_loader = get_loaders_no_ffcv(args)
 
     acc1 = evaluate(model1, test_loader)
     acc2 = evaluate(model2, test_loader)
@@ -493,16 +553,31 @@ def stitchtrain(args):
                 ORIGINAL_PARAMS_2 = pclone(model2)
 
                 send_label, recv_label = layerlabels[i][j]
+                stitch_file = os.path.join(
+                    STITCHES_FOLDER, f"stitch_{send_label}_{recv_label}.pt")
+
                 print(f"Training {send_label} to {recv_label}")
                 stitch = stitches[i][j]
+                # If we already have a stitch, just load it and evaluate it for the acc
+                # Else retrain it (noting that train loop does evaluate at the end)
+                if load_stitch:
+                    stitch.load_state_dict(torch.load(stitch_file))
+                # ...
                 stitch = stitch.cuda()
-                print(stitch)
+
                 stitched_resnet = make_stitched_resnet(
                     model1, model2, stitch, send_label, recv_label)
-                acc = train_loop(args, stitched_resnet,
-                                 train_loader, test_loader)
+                acc = evaluate(stitched_resnet, test_loader) \
+                    if load_stitch else \
+                    train_loop(args, stitched_resnet,
+                               train_loader, test_loader)
+                # ...
                 print(acc)
                 sims[i][j] = acc
+
+                # Save the stitch if this was a training run
+                if not load_stitch:
+                    torch.save(stitch.state_dict(), stitch_file)
 
                 NEW_PARAMS_1 = pclone(model1)
                 NEW_PARAMS_2 = pclone(model2)
@@ -515,8 +590,10 @@ def stitchtrain(args):
         os.mkdir(SIMS_FOLDER)
     if not os.path.exists(HEATMAPS_FOLDER):
         os.mkdir(HEATMAPS_FOLDER)
-    sim_path = os.path.join(SIMS_FOLDER, f"{name}_{name}_sims.pt")
-    heat_path = os.path.join(HEATMAPS_FOLDER, f"{name}_{name}_heatmaps.png")
+    sim_path = os.path.join(
+        SIMS_FOLDER, f"{name}_{name}_sims_load_stitch_{load_state_dict}_two_models_{two_models}.pt")
+    heat_path = os.path.join(
+        HEATMAPS_FOLDER, f"{name}_{name}_heatmaps_load_stitch_{load_state_dict}_two_models_{two_models}.png")
     torch.save(torch.tensor(sims), sim_path)
     matrix_heatmap(sim_path, heat_path, tick_labels_y=labels,
                    tick_labels_x=labels)
