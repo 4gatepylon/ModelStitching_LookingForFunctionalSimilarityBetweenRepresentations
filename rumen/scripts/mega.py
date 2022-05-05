@@ -62,6 +62,7 @@ FFCV_CIFAR_STD = [51.5865, 50.847, 51.255]
 FFCV_NORMALIZE_TRANSFORM = torchvision.transforms.Normalize(
     FFCV_CIFAR_MEAN, FFCV_CIFAR_STD)
 
+
 def pclone(model):
     return [p.data.detach().clone() for p in model.parameters()]
 
@@ -69,59 +70,62 @@ def pclone(model):
 def listeq(l1, l2):
     return min((torch.eq(a, b).int().min().item() for a, b in zip(l1, l2))) == 1
 
+
 def num_labels(numbers):
     # input, conv1, ... one for each block, blockset, ... fc, output
     return 2 + 2 + sum(numbers)
 
 # NOTE: tick labels for y before x because y is the sender
+
+
 def matrix_heatmap(input_file_name: str, output_file_name: str, tick_labels_y=None, tick_labels_x=None):
-        mat = torch.load(input_file_name)
-        assert type(mat) == torch.Tensor or type(mat) == np.ndarray
-        if type(mat) == torch.Tensor:
-            mat = mat.numpy()
-        assert len(mat.shape) == 2
+    mat = torch.load(input_file_name)
+    assert type(mat) == torch.Tensor or type(mat) == np.ndarray
+    if type(mat) == torch.Tensor:
+        mat = mat.numpy()
+    assert len(mat.shape) == 2
 
-        mat_height, mat_width = mat.shape
+    mat_height, mat_width = mat.shape
 
-        # NOTE: rounding is ugly for mean squared errors (but it's great for sim matrices)
-        mat = np.round(mat, decimals=2)
+    # NOTE: rounding is ugly for mean squared errors (but it's great for sim matrices)
+    mat = np.round(mat, decimals=2)
 
-        yticks, xticks = np.arange(mat_height), np.arange(mat_width)
-        if tick_labels_y:
-            assert len(tick_labels_y) == mat_height
-        else:
-            tick_labels_y = yticks
-        if tick_labels_x:
-            assert len(tick_labels_x) == mat_width
-        else:
-            tick_labels_x = xticks
-       
+    yticks, xticks = np.arange(mat_height), np.arange(mat_width)
+    if tick_labels_y:
+        assert len(tick_labels_y) == mat_height
+    else:
+        tick_labels_y = yticks
+    if tick_labels_x:
+        assert len(tick_labels_x) == mat_width
+    else:
+        tick_labels_x = xticks
 
-        fig, ax = plt.subplots()
-        im = ax.imshow(mat)
-        ax.set_yticks(yticks)
-        ax.set_xticks(xticks)
-        ax.set_xticklabels(tick_labels_x)
-        ax.set_yticklabels(tick_labels_y)
-        plt.setp(ax.get_xticklabels(), rotation=45,
-                 ha="right", rotation_mode="anchor")
+    fig, ax = plt.subplots()
+    im = ax.imshow(mat)
+    ax.set_yticks(yticks)
+    ax.set_xticks(xticks)
+    ax.set_xticklabels(tick_labels_x)
+    ax.set_yticklabels(tick_labels_y)
+    plt.setp(ax.get_xticklabels(), rotation=45,
+             ha="right", rotation_mode="anchor")
 
-        # This is inserting the text into the boxes so that we can compare easily
-        for i in range(len(yticks)):
-            for j in range(len(xticks)):
-                text = ax.text(j, i, mat[i, j],
-                               ha="center", va="center", color="w")
+    # This is inserting the text into the boxes so that we can compare easily
+    for i in range(len(yticks)):
+        for j in range(len(xticks)):
+            text = ax.text(j, i, mat[i, j],
+                           ha="center", va="center", color="w")
 
-        title = input_file_name.split("/")[-1].split('.')[0]
-        ax.set_title(f"{title}")
-        fig.tight_layout()
-        plt.savefig(output_file_name)
-        plt.clf()
+    title = input_file_name.split("/")[-1].split('.')[0]
+    ax.set_title(f"{title}")
+    fig.tight_layout()
+    plt.savefig(output_file_name)
+    plt.clf()
+
 
 def get_loaders(args):
     num_of_points = 50000
     split = [int(num_of_points * args.fraction),
-                int(num_of_points * (1 - args.fraction))]
+             int(num_of_points * (1 - args.fraction))]
 
     dataset_class = torchvision.datasets.CIFAR10 if (
         args.dataset == 'cifar10') else torchvision.datasets.CIFAR100
@@ -157,15 +161,15 @@ def get_loaders(args):
         FFCV_NORMALIZE_TRANSFORM
     ]
     train_loader = Loader(finetune_file,
-                            batch_size=args.bsz,
-                            num_workers=args.num_workers,
-                            order=OrderOption.RANDOM,
-                            os_cache=True,
-                            drop_last=True,
-                            pipelines={
-                                'image': image_pipeline_train,
-                                'label': label_pipeline,
-                            })
+                          batch_size=args.bsz,
+                          num_workers=args.num_workers,
+                          order=OrderOption.RANDOM,
+                          os_cache=True,
+                          drop_last=True,
+                          pipelines={
+                              'image': image_pipeline_train,
+                              'label': label_pipeline,
+                          })
 
     test_data_file = os.path.join(
         MISC_FFCV_FOLDER, f"{args.dataset}_test_data.beton")
@@ -190,16 +194,17 @@ def get_loaders(args):
     ]
 
     test_loader = Loader(test_data_file,
-                            batch_size=2048,
-                            num_workers=args.num_workers,
-                            order=OrderOption.SEQUENTIAL,
-                            os_cache=True,
-                            drop_last=False,
-                            pipelines={
-                                'image': image_pipeline_test,
-                                'label': label_pipeline,
-                            })
+                         batch_size=2048,
+                         num_workers=args.num_workers,
+                         order=OrderOption.SEQUENTIAL,
+                         os_cache=True,
+                         drop_last=False,
+                         pipelines={
+                             'image': image_pipeline_test,
+                             'label': label_pipeline,
+                         })
     return train_loader, test_loader
+
 
 def adjust_learning_rate(
     epochs,
@@ -222,6 +227,7 @@ def adjust_learning_rate(
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
+
 def evaluate(model, test_loader):
     # NOTE used to be for layer in model
     model.eval()
@@ -239,12 +245,13 @@ def evaluate(model, test_loader):
 
     return total_correct / total_num
 
+
 def train_loop(
     args,
     model,
     train_loader,
     test_loader,
-    verbose = True,
+    verbose=True,
 ):
     parameters = list(model.parameters())
 
@@ -261,7 +268,8 @@ def train_loop(
     epochs = args.epochs
     for e in range(1, epochs + 1):
         if verbose:
-            print(f"\t\t starting on epoch {e} for {len(train_loader)} iterations")
+            print(
+                f"\t\t starting on epoch {e} for {len(train_loader)} iterations")
         model.train()
         # epoch
         # NOTE that enumerate's start changes the starting index
@@ -271,22 +279,22 @@ def train_loop(
             # print(f"\t\t\titeration {it}")
             # adjust
             adjust_learning_rate(epochs=epochs,
-                                    warmup_epochs=args.warmup,
-                                    base_lr=args.lr * args.bsz / 256,
-                                    optimizer=optimizer,
-                                    loader=train_loader,
-                                    step=it)
+                                 warmup_epochs=args.warmup,
+                                 base_lr=args.lr * args.bsz / 256,
+                                 optimizer=optimizer,
+                                 loader=train_loader,
+                                 step=it)
             # zero grad (should we set to none?)
             optimizer.zero_grad(set_to_none=True)
 
             with autocast():
                 h = inputs
                 h = model(h)
-                #print(h)
-                #print(y)
+                # print(h)
+                # print(y)
                 # TODO modularize this out to enable sim training
                 loss = F.cross_entropy(h, y)
-                #print(loss)
+                # print(loss)
 
             scaler.scale(loss).backward()
             scaler.step(optimizer)
@@ -297,6 +305,7 @@ def train_loop(
     eval_acc = evaluate(model, test_loader)
 
     return eval_acc
+
 
 def get_shape(label):
     if label == "input":
@@ -323,6 +332,8 @@ def get_shape(label):
 # Tells you the shape that's coming INTO a layer
 # Which is either a 3-tuple for tensors or a single scalar for the width
 # of a linear layer
+
+
 def get_prev_shape(label):
     if label == "input":
         raise Exception("input layer has no previous shape")
@@ -345,6 +356,7 @@ def get_prev_shape(label):
     else:
         raise Exception(f"unknown label: {label} in get_prev_shape")
 
+
 def make_stitch(send_label, recv_label):
     send_shape = get_shape(send_label)
     recv_shape = get_prev_shape(recv_label)
@@ -353,12 +365,12 @@ def make_stitch(send_label, recv_label):
     # assert type(recv_shape) == tuple or t
     if type(recv_shape) == int:
         return nn.Sequential(
-        nn.Flatten(),
-        nn.Linear(
-            send_shape[0] * send_shape[1] * send_shape[2],
-            recv_shape,
-        ),
-    )
+            nn.Flatten(),
+            nn.Linear(
+                send_shape[0] * send_shape[1] * send_shape[2],
+                recv_shape,
+            ),
+        )
     else:
         send_depth, send_height, send_width = send_shape
         recv_depth, recv_height, recv_width = recv_shape
@@ -393,6 +405,8 @@ def make_stitch(send_label, recv_label):
 # 2. does NOT use controls (i.e. random networks) since
 #    we've more or less used them before and want to get
 #    a quick sanity test batch of results
+
+
 def stitchtrain(args):
     name = f"resnet_1111"
     numbers = [1, 1, 1, 1]
@@ -419,7 +433,7 @@ def stitchtrain(args):
     model2 = model2.cuda()
     model1.load_state_dict(torch.load(_file))
     model2.load_state_dict(torch.load(_file))
-    
+
     print("Getting loaders for FFCV")
     train_loader, test_loader = get_loaders(args)
 
@@ -429,9 +443,10 @@ def stitchtrain(args):
     print("Model 2 Original Accuracy: {}".format(acc2))
 
     print("Creating Tables, padding with None (and zero) to make it square")
-    labels = ["input", "conv1"] + [(i, 0) for i in range(1,5)] + ["fc", "output"]
+    labels = ["input", "conv1"] + [(i, 0)
+                                   for i in range(1, 5)] + ["fc", "output"]
     layerlabels = [
-        [(labels[i], labels[j]) for j in range(len(labels))] \
+        [(labels[i], labels[j]) for j in range(len(labels))]
         for i in range(len(labels))
     ]
     num_labels = 8
@@ -476,14 +491,16 @@ def stitchtrain(args):
                 print("*************************")
                 ORIGINAL_PARAMS_1 = pclone(model1)
                 ORIGINAL_PARAMS_2 = pclone(model2)
-            
+
                 send_label, recv_label = layerlabels[i][j]
                 print(f"Training {send_label} to {recv_label}")
                 stitch = stitches[i][j]
                 stitch = stitch.cuda()
                 print(stitch)
-                stitched_resnet = make_stitched_resnet(model1, model2, stitch, send_label, recv_label)
-                acc = train_loop(args, stitched_resnet, train_loader, test_loader)
+                stitched_resnet = make_stitched_resnet(
+                    model1, model2, stitch, send_label, recv_label)
+                acc = train_loop(args, stitched_resnet,
+                                 train_loader, test_loader)
                 print(acc)
                 sims[i][j] = acc
 
@@ -493,7 +510,6 @@ def stitchtrain(args):
                 assert listeq(ORIGINAL_PARAMS_2, NEW_PARAMS_2)
                 print("*************************\n")
 
-
     print("Saving similarities")
     if not os.path.exists(SIMS_FOLDER):
         os.mkdir(SIMS_FOLDER)
@@ -502,7 +518,9 @@ def stitchtrain(args):
     sim_path = os.path.join(SIMS_FOLDER, f"{name}_{name}_sims.pt")
     heat_path = os.path.join(HEATMAPS_FOLDER, f"{name}_{name}_heatmaps.png")
     torch.save(torch.tensor(sims), sim_path)
-    matrix_heatmap(sim_path, heat_path, tick_labels_y=labels, tick_labels_x=labels)
+    matrix_heatmap(sim_path, heat_path, tick_labels_y=labels,
+                   tick_labels_x=labels)
+
 
 class Args:
     def __init__(self):
@@ -520,6 +538,7 @@ class Args:
         self.epochs = 1  # Total epochs
         self.wd = 0.01   # Weight decay
         self.dataset = "cifar10"
+
 
 if __name__ == "__main__":
     args = Args()

@@ -18,6 +18,8 @@
 \usepackage{graphicx}
 \graphicspath{ {.} }
 
+\setcitestyle{square,comma}
+
 
 \title{Exploring Neural Network Modularity \\ Using Model Stitching}
 
@@ -43,183 +45,32 @@ Cambridge, MA 02139, USA \\
 \iclrfinalcopy % Uncomment for camera-ready version, but NOT for submission.
 \begin{document}
 
-
 \maketitle
 
 \begin{abstract}
 We expand \textit{model stitching} (Lenc \& Vedaldi 2015) as a methodology to compare neural networks.
-Previously, Bansal, Nakkiran \& Barak used it to compare the representations learned by differently seeded and/or trained neural networks.
+Previously, Bansal, Nakkiran \& Barak used it to compare the representations learned by differently seeded
+and/or trained neural networks.
 We use it to compare the representations learned by neural networks with different architectures.
-This gives us insight into the properties of stitching. Namely, we find that stitching can reach unintuitively
+This enables us to reveal interesting behavior of model stitching. Namely, we find that stitching, 
+based on convolutions, for small ResNets, can reach unexpectedly
 high accuracy for intuitively different layers if those layers come earlier in the first (sender) network than in
-the second (reciever). This leads us to hypothesize that stitches are not in fact learning to match the
-representations expected by reciever layers, but instead to find representations which yield similar results.
-We do some numerical analysis to check this hypothesis.
-% Previously we wanted to do modular structure.
+the second (receiver). This leads us to hypothesize that stitches are not in fact learning to match the
+representations expected by receiver layers, but instead to find different representations which nonetheless
+yield similar results.
+We do a simple numerical analysis to test this hypothesis and it yields mixed results.
 \end{abstract}
 
-
-%
-%
-% Everything below this line
-% is the original ICLR template.
-% I keep it here specifically for
-% the purpose of reminding me of how to do various things...
-% I need to figure out how to get citations in there...
-% 
-% Papers to cite:
-% https://arxiv.org/abs/2106.07682 (Revisiting Model Stitching)
-%
-%
-%
-%
-%%
-% https://arxiv.org/abs/2108.01661 (Grounding Representation Similarity with Statistical Testing)
-%
-% Start here: https://bair.berkeley.edu/blog/2021/11/08/similarity/.
-% From this one they basically are trying to create a benchmark to test if a test of similarity is
-% good or not. So for example you give them something like CKA or CCA and then they find whether it's
-% a good measure or not. However, this "good measure" measure is for A SPECIFIC TASK. So, they are testing
-% if FOR A SPECIFIC TASK the measure of similarity is able to discern differences (where accuracy is used
-% to tell if the two models are actually different). I'm guessing it's rather harder to use just accuracy
-% because it's unclear how you should compare specific layers. They use linear probes (linear classifiers
-% trained on top of the intermediate layers we want to compare). They also use accuracy of the whole
-% network (though unless you isolate the specific section you change in the network).
-%
-% Sensitivity: meaningful change is made to a representation => the similarity measure should reflect it.
-% Specificity: non-meaningful change is made to a representation => similarity does not change much.
-%
-% Principle components refers to the principle components as defined by Principle Component Analysis (PCA)
-% Read: https://en.wikipedia.org/wiki/Principal_component_analysis. The most informative components
-% are the largest ones according to PCA (or at least they can be sorted that way).
-%
-% It was hard for me to understand what the similarity measures were doing. I need to take a statistics class.
-% I also need to review, probably, some aspects of linear algebra or optimization.
-%
-% I did not totally finish this paper since it was hard to read for me. I will want to write or speak about
-% what they are measuring. Here (below) is an outline:
-% 1. Definitions of similarity metrics f (OOD and/or linear probe accuracy).
-% 2. Definitions of models S (NLP and Vision) and how they were trained
-% 3. Descriptions of intuitive tests. We run a test and measure f over it.
-%   a. Sensitivity: 
-%   b. Specificity: 
-% 4. Description of a more rigorous operation
-%  a. Definition: pick f (a function from the representation to a real number) as our "accuracy metric"
-%  and S as our set of representations to measure similarity. Pick an A inside S (probably the one from the
-%  the model with the highest accuracy, or just pick arbitrarily). For all B in S (including cases where
-%  A = B) find d(A, B) using the similarity or dissimilarity metric "d" which we are testing, and also find
-%  |f(A) - f(B)| which is the variation in "accuracy." Then find Corr(d(A, B), |f(A) - f(B)|) where Corr is
-%  a measure of correlation. They use "Tau" and "Rho" which are the Kendall and Spearman measures of
-%  correlation, respectively.
-%  b. Benchmark 1: layer depth (i.e. which layer).
-%  c. Benchmark 2: principle component deletion.
-%  d. Pre-training Seed and/or Fine-tuning Seed. For the layer depths the pre-training seed is also varied.
-%  For vision the training seed is used (they are Res-Net-14's trained from scratch). For vision no tests seem
-%  to be done for PWCCA. I did not read why.
-%
-% Things that remain to be understood by me:
-% 1. The specifics of their experiments (the models, the data, etcetera).
-% 2. The definitions of correlation and whether a better "Corr" function might exist.
-% 3. The relation between the Wikipedia definitions of "sensitivity" and "specificity" and the usage
-%  of those words in the paper (I think it's just meant colloquially, but it's not totally clear).
-% 4. The computation and meaning of principle components.
-% 5. The meaning and computation of the different similarity metrics. Not only did I not understand them
-%  very well, at times I did not even parse them properly.
-
-%%
-%% From Revisiting Model Stitching %%
-% Understanding intermediate layers using linear classifier probes
-% Learning internal representations by error propagation
-% Towards understanding learning representations: To what extent do different neural networks learn the same representation, 2018
-% Do wide and deep networks learn the same things? uncovering how neural network representations vary with width and depth
-% Convergent learning: Do different neural networks learn the same representations?
-% Bad global minima exist and sgd can reach them. 
-% Insights on representational similarity in neural networks with canonical correlation
-% Similarity of neural network representations revisited
-% Deep residual learning for image recognition
-% Linear mode connectivity and the lottery ticket hypothesis
-% On the surprising similarities between supervised and self-supervised models
-% Multimodal neurons in artificial neural networks.
-%
-%
-
-% There is a strict upper limit to 8 pages
-% Do NOT refer to the line numbers it automatically generates in your paper
-% 
-% 
-% 
-% \section{Introduction Guide}
-% ... Specifically, say what your goal is (concretely) on a high level as well as explain your journey
-% (help them step in your shoes and see things how you see them).
-
-% Statsis freewrite:
-% \begin{itemize}
-%    \item What facts am I responding to? (social trends; discplinary trends; etc.)
-%    \item What are the consequences of those facts?
-%    \item What is valuable from a researcher/societal perspective about existing facts/work?
-%    \item How do those consequences lead to an open question?
-% \end{itemize}
-
-% The facts that I am responding to are a few. Firstly, we do not know how to properly compare representations.
-% This stems also from the fact that we do not understand what a lot of different types of neural networks are
-% doing (i.e. we understand some convolutional neural networks but not totally, and attention networks are a lot
-% more black-boxy). The consequences are that we find it hard to create robust and human-like-feature-generating
-% models especially when using non-CNNs. Also, perhaps, we can care about the fact that training is expensive and
-% that we cannot really reuse weights effectively. Lastly, we need to do a lot of data preprocessing, postprocessing,
-% etcetera to be able to turn our model's expected inputs/outputs into something that can be used in real life. Thus,
-% if we want to do full neural computation we need to break it down and understand it in more detail. The value
-% element for our research is that we enble future research to use our building blocks to create tangible things
-% (basically we build intellectual infrastructure). These consequences lead to open questions on a high level:
-% how can we compare representations? How can we reuse weights most effectively? How can we understand if a
-% model learns a human-understandable representation? How can we best combine different models?
-
-% \begin{itemize}
-%    \item What have others done in response to this same set of facts or in response to this question?
-%    \item What did they find?
-%    \item What motivates their work?
-% \end{itemize}
-
-% The stitching paper has done what I'm doing but in a more limited sense. They found that neural networks that we expect
-% to be easy to compare and learn similar things do in fact meet those conditions. Their own work was motivated by the same
-% curiosity which motivates mine, though it was primarily focused on how we can compare representations.
-
-% \begin{itemize}
-%    \item What do you do in response to this question?
-%    \item What challenges exist for your project?
-%    \item How do you set up your approach (what must you define in order for it to make sense, how does your approach build on/respond to what others have done, and what tools, frameworks, corpii, etc... did we use)?
-% \end{itemize}
-
-% I do my project on stitching different architectures of neural networks. Challenges are figuring out what good stitch function classes
-% are as well as a lot of coding and fine-tuning. We set up our approach by creating a big experimental infrastructure to define a bunch of
-% stitches across different architectures. We then use the infrastructure to create a bunch of models and compare them.
-
-% \begin{itemize}
-%    \item How does your project answer the open question?
-%    \item What are the consequences of your work?
-%    \item What value/contributions does your project have or offer (to broader community, to researchers, or to future work)?
-% \end{itemize}
-
-% My project gives future researches infrastructure to try and better understand and compare neural networks. The idea is that
-% if we can use compare different architectures effectively, then we can use our current knowledge to understand other networks.
-% It's just building bridges. My project is also going to give people language to talk about their experimental setups that makes
-% it completely unambiguous what they are doing (i.e. it is easy to understand often the technicalities of some approach, but it
-% is the naming which holds us back: if we can create good lingo through words like "sender" and "reciever" and other things to
-% describe stitches, then the field can easily progress faster). My project overall takes us closer to answering the question by
-% empowering others and giving us a space of concrete experimentation.
-
-% NOTE: good introductions should do what we have done up here.
-
-% This will discuss why we are doing this. The main goal is to understand neural networks, but we can think of this
-% attempt to understand "modules" as a great boon to transfer learning and cheap computation since it may allow us to
-% have the tools necessary to do a lot of iterative tinkering with architectures in an empirical way.
-\section*{Introduction}
-\subsection*{Motivation}
+\section{Introduction}
+\label{Introduction}
 The success of deep learning for visual recognition has been attributed to the ability of neural networks to learn
-good representations of their training data [Rumelhart et al., 1985]. That is, intermediate outputs (which we refer
-to as "representations) of good neural networks 
-are believed to somehow encode meaningful information about their inputs, which they use for classification and/or other
-downstream machine learning tasks. However, our understanding of these representations is somewhat limited. Though
-deep learning interpretability research, particularly for computer vision, has helped us grok what deep neural 
+good representations of their training data \cite{Rumelhart1986LearningIR}. That is, intermediate outputs (which we refer
+to as ``representations'') of good neural networks 
+are believed to encode meaningful information about their inputs, which these neural networks use for classification and/or other
+downstream machine learning tasks \cite{goodfellow2016deep}.
+However, our understanding of these representations is somewhat limited. Though
+deep learning interpretability research, particularly for computer vision, has helped us
+to intuitively grasp what deep neural 
 networks are learning, we do not
 know why good representations are learned, nor do we have a robust theory to characterize them. For example, we do not
 know how to compare representations effectively.
@@ -227,99 +78,95 @@ know how to compare representations effectively.
 Being unable to compare representations is a fundamental limitation because it precludes us from understanding whether
 different models are learning essentially the same thing. This is important, because one of the great hopes of the authors
 of this paper is that
-different neural networks are able to learn, by some measure, qualitatively similar representations. Metaphorically speaking,
-we'd like it to be the case that two models' representations were the same, but in different ``languages.'' It is as if
-a ResNet18 were speaking French and a ResNet34 English, but with an effective translator we could confirm that they were
-indeed speaking the same sentence.
+different neural networks are able to learn, by some measure, qualitatively similar representations, even if they are
+numerically, or superficially, different. Metaphorically,
+we would like to find that models learn ``the same sentences in different languages.''
 
-Basically, two different representations may encode the same underlying information differently, and we, the authors,
-wish to have a way to check: this so-called ``translator''. If we had such a ``translator'', and he/she were to tell
-us that, indeed, most neural networks for certain tasks (such as computer vision) learn to encode the same
-underlying information in their representations, that fact would lend credence to the suggestion that deep neural
-networks, even with superficially different representations from a human's, can learn the same information we do.
-It would
-lend credence to this possibility mainly because it would be too much of a coincidence for so many different learners
-to learn the same thing with the exception being the human mind.
+Since two different representations can encode the same underlying information differently, one of the goals of this
+paper is to advance our ability to ``translate these different languages,'' so to speak. Armed with such an ability,
+if we found that indeed, most neural networks for certain
+common tasks learn to encode the same
+underlying information in their representations, that fact would lend credence to the belief that deep neural
+networks, can learn meaningful concepts (if we can call representations ``concepts'')
+like a human, since it is an unlikely coincidence that so many
+different learners converge to similar representations.
 
-Any evidence for or against the ability of deep neural networks to learn representations like a human would be at the
-very least of great philosophical interest. However, the ability to compare representations (i.e. our metaphorical
-``translator'') could empower us in more practical ways as well. For example, we could use representational comparisons
-to more rigorously test novel architectures based on older well-known ones. More generally, such a tool to do this
-would help us use our existing knowledge about deep neural networks to gain more, quickly. Thus, we want to be
-able to compare neural network representations.
+At the very least this would be of philosophical interest and encourage explanatory theoretical research.
+However, the ability to compare representations could empower us in more practical ways as well.
+For example, we could use representational comparisons
+to more rigorously test novel architectures based on older well-known ones. More generally, we could
+use our existing knowledge about specific deep neural networks to gain more knowledge about others, quickly.
+Thus, we want to be able to compare neural network representations.
 
-\subsection*{Related Work}
-% This will discuss things like CKA, CCA, Procrustes, and stitching without differnet architectures.
-Many non-learned similarity measures exist such as Centered Kernel Alignment [Kornblith et al.],
-Canonical Correlation Analysis [Morcos et al.], and the well-known classical procrustes distance.
+\subsection*{Organization}
+We first discuss related work in \hyperref[RelatedWork]{Section 2}. Subsequently we will provide a high-level view of our
+contribution in \hyperref[Contribution]{Section 3} and explain our method of stitching in \hyperref[Stitching]{Section 4}.
+In \hyperref[ExperimentalSetup]{Section 5} and \hyperref[Results]{Section 6} we will discuss our experimental setup and
+results respectively, after which we wrap up with a conclusion in \hyperref[Conclusion]{Section 7}. Tables for one of
+our numerical tests are available in the \hyperref[Appendix]{Appendix}.
 
-These may or may not be useful to explore the similarity of different representations. However, these measures are
-plagued by the fact that they are rather ad-hoc and rely on the ingenuity of their designers [Bansal et al., 2021].
-Recent research [Ding et al., 2021] has shown that supposed improvements in these measures are not true improvements,
-but instead improvements in special cases. Thus, we decide not to use measures like Centered Kernel
-Alignment because results gotten from
-their use are difficult to gague. Instead, in line with Ding et al.'s arguments, we choose a measure which is more correlated
-to an accuracy, and therefore more interpretable. Specifically, we use stitching as described in Bansal et al.
+\section{Related Work}
+\label{RelatedWork}
+Many non-learned similarity measures exist such as Centered Kernel Alignment \cite{Kornblith2019SimilarityON} and
+Canonical Correlation Analysis \cite{Morcos2018InsightsOR}.
 
-Recent advances in model stitching [Bansal et al., 2021] have made great strides towards our goal of effectively
-comparing representations. Bansal et al. elaborate and use model stitching to confirm that very similar 
-neural networks learn similar representations for
-standard computer vision classification tasks such as CIFAR.
+These may or may not be useful to explore the similarity of different representations. However, their efficacy relies
+on the ingenuity of their designers since these measures are rather ad-hoc \cite{Bansal2021RevisitingMS}.
+Recent research \cite{Ding2021GroundingRS} argues that some supposed improvements in these measures do not generalize.
+Thus, we decide not to use these measures because results which use them their use are difficult to gague.
+Instead, we choose a measure that depends entirely on accuracy: model stitching.
 
+\section{Our Contribution}
+\label{Contribution}
+Recent advances in model stitching \cite{Bansal2021RevisitingMS} have made great strides towards the goal of effectively
+comparing representations. Bansal et al. elaborate and use model stitching to confirm that architecturally similar
+neural networks learn similar representations for computer vision.
 
-\subsection*{Our Contribution}
-Bansal et al. give us tantalizing results with positive practical repercussions beyond our current scope\footnote{
-   Bansal et al. confirm that, on standard datasets, such as CIFAR-10, standard ResNets, such as ResNet18, are able to learn similar
+They give us tantalizing results with positive practical repercussions\footnote{
+   They confirm that, on standard datasets, such as CIFAR-10, standard ResNets, such as ResNet18, are able to learn similar
    representations irrespective of their initial random seeds, layer widths, or (to a limited extent) training methodology.
    They use this finding to show that stitching wider neural networks into more narrow ones can improve performance. Moreover,
-   they use stitching to tell how fast differnet layers converge to good solutions, which enables Bansal et al. to freeze
-   layers which converge faster during training to save compute.
+   they use stitching to tell how fast different layers converge to good solutions, which enables them to freeze
+   fast-converging layers during training to save compute.
 }.
-In doing so open up a space of possibility for future research. We see two main directions to pursue in response
-to their work.
+In doing so open up a space of possibility for future research, and we see two main directions to explore.
 
-Firstly, Bansal et al. only confirm that networks with the same fundamental architecture have similar representations at
-the exact same layers. It is much harder to compare the representations of neural networks with different architectures
+\textbf{Different Architectures and Layer Shapes.} Bansal et al. only confirm that networks with the same 
+fundamental architecture have similar representations at
+the exact same layers. It is trickier to compare the representations of neural networks with different architectures
 since they have different shapes, but in some respects this is the more meaningful and interesting thing to do.
 
-Secondly, Bansal et al. ignore a subtle point regarding the ability of stitching to compare representations. To understand
-this point a little bit of context is necessary. Namely,
-model stitching involves training a set of very simple ``translator'' models (called stitches) 
-to tell whether it is possible to
-``translate'' the ``langauge'' of one neural network into that of another. Stitches take in representations
-from intermediate layers of a sender neural network, and put their outputs into a reciever neural network. Each
-stitch translates from a specific layer of the sender to a specific layer of the reciever. It is inferred that
-if the reciever can reach high task accuracy by utilizing the stitch's translations (of the sender's representations)
-then the two representations are similar. However, the latter does not logically follow
-from the former. There is no necessary condition that two representations be similar to both yield 
-high task accuracy.
+\textbf{Sanity Testing Stitching.} Bansal et al. ignore a subtle point regarding the ability 
+of stitching to compare representations. Model stitching essentially checks whether two representations
+are interchangeable with minor modifications, using a \textit{learned} transformation to learn the best
+such ``modifications.'' However, the transformation, which we call the stitch, is trained using backpropagation
+from a downstream task like classification. It may not be necessary that two representations be ``similar,'' either
+numerically or intuitively, for the stitched model to reach high task accuracy.
 
 Our paper seeks to tackle these two questions. Firstly, we expand stitching in a simple way to be able to compare
-different layers of different Resnets.  Secondly, we analyse whether different neural networks are learning similar
-representations. Lastly, we analyse whether stitching is a good metric in these cases. We have preliminary
-results that are quite perplexing, and further research is in progress.
+different layers of different Resnets.  Secondly, we analyse whether different neural networks learning similar
+representations. Lastly, we analyse whether stitching is a good metric in these cases using a simple numerical test.
 
-% This will discuss how stitching works on a high level. It will not introduce any mathematical formalisms or notation.
-% Those will probably be used later.
-\section*{Stitching}
-We broaden the definition of stitching very little from that as defined in [Bansal et al., 2021]. In that paper,
+\section{Stitching}
+\label{Stitching}
+We broaden the definition of stitching very little from that as defined in \cite{Bansal2021RevisitingMS}. In that paper,
 stitching involved taking the intermediate output of some layer, which we call the sender, transforming it, and then
-inputting that into some intermediate input in another network. We call the layer we input into the reciever. We
-will also refer to the two networks, respectively, as sender and reciever when convenient and contextually clear.
-The representation that would normally be recieved by the reciever we call the expected representation
+inputting that into some intermediate input in another network. We call the layer we input into the receiver. We
+will also refer to the two networks, respectively, as sender and receiver when convenient and contextually clear.
+The representation that would normally be recieved by the receiver we call the expected representation
 \footnote{The expected representation is sent by
-the expected sender: the previous layer in the reciever network).}.
+the expected sender: the previous layer in the receiver network).}.
 
-The layers up to the sender (inclusive) we call a prefix and the layers from the reciever to the end (inclusive) we call
+The layers up to the sender (inclusive) we call a prefix and the layers from the receiver to the end (inclusive) we call
 a suffix. The transformation used is called the stitch, and it is learned\footnote{Any optimizer will do, but we use gradient descent for simplicity.}
-on a frozen prefix/suffix pair. The network formed by concatenating the sender prefix, the stitch, and the reciever
+on a frozen prefix/suffix pair. The network formed by concatenating the sender prefix, the stitch, and the receiver
 suffix, is called the stitched network. Just like Bansal et al. we use the accuracy of the stitched network as our
 primary training task.
 
 The stitch belongs to a simple function class such as 1x1 convolutions (depthwise) or
-a linear layer. Bansal et al. pick these function classes since, if the sender and reciever networks are in the same
+a linear layer. Bansal et al. pick these function classes since, if the sender and receiver networks are in the same
 function class, the stitched network will also be in that same function class. However, since for us the sender and
-reciever networks are not in the same function class, we allow stitches that modify the function class in minor ways.
+receiver networks are not in the same function class, we allow stitches that modify the function class in minor ways.
 We expand the class of stitches to include strided convolutions \footnote{with stride equal to kernel width, so as to downsample
 by some constant factor} as well as 1x1 convolutions of nearest-upsampled layers \footnote{basically, the sender representation
 is copied a constant number of times such that each pixel in it corresponds to a square grid of identical pixels}.
@@ -341,7 +188,8 @@ is copied a constant number of times such that each pixel in it corresponds to a
    \end{figure}
 \end{center}
 
-\section*{Experimental Setup}
+\section{Experimental Setup}
+\label{ExperimentalSetup}
 \subsection*{Models and Dataset}
 We use the CIFAR-10 dataset\footnote{In the future, once our preliminary results are more interpretable, we intend to
 continue on to imagenet.} with small ResNets. With our augmented class of stitches we compare all different
@@ -379,34 +227,35 @@ every layer from ResNet18 to ResNet34 and vice versa as a special case of a ``me
 
 We use randomly initialized ResNets as controls. Unlike Bansal et al. we only vary our neural networks by their
 initialization weights. For every pair of networks that are stitched, we also create a random sender and a random
-reciever both with the same architecture as the sender and reciever respectively. Just as the sender is stitched
-into the reciever, the random sender is stitched into both the reciever and the random reciever, and the sender
-is also stitched into the random reciever. This allows us to acertain that the stitches
-are not overly powerful [Bansal et al.].
+receiver both with the same architecture as the sender and receiver respectively. Just as the sender is stitched
+into the receiver, the random sender is stitched into both the receiver and the random receiver, and the sender
+is also stitched into the random receiver. This allows us to acertain that the stitches
+are not overly powerful \cite{Bansal2021RevisitingMS}.
 
 We train each stitch for 4 iterations. This hyperparameter was selected after much experimentation. For both
 regular training of the network and training of the stitches we use stochastic gradient descent with momentum 0.9,
 batch size 256, weight decay 0.01, learning rate 0.01, and a post-warmup cosine learning rate scheduler.
  These hyperparameters were also arrived at from experimentation.
 
-For each stitch, we plot the accuracy on a grid based on the sending layer and the reciever layer. The layer is
+For each stitch, we plot the accuracy on a grid based on the sending layer and the receiver layer. The layer is
 denoted by an integer which counts how many layers came before it.
 
-As a bonus we also train a set of "similarity-trained" stitches. These stitches are also used as a sort of control and
+As a bonus we also train a set of ``similarity-trained'' stitches. These stitches are also used as a sort of control and
 their motivation explained more fully later. Most importantly, though, they are trained using mean squared error (and the
-same hyperparameters) to copy the expected representation of the reciever using that from the sender.
+same hyperparameters) to copy the expected representation of the receiver using that from the sender.
 
-\section*{Results}
+\section{Results}
+\label{Results}
 \subsection*{Preliminary Results}
 All our experimental results are formatted as layer to
-layer similarity matrices. (The row is the sender, the column is the reciever, and the compared layers are the expected sender
+layer similarity matrices. (The row is the sender, the column is the receiver, and the compared layers are the expected sender
 and the sender; the entry is the accuracy of the stitched network).
 
 Every single pair in our experiment has the same
 patterns. When two random networks are stitched, all possible stitches have low accuracy with a rather uniform distribution. When
-a sender is stiched with a random reciever, only stitches from the later layers of the sender into the later layers of the (random)
-reciever have high stitching accuracy. When a random sender is stitched into a reciever, only stitches into the early layers of the
-reciever have high stitching accuracy. When the sender is stitched into the reciever, all layers in the lower left hand triangle
+a sender is stiched with a random receiver, only stitches from the later layers of the sender into the later layers of the (random)
+receiver have high stitching accuracy. When a random sender is stitched into a receiver, only stitches into the early layers of the
+receiver have high stitching accuracy. When the sender is stitched into the receiver, all layers in the lower left hand triangle
 of the layer-to-layer similarity matrix have high stitching accuracy. 
 This intruiging last result was most apparent for small ResNets or different shapes.
 Figures are below for all our results.
@@ -420,8 +269,8 @@ that yields the same results (i.e. high accuracy). We are using a rough numerica
 are using the mean squared error between the expected representation and the representation produced by the stitched network.
 We provide statistics and an analysis below. We also provide the results of a similarity-trained set of stitches which
 try to copy the expected representation. These are meant mainly to give us a sense of how close a stitch could be to the
-expected representation if it were "trying" to copy it. We find that these similarity-trained stitches are not very good
-and perhaps not that similar from the corresponding normal (sometimes called "vanilla") stitch.
+expected representation if it were ``trying'' to copy it. We find that these similarity-trained stitches are not very good
+and perhaps not that similar from the corresponding normal (sometimes called ``vanilla'') stitch.
 
 \begin{center}
    \begin{figure}[h!]
@@ -429,7 +278,7 @@ and perhaps not that similar from the corresponding normal (sometimes called "va
       \caption{Triangle Pattern in Small ResNets}
       \includegraphics[width=6.5cm]{resnet1111_1111.png}
       \includegraphics[width=6.5cm]{resnet1112_1122.png}
-      \caption*{These are similarity matrices from sender to reciever. The row tells you the sending layer and the column tells you the recieving layer.
+      \caption*{These are similarity matrices from sender to receiver. The row tells you the sending layer and the column tells you the recieving layer.
       The entry tells you the accuracy of the stitched model created by stitching between those two layers.}
    \end{figure}
 \end{center}
@@ -439,7 +288,7 @@ and perhaps not that similar from the corresponding normal (sometimes called "va
       \centering
       \caption{Sometimes a Diagonal in Large ResNets}
       \includegraphics[width=8.5cm]{resnet18_resnet18_sims.png}
-      \caption*{Similariy matrix from sender to reciever.}
+      \caption*{Similariy matrix from sender to receiver.}
    \end{figure}
 \end{center}
 
@@ -448,7 +297,7 @@ and perhaps not that similar from the corresponding normal (sometimes called "va
       \centering
       \caption{Sometimes Triangular Pattern in Large ResNets}
       \includegraphics[width=9.5cm]{resnet18_resnet34_sims.png}
-      \caption*{Similariy matrix from sender to reciever.}
+      \caption*{Similariy matrix from sender to receiver.}
    \end{figure}
 \end{center}
 
@@ -473,7 +322,7 @@ The reason that these results are perplexing is that we were expecting to see so
 when stitching
 different networks. Bansal et al.'s findings suggested that there would be a one-to-one layer correspondence between
 two networks of the same architecture. While we did, roughly, see this for ResNet18 and ResNet34, we did not for the
-small ResNets. Obviously, it is impossible to have a diagonal when the sender and reciever have different lengths,
+small ResNets. Obviously, it is impossible to have a diagonal when the sender and receiver have different lengths,
 but we had considered a few possibilities.
 
 Namely, we considered that there may be a one-to-one correspondence between subsections of each neural network to
@@ -485,13 +334,13 @@ have the same final learned representation.
 To make our language more precise we can define consecutive sequences of neural networks as ``modules''. Naturally,
 modules have modules within them and, if they are not the entirety of the network, they are within a module. We thought
 that there would be some non-trivial modular mapping between two networks. That is to say, there would be some way of
-describing the sender as a sequence of modules and the reciever as a sequence of modules, such that a mapping existed
-between the two sequences. Obviously, the trivial mapping exists between the entire sender to the entire reciever
+describing the sender as a sequence of modules and the receiver as a sequence of modules, such that a mapping existed
+between the two sequences. Obviously, the trivial mapping exists between the entire sender to the entire receiver
 (since they both input identical images and both output nearly identical classifications), but we had hoped for more.
 
 Implicit in our expectations, naturally, was the assumption that there would be a \textbf{mapping} between some quantity
-in the sender and some other quantity in the reciever. It is highly unintuitive that layers in the sender are equally
-similar (and very much so) to lots of layers in the reciever. We expected each layer to have at most one to three layers
+in the sender and some other quantity in the receiver. It is highly unintuitive that layers in the sender are equally
+similar (and very much so) to lots of layers in the receiver. We expected each layer to have at most one to three layers
 in the other network it was similar to. As we've seen, however, later layers tend to be similar to nearly all earlier layers
 by our stitching metric.
 
@@ -504,7 +353,7 @@ The former option is very interesting because it upheaves our understanding of n
 as data is more deeply processed in neural networks it becomes more ``high level'' and granular information is lost. If
 this were not the case it would prompt us to understand when and why that is so. The latter option is compelling mainly
 because it helps us find a limitation of stitching. In a sense it would mean that stitches are powerful enough to ``hack''
-the reciever network: to trick it into using a representation it was not expecting. If this were possible and common, then
+the receiver network: to trick it into using a representation it was not expecting. If this were possible and common, then
 high stitching accuracy would not be a sign of similarity, though low stitching accuracy could be a sign of dissimilarity.
 
 We mainly examine the latter option by using a similarity-trained stitch and by taking statistics on the mean squared
@@ -529,7 +378,7 @@ epochs per stitch and have close to random accuracy.
       \centering
       \caption{Naive Self-Similarity Training Tends To Fail}
       \includegraphics[width=7.5cm]{resnet1111_1111_autoencoder.png}
-      \caption*{Similarity matrix from sender to reciever.}
+      \caption*{Similarity matrix from sender to receiver.}
    \end{figure}
 \end{center}
 
@@ -546,7 +395,7 @@ for various cases with random representations.}
 
 That is to say, we measured the mean squared distance (frobenius norm) of the stitched representations for the networks
 for each of those pairs of networks, specifically for the representations that were at the same layer. This enabled us
-to get a sense for whether the networks were learning the same representation or "hacking" eachother.
+to get a sense for whether the networks were learning the same representation or ``hacking'' eachother.
 
 We also computed the same statistics on the set of all stitches to see if the diagonal was any different. We focused
 on the diagonal because due to Bansal et. al. we have more confidence in it corresponding to a true emulation of the
@@ -557,10 +406,11 @@ low. It tended to be around two orders of magnitude lower for the similarity-tra
 similarity trained stitch does not seem to be further from the expected representation than the vanilla stitch is from it
 (in ``Self-Similarity Stitches vs. Vanilla Stitches''). The specifics (tables) are in the appendix.
    
-\section*{Conclusion}
+\section{Conclusion}
+\label{Conclusion}
 It appears that stitching does not behave for different architectures exactly as we had hoped, though it does not seem
 to be generating representations altogether different from those that were expected. We hypothesize that in some cases
-stitches may be able to ``hack'' the reciever by learning to give it novel representations which nonetheless yield high
+stitches may be able to ``hack'' the receiver by learning to give it novel representations which nonetheless yield high
 accuracy. However, it appears that stitches do not deviate, numerically, that much from the expected representation on
 average. Most likely, there are subspaces in the representation space more important than others and the vanilla stitch
 is able to optimize them, potentially at the expense of others, thus yielding slightly higher mean squared error with
@@ -569,331 +419,79 @@ by training such a stitch (the ``Self-Similarity'' stitch). In line with this co
 to reach high accuracy, probably because it is to ``diversified'' and does not have information about what subspaces
 matter more for the downstream task.
 
-\section*{Appendix}
+\section*{Acknowledgments}
+\label{Acknowledgments}
+Thank you to the SuperUROP benefactors (MIT EECS) for funding this project as well as my mentors, and the
+SuperUROP faculty and staff for helping me embark on this research and write this paper.
+\newpage
+\bibliography{iclr2021_conference}
+\bibliographystyle{iclr2021_conference}
+\newpage
+\appendix
+\section{Appendix}
+\label{Appendix}
+Below are numerical talbes for the mean squared differences between different representations
+after training with different stitching methods. Vanilla stitches were trained using backpropagation
+through the stitched network from the CIFAR-10 classification task. Self-Similarity stitches were
+trained using a mean squared error loss with respect to the expected representation of the
+receiver layer.
+
+We compile tables of simple statistics for the mean squared differences both for all the stitches as well
+as for the diagonals, which we expect to tend to exhibit smaller mean squared differences. For each comparison
+we use stitches to and from randomly weighted models as controls.
+
 \subsection*{Diagonals: Vanilla Stitches}
 \begin{tabular}{c c c c c}
-   Name&Minimum&Mean&Maximum&Standard Deviation\\
+   Model Pair&Minimum&Mean&Maximum&Standard Deviation\\
    Trained to Trained&2.03e-03&4.41e-02&2.80e-01&6.10e-02\\
    Trained to Random&1.27e-01&4.28e+05&4.24e+06&1.12e+06\\
    Random to Trained&1.50e-02&3.25e-01&5.29e-01&1.56e-01\\
    Random to Random&1.58e-01&1.26e+02&1.36e+03&2.92e+02\\
 \end{tabular}
+
 \subsection*{Diagonals: Self-Similarity Stitches}
 \begin{tabular}{c c c c c}
-   Name&Minimum&Mean&Maximum&Standard Deviation\\
+   Model Pair&Minimum&Mean&Maximum&Standard Deviation\\
    Trained to Trained&2.15e-05&1.50e-02&1.91e-01&3.73e-02\\
    Trained to Random&5.52e-02&7.60e+04&3.56e+05&1.26e+05\\
    Random to Trained&3.48e-05&1.10e-03&5.91e-03&2.01e-03\\
    Random to Random&1.73e-02&4.94e+00&6.03e+01&1.27e+01\\
 \end{tabular}
+
 \subsection*{Diagonals: Self-Similarity Stitches vs. Vanilla Stitches}
 \begin{tabular}{c c c c c}
-   Name&Minimum&Mean&Maximum&Standard Deviation\\
+   Model Pair&Minimum&Mean&Maximum&Standard Deviation\\
    Trained to Trained&1.21e-03&2.33e-02&1.14e-01&3.89e-02\\
    Trained to Random&2.71e-03&1.67e+05&3.67e+06&7.32e+05\\
    Random to Trained&7.94e-03&3.23e-01&5.29e-01&1.59e-01\\
    Random to Random&1.17e-01&1.18e+02&1.35e+03&2.86e+02\\
 \end{tabular}
+
 \subsection*{All Representation Pairs: Vanilla Stitches}
 \begin{tabular}{c c c c c}
-   Name&Minimum&Mean&Maximum&Standard Deviation\\
+   Model Pair&Minimum&Mean&Maximum&Standard Deviation\\
    Trained to Trained&1.63e-03&4.49e-02&3.63e+00&1.37e-01\\
    Trained to Random&1.55e-04&2.63e+05&1.78e+07&1.00e+06\\
    Random to Trained&1.35e-02&2.21e+00&2.27e+02&1.17e+01\\
    Random to Random&1.34e-01&7.25e+04&1.24e+07&5.94e+05\\
 \end{tabular}
+
 \subsection*{All Representation Pairs: Self-Similarity Stitches}
 \begin{tabular}{c c c c c}
-   Name&Minimum&Mean&Maximum&Standard Deviation\\
+   Model Pair&Minimum&Mean&Maximum&Standard Deviation\\
    Trained to Trained&5.39e-06&1.58e-02&1.32e+00&5.90e-02\\
    Trained to Random&1.71e-07&1.06e+05&9.19e+06&4.27e+05\\
    Random to Trained&6.32e-06&2.05e-03&1.88e-02&4.31e-03\\
    Random to Random&1.59e-02&4.20e+04&6.90e+06&3.44e+05\\
 \end{tabular}
+
 \subsection*{All Representation Pairs: Self-Similarity Stitches vs. Vanilla Stitches}
 \begin{tabular}{c c c c c}
-   Name&Minimum&Mean&Maximum&Standard Deviation\\
+   Model Pair&Minimum&Mean&Maximum&Standard Deviation\\
    Trained to Trained&7.83e-04&1.98e-02&5.87e-01&3.25e-02\\
    Trained to Random&1.54e-04&6.26e+04&5.79e+06&3.43e+05\\
    Random to Trained&7.94e-03&2.21e+00&2.27e+02&1.17e+01\\
    Random to Random&9.44e-02&2.12e+04&4.77e+06&2.08e+05\\
 \end{tabular}
-
-% \section{Experimental Setup}
-% % Notational notes for myself:
-% %    %% Stitching %%
-% % A_{i,j} is the module from i to j inclusive
-% % A_{\leq N} is the prefix (i.e. module from 0 to N inclusive)
-% % A_{\geq K} is the suffix of all layers after K.
-% % AB_{i \rightsquigarrow | \rightarrow \not{\rightarrow} j} is the stitch from A to B from layer i to layer j
-% %   depeneding on whether the accuracy is unknown, high, or low (so representations are unknown, similar, or differnet)
-% % To refer to the outputs of networks we use the letter R for representation. For the output of network A
-% % from layer i we use R_{A, i}. This'd be the input for network A at layer i + 1 or some sort of stitch.
-% %    %% Mappings %%
-% % A \rightarrow B
-% % 
-% % 
-% \subsection{Definitions}
-% We begin with a lot of definitions and then proceed to elucidate the high-level experimental setup
-% and preliminary results. Our goal from the experiments is to understand what functionality is shared
-% across pairs of neural network architectures. We rely heavily on a domain-specific language defined
-% below because it allows us to ascribe terms with precise meaning to all the different types of behaviors
-% we expect to see.
-
-% \subsubsection*{Basic Definitions and Terminology}
-% \begin{itemize}
-%    \item Representation: the intermediate output of a neural network, usually refered to as \(R_{A, i}\) if output from layer \(i\) of network \(A\).
-%    \item Prefix: the first \(N\) layers of a neural network, \(A\). We may call the prefix function \(A_{\leq N}\) or \(A_{<N+1}\) if applicable.
-%    \item Suffix: the last layers of a neural network \(B\), starting at layer \(K\). We may call the suffix function \(B_{\geq K}\) or \(B_{>K-1}\) if applicable.
-%    \item Module: a subsequence of consecutive layers in a neural network, similar to the notion of a substring in computer systems. It can also be thought of as a prefix of a suffix, or a suffix of a prefix. It is denoted with the start and ending layers (inclusive). For example \(C_{2,3}\) is the module with layers 2 and 3 of network \(C\). During normal computation, the first layer outputs into it, and it outputs into the fourth layer. Note that single layers are also modules. \(C_{1,1}\) is both the first layer and the first possible module of \(C\). Moreover, prefixes and suffixes are modules.
-%    \item Submodule: a module inside a module. for example, \(C_{2,2}\) is a submodule of \(C_{2,3}\). This will be used when we wish to describe the internals of modules.
-%    \item Supermodule: a module within which there is a module. This will be used when we wish to group modules.
-%    \item Sender: when a module recieves input from a previous module we call that previous module the sender. We may also say that a module is \emph{sending} when we wish to express that it is the sender.
-%    \item Reciever: The module some other module is sending to. We may also say that it is \emph{recieving}.
-%    \item Expected sender (or reciever): absent of stitching, the module that would be the sender or the reciever to/from the current module.
-%    \item Expected input (or output): the output of the expected sender or reciever during normal computation.
-% \end{itemize}
-
-% \subsubsection*{Stitching}
-% We define stitching in the same way as Bansal et. al. 
-% Say we wish to stitch two networks \(A\) and \(B\).
-% We will calculate the output of a prefix of \(A\),
-% input it into our stitch \(S\), and then input the output
-% of \(S\) into a suffix of \(B\). Say we take the
-% output of \(A\) at layer \(i\), input it into \(S\),
-% and then take the output of \(S\) and input it into
-% \(B\) at layer \(j+1\). We say that layer \(i\) of
-% \(A\) was stitched \emph{into} layer \(j+1\) of \(B\).
-% The composition \(S \circ A_{\leq i}\) has replaced
-% the expected sender, \(B_{\leq j}\) of \(B_{>j}\).
-% As discussed by Bansal et. al, this enables us to compare
-% the representations \(R_{A,i}\) and \(R_{B,j}\).
-
-% The stitch \(S\) is a function whose domain is the set of possible \(R_{A,i}\)
-% and whose range is in the same space as \(R_{B,j}\). For the same reasons as Bansal et. al.
-% we use simple function classes like 1x1 convolutions where applicable and strided convolutions
-% elsewhere.
-
-% The network formed with \(B_{\geq j+1} \circ S \circ A_{\leq i}\) is called the 
-% \emph{stitched network} and is often denoted as \(AB_{i \rightsquigarrow j+1}\). The stitched 
-% network is frozen in all layers except for \(S\), which is trained with gradient descent
-% so as to approximate the best possible choice for \(S\). If the resulting accuracy
-% is high then we refer to the stitched network as \(AB_{i \rightarrow j+1}\) and we say
-% that \(A\) is \emph{stitchable} to \(B\) through those layers: \(\exists AB_{i \rightarrow j+1}\).
-% If the resulting accuracy is low, we refer to the stitched network as \(AB_{i \not{\rightarrow} j+1}\)
-% and we say that \(A\) is not stitchable to \(B\) through those layers.
-
-% \subsubsection*{Representational Mappings}
-% A representational mapping between neural networks \(A\) of length and \(B\) is a mapping that assigns
-% at most one \(R_{B,j}\) for every \(R_{A,i}\). We sometimes use the layer indices \(i\) and \(j\)
-% as shorthand.
-
-% We establish the mapping as follows: for each valid \(i\) in \(A\), find the \(j\) in \(B\)
-% such that \(R_{A,i}\) is most similar to \(R_{B,j}\) out of all possible \(j\) and
-% \(\exists AB_{i \rightarrow j+1}\). We refer to the mapping as \(A \rightarrow B\). There are
-% other ways to define such a relation, but we pick this one for simplicity.
-% Intuitively this says that those two representations are, to an extent, interchangeable.
-% We also hope that this mapping will be injective and monotonic.
-% By monotonic we simply mean that if \(i_{1} < i_{2}\), \(i_{1}\) maps to \(j_{1}\),
-% and \(i_{2}\) maps to \(j_{2}\), then it should be the case that \(j_{1} < j_{2}\). This simply
-% means that the network is learning more abstract notions as data flows through it.
-
-% The precise reader will note that while the representations may be interchangeable in one direction
-% they may not be in both, depending on the type of stitch. That is to say,  \(\exists AB_{i \rightarrow j+1}\)
-% does not imply \(\exists BA_{j \rightarrow i+1}\), even with linear transformations and 1x1 convolutions
-% because of the possibility of drastic changes in dimensionality. We use \(\rightarrow\) and \(\leftarrow\)
-% or flip the order of the operands to differentiate the two directions.
-% When we wish to express \(\exists AB_{i \rightarrow j+1} \land \exists BA_{j \rightarrow i+1}\),
-% we may often say \(AB_{i \leftrightarrow j}\). We may also define a two-way representational mapping,
-% \(A \leftrightarrow B = (A \rightarrow B) \cap (B \rightarrow A)\), though it is not a mapping
-% in the mathematical sense, but instead a list of tuples.
-% % Begin Footnote
-% \footnote{For a set of tuples \(C\), Define the reverse tuple set \(V(C) = \{(b, a) \forall (a, b) \in C\}\).
-% For a mapping \(f: D \to R\) we define its set of tuples, \(T(f) = \{(x, f(x)) \forall x \in D\}\).
-% For \(f: D \to R, g: R \to D\), we define \(f \cap g = T(f) \cap V(T(g))\). We can also define
-% \(f \cup g = T(f) \cup V(T(g))\). Note that \(f \cap g\) is always a subset of \(D x R\), and
-% that \(f \cap g = V(g \cap f)\)}.
-% % End Footnote
-
-% The precise reader will also note that high accuracy should be relative to some baseline. We define what is high
-% experimentally and using random (untrained) networks. When stitching different architectures we compare the accuracy
-% with that of the \emph{least accurate} architecture that went into the stitch. That means that if we stitch from
-% a very large (or wide) network to a very small one, or vice versa, we should expect the smaller network to be a
-% bottleneck on accuracy.
-
-% \subsubsection*{Modular Mapping}
-% Using our representational mappings, we establish a more general notion of modular mappings based on modules. A Modular mapping
-% tells us about what modules in two different neural networks might have shared functionality based on representational similarity.
-% Intuitively, if one module is mapped to another, then the latter can be swapped out for the former, with two stitches, in the latter's network.
-% Informally, for two networks \(A\) and \(B\), \(A_{i_1, i_2}\) is mapped to \(B_{j_1, j_2}\) if we can find a pair of stitches \(S_1, S_2\), such that the accuracy is high for
-% \(B_{>j_2} \circ S_2 \circ A_{i_1,i_2} \circ S_1 \circ B_{<j_1}\). Since it's possible to infer this from \(A \rightarrow B\) and \(B \rightarrow A\),
-% however, we infer it from \(\exists BA_{j_1 \rightarrow i_1}\) and \(\exists AB_{i_2 \rightarrow j_2+1}\).
-
-% To find these modular mappings we can simply brute force for all possible indices, \(i_1, i_2, j_1, j_2\),
-% given our pre-computed representational mappings. If we denote the length (in layers) of \(A\) as \(N_1\) and
-% that of \(B\) as \(N_2\), The runtime of the brute force algorithm is \(\mathcal{O}(\alpha N_1 N_2)\) where \(\alpha\) is
-% the worst-case time necessary to optimize a stitch between any pair of layers.
-
-% However, we would prefer to also try and enforce monotonicity of the modular mapping. If two modules, \(M_1 = A_{i_1, i_2}, M_2 = A_{i_3, i_4}\),
-% have the property that \(i_2 < i_3\), we say that \(M_1 < M_2\). Monotonicity means that of we have any two modules in \(A\),
-% \(M_{A_1}, M_{A_2}\), and any two modules in \(B\), \(M_{B_1}, M_{B_2}\), such that \(M_{A_1} \Rightarrow M_{B_1}\)
-% and \(M_{A_2} \Rightarrow M_{B_2}\), then \(M_{A_1} < M_{A_2}\)implies \(M_{B_1} < M_{B_2}\). Monotonicity is preferable, because
-% it makes the mapping more interpretable. It may not be the case that the modular mapping is monotonic, but we can instead choose to
-% focus on a subset of module pairs that is. We present an algorithm below which given two neural networks finds a monotonic subset of
-% \(A \Rightarrow B\).
-
-% \begin{center}
-% \begin{algorithm}
-% \caption{Find A Monotonic Modular Mapping Subset}
-% \begin{algorithmic}[h]
-% \Procedure{MFind(\(A\), \(B\))}{}
-%       \State Pretrain and Freeze \(A\) and \(B\) seperately
-%       \State \(A\) has length \(N\)
-%       \State \(B\) has length \(M\)
-%       \State Find \(A\rightarrow B\) through brute force
-%       \State Find \(B\rightarrow A\) through brute force
-%       \State \(i_{start} = 1\)
-%       \State \(j_{start} = 1\)
-%       \State Initialize \(MM = \{\}\)
-%       \For{\(i_{end} \in [1, N-1]\)}
-%          \For{\(j_{end} \in [j_{start}, M-1]\)}
-%             \If{\((B_{j_{start}-1} \rightarrow A_{i_{start}}) \land (A_{i_{end}} \rightarrow B_{j_{end}+1})\)}
-%                \State Add \((A_{i_{start}, i_{end}}, B_{j_{start}, j_{end}})\) to \(MM\)
-%                \State \(i_{start} = i_{end} + 1\)
-%                \State \(j_{start} = j_{end} + 1\)
-%                \State Break Inner Loop
-%             \EndIf
-%          \EndFor
-%       \EndFor
-%       \State Return \(MM\)
-% \EndProcedure
-% \end{algorithmic}
-% \end{algorithm}
-% \end{center}
-
-% \subsection{Hypotheses}
-% Now that we know how to talk about modules, we introduce 4 main idealized cases that may present themselves when we
-% try to modularly map two different neural networks of different sizes. We assume that these mappings are all monotonic.
-% We describe these assuming that the sender network is at most as long as the reciever network.
-
-% \begin{itemize}
-%    \item Layer to layer (L2L) mapping: single layers (in shorter networks) may have the same functionality as single layers in longer networks. Additional layers in longer networks introduce new functionality. This mapping is injective, but not necessarily surjective.
-%    \item Layer to module (L2M) mapping: single layers (in shorter networks) may have the same functionality as modules in longer networks. The long networks have the same functionality, but better. This mapping is injective and ideally surjective.
-%    \item Module to module (M2M) mapping: modules (in shorter networks) may have the same functionality as modules in longer networks. This mapping is injective and ideally surjective.
-%    \item No (N) mapping: informally, when there is M2M mapping, but the modules are so big as to be uninformative.
-% \end{itemize}
-
-% It is possible that our mappings will not be monotonic, but we hope to find that they are. It is an elegant
-% simplifiying assumption.
-
-% Given this assumption, it is (only) possible to have these four cases outlined above. However, which one
-% is most prevalent at a specific segment of a network may change: we may start with L2L mappings followed by
-% M2M or N mappings, for example. To define a notion of this, we introduce \textit{realms}. Realms are pairs
-% of supermodules within which submodules obey a single mapping mode (L2L, L2M, M2M, or N).
-% More generally, if within a pair of supermodules behavior follows some pattern, we label it a realm.
-
-% Thus, we may re-pharse our goal as that of describing the realms of modular mappings for different
-% neural network architectures. To do this we generate a monotonic modular mapping based on representational
-% mappings which we found using stitching. This helps us understand for pairs of networks, where they have the
-% same functionality in a precise way.
-
-% \subsection{Networks and Dataset}
-% We focused on varying only the random seed of the neural network. To simplify our analysis we also used the CIFAR-10 dataset
-% with standard resnets. These currently only include ResNet18, but will soon also include  ResNet34, ResNet50, ResNet101, ResNet152.
-% The optimizers and hyperparameters used are further elucidated in the appendix.
-
-% For layers with the same width and height we used 1x1 convolutions as our stitching function class. For layers with different dimensions
-% we utilized the fact that the dimensions of the layers are powers of two (in our networks). In stitches that required downsampling (due
-% to smaller dimensions in the reciever) we used strided convolutions. In stitches that required upsampling we simply used a nearest
-% upsampling followed by a 1x1 convolution (which you can think of as reversed strided convolutions).
-
-% \subsection{Tests and Controls}
-% \subsubsection*{Networks of the same architecture}
-% First we stitched networks of each architecture with other networks of the same architecture. We trained lists of networks for each 
-% architecture. For each list we called the first element the \textit{pivot}. The pivot was stitched to each of the other networks
-% in the same list, including itself. For every pair of networks we stitched each layer in the sender network to each layer in the
-% reciever network. 
-
-% For the purpose of creating a control, we made sure that there was a random (untrained) reciever network in the list. We also swapped 
-% pivots with another untrained network which was stitched with all the other networks in the list. This ensured that we had baselines
-% for resulting accuracy (and therefore similarity).
-
-% You can think of the result of each pair of networks' stitches as a square matrix of accuracies, where the row denotes the layer of the
-% sender network and the column denotes the layer of the reciever network. The accuracy at that elements is our measure of representational
-% similarity. These tables are tiled into a tensor which represents the results of the stitch. In the depth dimension we average to find
-% the average similarity over all our experiments for that architecture. Note that we insert zero at layer pairs that are not stichable
-% due to dissimilar shapes.
-
-% \subsubsection*{Networks of different architectures}
-% We will conduct the same experiment as above, but where the pivot (sender) architecture is different from the reciever architecture.
-% For each pair of architectures, we pick a pivot of each architecture along with a (small) list of recievers of the other architecture.
-% We then repeated the procedure from the case with two identical architectures. Note that instead of a square matrix of accuracies, we
-% have a rectangular matrix of accuracies. This matrix will be tall if the sender network is longer than the reciever network, and wide
-% in the other case.
-
-% \subsection{Testing Algorithm}
-% More details will be elucidated in the appendix.
-
-% \section{Results}
-% \subsection{Summary}
-% We have preliminary results that suggest the expected: networks of the same architecture yield a high similarity
-% along the layer-to-layer matrix diagonal, with decreasing accuracies towards the top right and bottom left corners. This tells us
-% that they are in a L2L realm (where corresponding layers have similar output representations and therefore functionality).
-% For a random network, we have random behavior. We trained on a ResNet18 and have graphics below.
-% \begin{center}
-%    \includegraphics[width=6.5cm]{sim.png}
-%    \includegraphics[width=6.5cm]{rand.png}
-% \end{center}
-% \subsection{Figures}
-% ...
-
-% % Figures that make sense when they are in black and white are ideal
-% % \begin{figure}[h]
-% % \begin{center}
-% % %\framebox[4.0in]{$\;$}
-% % \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
-% % \end{center}
-% % \caption{Sample figure caption.}
-% % \end{figure}
-
-% \subsection{Tables}
-% ...
-
-% % \begin{table}[h]
-% % \caption{Sample table title}
-% % \label{sample-table}
-% % \begin{center}
-% % \begin{tabular}{ll}
-% % \multicolumn{1}{c}{\bf PART}  &\multicolumn{1}{c}{\bf DESCRIPTION}
-% % \\ \hline \\
-% % Dendrite         &Input terminal \\
-% % Axon             &Output terminal \\
-% % Soma             &Cell body (contains cell nucleus) \\
-% % \end{tabular}
-% % \end{center}
-% % \end{table}
-
-% \section{Analysis and Interpretation of Results}
-% \subsection{Interpretation}
-% ...
-% % It didn't work.
-
-% \subsection{Significance}
-% ...
-% % What this means for the future and the field.
-
-% \section{Conclusions}
-% ...
-% % We'll write our conclusions in a nice format here.
-
-% \section*{Acknowledgments}
-% Thank you to the SuperUROP benefactors (MIT EECS) for funding this project.
-
-% \bibliography{iclr2021_conference}
-% \bibliographystyle{iclr2021_conference}
-
-% \appendix
-% \section{Appendix}
-% ...
 
 \end{document}
