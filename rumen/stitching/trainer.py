@@ -5,18 +5,13 @@ import unittest
 
 # Enables more interesting type annotations
 from typing_extensions import (
-    Concatenate,
     ParamSpec,
 )
 from typing import (
-    Dict,
     NoReturn,
-    Callable,
-    Union,
     List,
     Any,
     Optional,
-    Tuple,
     TypeVar,
 )
 
@@ -25,7 +20,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import Dataset, DataLoader
-
 from cifar import pclone, listeq
 
 import time
@@ -36,6 +30,8 @@ T = TypeVar('T')
 P = ParamSpec('P')
 
 # In theory it's faster this way...
+
+
 def adjust_learning_rate(
     epochs: int,
     warmup_epochs: int,
@@ -160,7 +156,8 @@ class Trainer(object):
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         for e in range(1, epochs + 1):
             if verbose:
-                print(f"\t\t starting on epoch {e} for {len(train_loader)} iterations")
+                print(
+                    f"\t\t starting on epoch {e} for {len(train_loader)} iterations")
             model.train()
             # epoch
             # NOTE that enumerate's start changes the starting index
@@ -183,11 +180,11 @@ class Trainer(object):
                     y = outputs.to(device)
                     h = inputs.to(device)
                     h = model(h)
-                    #print(h)
-                    #print(y)
+                    # print(h)
+                    # print(y)
                     # TODO modularize this out to enable sim training
                     loss = F.cross_entropy(h, y)
-                    #print(loss)
+                    # print(loss)
 
                 scaler.scale(loss).backward()
                 scaler.step(optimizer)
@@ -221,6 +218,8 @@ class MockDataset(Dataset):
         return self.X_Y[idx]
 
 # TODO this does not seem to properly learn
+
+
 class TrainerTester(unittest.TestCase):
     def test_train_loop(self):
         # Get hyperparameters with bsz = 1
@@ -228,12 +227,13 @@ class TrainerTester(unittest.TestCase):
         hyps.epochs = 100
 
         # Should be converging to [1, 0]
-        model = nn.Linear(2, 1, bias = False)
+        model = nn.Linear(2, 1, bias=False)
         original_params = pclone(model)
 
         test_loader = DataLoader(MockDataset(), batch_size=hyps.bsz)
         train_loader = DataLoader(MockDataset(), batch_size=hyps.bsz)
-        acc = Trainer.train_loop(hyps, model, train_loader, test_loader, verbose=False)
+        acc = Trainer.train_loop(
+            hyps, model, train_loader, test_loader, verbose=False)
         self.assertTrue(acc > 0.0)
 
         optimum_weights = torch.tensor([1, 0]).float()
@@ -243,6 +243,7 @@ class TrainerTester(unittest.TestCase):
         # Ascertain that the weights change and that they get better
         self.assertFalse(listeq(original_params, list(model.parameters())))
         self.assertTrue(new_dist < original_dist)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

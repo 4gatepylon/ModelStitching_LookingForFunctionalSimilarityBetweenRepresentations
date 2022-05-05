@@ -361,13 +361,13 @@ class StitchedResnet(nn.Module):
         self.stitch = stitch
 
         # TODO why does this break things?
-        # sender.eval()
-        # reciever.eval()
-        # for p in self.sender.parameters():
-        #     p.requires_grad = False
+        sender.eval()
+        reciever.eval()
+        for p in self.sender.parameters():
+            p.requires_grad = False
         
-        # for p in self.reciever.parameters():
-        #     p.requires_grad = False
+        for p in self.reciever.parameters():
+            p.requires_grad = False
     
     def parameters(self):
         return self.stitch.parameters()
