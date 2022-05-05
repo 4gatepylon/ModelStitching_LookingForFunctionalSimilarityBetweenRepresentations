@@ -199,58 +199,78 @@ is copied a constant number of times, corresponding to a square grid of identica
 \section{Experimental Setup}
 \label{ExperimentalSetup}
 \subsection*{Models and Dataset}
-We use the CIFAR-10 dataset\footnote{In the future, once our preliminary results are more interpretable, we intend to
-continue on to imagenet.} with small ResNets. With our augmented class of stitches we compare all different
-layers of ResNet18, ResNet34, and all
-ResNets with between 10 and 18 layers. These small ResNets we characterize with four-tuples,
-$R(x_1, x_2, x_3, x_4)$, where we choose $x_i \in \{1, 2\}$. For any of these ResNets there are, between an initial convolutional
-layer and a final linear classification layer, four sets of Residual blocks numbered 1 through 4 and denoted by
-$x_i$. Each set has either 1 or 2 blocks denoted by the value of $x_i$. Within each block there are two layers,
-though we focus on stitching out of and into blocks, instead of the layers within them. 
+We use the CIFAR-10 dataset with small ResNets. We chose CIFAR-10 because it is a small, well-understood dataset
+of small RGB-images that we can train fast on. We chose ResNets because they were used by Bansal et al., giving our
+results more context.
 
-Because within each block there are two layers, and there is one
-additional initial convolutional layer as well as one additional classification layer, the total number
-of layers is given by
-\[2 + \sum_{i=1}^{i=4} 2 \cdot x_i \]
+We compare all different
+layers of ResNet34 and all
+ResNets with between 10 and 18 layers. These small ResNets we characterize with 4-tuples, where 
+each element is either 1 or 2, representing the number of residual blocks per blockset\footnote{
+   Residual blocks are partitioned into sets of consecutive within which they have the same shape.
+} out of the 4 blocksets
+present in a ResNet.\footnote{
+   Though within each block there are two layers,
+   we focus on stitching out of and into blocks for simplicity.
+} Since we never use 10 or more blocks per blockset, we can denote these 4-tuples unambiguously\footnote{
+   If we were to refer to them by their numbers of layers there would be ambiguity, since the neural networks
+   r1122 and r2211 have the same number of layers, but different shapes per layer if we were to map their
+   layers one to one.
+} as
+r1111, r1112, and so on. This set of 16 ResNets\footnote{
+   Since each element of the 4-tuple is either 1 or 2, there are 16 total choices.
+} we refer to as the small ResNets.
 
-This means that for $R(1, 1, 1, 1)$ there are 10 layers, while for $R(2, 2, 2, 2)$ there are 18 layers. We call
-$R(2, 2, 2, 2)$ by the shorthand, ``ResNet18'', though this should not be generalized because there are pairs
-of networks with the same total number of layers but different numbers of blocks per tuple. For example:
-$R(1, 1, 2, 2)$ and $R(2, 2, 1, 1)$ both have 14 layers. These ResNets are qualitatively different
-because the blocks corresponding to each different set have different shapes. Specifically, the blocks in
-the set corresponding to $x_1$ have depth 64, width 32, and height 32; the blocks corresponding to $x_2$ have
-depth 128, width 16, and height 16; and in general the depth doubles each iteration,
-while the height and width each halve.
-
-It should be noted that ResNet34 is not a particularly special case. It is in fact $R(3, 4, 6, 3)$. In general,
-a large class of high-accuracy ResNets, both small and large, can be produced by by picking different values for
-$x_1, x_2, x_3, x_4$. We constrain $x_i$ to be either 1 or 2 since CIFAR-10 is a relatively easy task.
+Our small ResNets' representations double in depth and half in both width and height every blockset
+The first depth is 64 and the first width and height
+are both 32. Because the input dimensions have a depth of 3, and a width and height both of 32, ResNets have an
+initial convolutional layer before the first blockset. Because the output dimension is a 10-dimensional vector,
+for classification, they also have a fully connected layer at the very end.
 
 \subsection*{Experiment}
-We train ResNet34 as well as each possible $R(x_1, x_2, x_3, x_4)$ as described above. There are $2^4 = 16$ such possible
-small ResNets since each set of blocks can have either 1 or 2 blocks and there are 4 blocks. We stitch every unique ordered
-pair of networks from this set. There are $16 \cdot 16$ such unique ordered pairs, yielding 256 total pairs to stitch.
-For every pair we stitch every layer from the first network into every layer for the second. Note that we also stitch
-every layer from ResNet18 to ResNet34 and vice versa as a special case of a ``medium-sized'' ResNet.
+We train ResNet34 as well as each possible small resnet on CIFAR, yielding an accuracy above 90\%. Because 
+there are 16 such possible
+small ResNets and we stitch every possible ordered pair\footnote{
+   For example, stitching r1111 with r2222.
+}, there are around 256 such pairs we stitch amongst the small
+ResNets. In addition, we stitch ResNet34 to ResNet18 and vice versa to see whether our findings generalize to a
+bigger network. In every ordered pair of networks being stitched, the former is the sender, and the latter
+is the receiver. For any sender/receiver pair, we stitch into all layers of the receiver
+excluding both the convolution and any layers inside the residual blocks. We stitch out of all layers from the sender
+excluding both the fully connected layer and any layers inside the residual blocks. 
+Note that we do stitch out of and into all blocks per blockset if there is more than one.
 
-We use randomly initialized ResNets as controls. Unlike Bansal et al. we only vary our neural networks by their
-initialization weights. For every pair of networks that are stitched, we also create a random sender and a random
+We use randomly initialized ResNets as controls. Unlike Bansal et al., we only vary our neural networks by their
+initialization weights. Otherwise our setup is nearly identical.
+For every pair of networks that are stitched, we also create a random sender and a random
 receiver both with the same architecture as the sender and receiver respectively. Just as the sender is stitched
 into the receiver, the random sender is stitched into both the receiver and the random receiver, and the sender
 is also stitched into the random receiver. This allows us to acertain that the stitches
-are not overly powerful \cite{Bansal2021RevisitingMS}.
+are not overly powerful \cite{Bansal2021RevisitingMS}. The stitches are trained on
+the standard CIFAR-10 classification task by using backpropagation through the stitched network.
 
-We train each stitch for 4 iterations. This hyperparameter was selected after much experimentation. For both
+We train each stitch for 4 epochs. This hyperparameter was selected after experimentation. For both
 regular training of the network and training of the stitches we use stochastic gradient descent with momentum 0.9,
 batch size 256, weight decay 0.01, learning rate 0.01, and a post-warmup cosine learning rate scheduler.
- These hyperparameters were also arrived at from experimentation.
+These hyperparameters were also arrived at from experimentation. The code will be available on Github.
 
-For each stitch, we plot the accuracy on a grid based on the sending layer and the receiver layer. The layer is
-denoted by an integer which counts how many layers came before it.
+For ordered pair of networks, we plot the accuracy of all the stitches between their prefixes and suffixes
+on a grid based on the sending layer and the receiver layer. The layer is
+denoted by an integer which counts how many layers came before it\footnote{
+   The initial convolution is ``0,'' the first block of the first blockset is ``1,'' and so on.
+}.
 
-As a bonus we also train a set of ``similarity-trained'' stitches. These stitches are also used as a sort of control and
-their motivation explained more fully later. Most importantly, though, they are trained using mean squared error (and the
-same hyperparameters) to copy the expected representation of the receiver using that from the sender.
+Because one of our goals is to see whether stitches emulate the receiver's expected representation, we
+also measure the final pointwise mean squared difference between representations generated by stitch and
+those that are expected. This mean squared difference is a crude numerical method, 
+but gives us a sense of whether the representations
+the stitch generates are close to the expected ones, since if they are close, the difference ought to be very close
+to zero. We use random networks for to give us a sense what a high mean squared difference
+looks like, numerically. Additionally, we use a ``similarity'' trained stitch to give us a sense of what a low mean
+squared difference looks like. The similarity trained stitch is not trained using backpropagation
+from the classification task, but instead on the mean squared loss corresponding to the mean squared difference.
+It gives us a sense of what mean squared difference the stitch could reach if it truly were ``doing its best''
+to emulate the expected representation. We found that we had to train these other stitches for around 30 epochs.
 
 \section{Results}
 \label{Results}
@@ -323,8 +343,7 @@ was that as the randomly initialized (untrained) fraction of the stitched networ
       \centering
       \caption{Triangle Pattern in Small ResNets}
       \includegraphics[width=8.5cm]{resnet18_rand_resnet18_sims.png}
-      \caption*{These are similarity matrices. The row tells you the sending layer and the column tells you the recieving layer.
-      The entry tells you the accuracy of the stitched model created by stitching between those two layers.}
+      \caption*{Similarity matrix from random ResNet18 to trained ResNet18.}
    \end{figure}
 \end{center}
 
@@ -376,7 +395,7 @@ similariy trained stitch, on the other hand, is meant to give us a sense of how 
 representation if that were it's only ``goal''. In both cases we use controls in the form of stitches with or between
 random networks.
 
-\subsection*{Self-Similarity-Trained Stitch}
+\subsection*{Similarity-Trained-Trained Stitch}
 Below we have a heatmap of the task accuracy for the similarity-trained stitch. We found that it was not
 easy to train a stitch exclusively using mean squared error with respect to the expected representation. We suspect
 that there may be subspaces of the representation space that are far more relevant to accuracy and that by using
@@ -389,7 +408,7 @@ epochs per stitch and have close to random accuracy.
 \begin{center}
    \begin{figure}[h!]
       \centering
-      \caption{Naive Self-Similarity Training Tends To Fail}
+      \caption{Naive Similarity-Trained Training Tends To Fail}
       \includegraphics[width=7.5cm]{resnet1111_1111_autoencoder.png}
       \caption*{Similarity matrix from sender to receiver.}
    \end{figure}
@@ -417,7 +436,7 @@ expected representation.
 What we tended to find was that for random networks the mean squared distance was high and for trained networks it was
 low. It tended to be around two orders of magnitude lower for the similarity-trained stitch, which is expected, but the
 similarity trained stitch does not seem to be further from the expected representation than the vanilla stitch is from it
-(in ``Self-Similarity Stitches vs. Vanilla Stitches''). The specifics (tables) are in the appendix.
+(in ``Similarity-Trained Stitches vs. Vanilla Stitches''). The specifics (tables) are in the appendix.
    
 \section{Conclusion}
 \label{Conclusion}
@@ -428,7 +447,7 @@ accuracy. However, it appears that stitches do not deviate, numerically, that mu
 average. Most likely, there are subspaces in the representation space more important than others and the vanilla stitch
 is able to optimize them, potentially at the expense of others, thus yielding slightly higher mean squared error with
 respect to the expected representation than is possible using a purely mean squared error trained stitch. We see this
-by training such a stitch (the ``Self-Similarity'' stitch). In line with this conclusion, the similarity stitch struggles
+by training such a stitch (the ``Similarity-Trained'' stitch). In line with this conclusion, the similarity stitch struggles
 to reach high accuracy, probably because it is to ``diversified'' and does not have information about what subspaces
 matter more for the downstream task.
 
@@ -445,7 +464,7 @@ SuperUROP faculty and staff for helping me embark on this research and write thi
 \label{Appendix}
 Below are numerical talbes for the mean squared differences between different representations
 after training with different stitching methods. Vanilla stitches were trained using backpropagation
-through the stitched network from the CIFAR-10 classification task. Self-Similarity stitches were
+through the stitched network from the CIFAR-10 classification task. Similarity-Trained stitches were
 trained using a mean squared error loss with respect to the expected representation of the
 receiver layer.
 
@@ -464,7 +483,7 @@ we use stitches to and from randomly weighted models as controls.
 \end{tabular}
 
 \label{Table2}
-\subsection*{Diagonals: Self-Similarity Stitches}
+\subsection*{Diagonals: Similarity-Trained Stitches}
 \begin{tabular}{c c c c c}
    Model Pair&Minimum&Mean&Maximum&Standard Deviation\\
    Trained to Trained&2.15e-05&1.50e-02&1.91e-01&3.73e-02\\
@@ -474,7 +493,7 @@ we use stitches to and from randomly weighted models as controls.
 \end{tabular}
 
 \label{Table3}
-\subsection*{Diagonals: Self-Similarity Stitches vs. Vanilla Stitches}
+\subsection*{Diagonals: Similarity-Trained Stitches vs. Vanilla Stitches}
 \begin{tabular}{c c c c c}
    Model Pair&Minimum&Mean&Maximum&Standard Deviation\\
    Trained to Trained&1.21e-03&2.33e-02&1.14e-01&3.89e-02\\
@@ -494,7 +513,7 @@ we use stitches to and from randomly weighted models as controls.
 \end{tabular}
 
 \label{Table5}
-\subsection*{All Representation Pairs: Self-Similarity Stitches}
+\subsection*{All Representation Pairs: Similarity-Trained Stitches}
 \begin{tabular}{c c c c c}
    Model Pair&Minimum&Mean&Maximum&Standard Deviation\\
    Trained to Trained&5.39e-06&1.58e-02&1.32e+00&5.90e-02\\
@@ -504,7 +523,7 @@ we use stitches to and from randomly weighted models as controls.
 \end{tabular}
 
 \label{Table6}
-\subsection*{All Representation Pairs: Self-Similarity Stitches vs. Vanilla Stitches}
+\subsection*{All Representation Pairs: Similarity-Trained Stitches vs. Vanilla Stitches}
 \begin{tabular}{c c c c c}
    Model Pair&Minimum&Mean&Maximum&Standard Deviation\\
    Trained to Trained&7.83e-04&1.98e-02&5.87e-01&3.25e-02\\
