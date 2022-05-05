@@ -40,7 +40,7 @@ from loaders import Loaders
 from resnet.resnet_generator import ResnetGenerator
 from trainer import Trainer, Hyperparams
 from visualizer import Visualizer
-from cifar import pclone, mapeq, mapneq, flattened_table
+from cifar import pclone, mapeq, mapneq, flattened_table, choose_product
 
 def sanity_test_stitches_ptrs(data_ptrs):
     assert len(data_ptrs) > 0, "should have at least some data pointers"
@@ -131,7 +131,7 @@ class Experiment(object):
         print(f"Using device: {device}")
 
         print("Generating combinations")
-        combinations = [[1, 1, 1, 1]]
+        combinations = choose_product(4, [1, 2])
 
         print(f"Storing resnets in {Experiment.RESNETS_FOLDER}")
         if not os.path.exists(Experiment.RESNETS_FOLDER):

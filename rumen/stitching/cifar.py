@@ -46,6 +46,17 @@ def fix_seed(seed):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
+def choose_product(length: int, possibles: List[Any]) -> List[List[Any]]:
+    """ All ordered subsequences of length `length` of where each element is in `possibles` """
+    if (length == 1):
+        return [[x] for x in possibles]
+    combinations = []
+    for possible in possibles:
+        remainders = choose_product(length - 1, possibles)
+        for remainder in remainders:
+            combinations.append(remainder + [possible])
+    return combinations
+
 def pclone(model) -> List[torch.Tensor]:
     return [p.data.detach().clone() for p in model.parameters()]
 
@@ -78,6 +89,17 @@ def flattened_table(l: List[List[Any]]) -> List[Any]:
     return vec
 
 class UtilsTester(unittest.TestCase):
+    def test_choose_product(self):
+        possibles = [1,2,3]
+        length = 2
+        expect = [[i, j] for i in possibles for j in possibles]
+        self.assertEqual(set(map(tuple, choose_product(length, possibles))), set(map(tuple, expect)))
+
+        possibles2 = [1, 2]
+        length2 = 4
+        expect = [[i, j, k, w] for i in possibles2 for j in possibles2 for k in possibles2 for w in possibles2]
+        self.assertEqual(set(map(tuple, choose_product(length2, possibles2))), set(map(tuple, expect)))
+
     def test_flattened_table(self):
         table = [[1,2,3], [4,5,6], [7,8,9]]
         expect = [1,2,3,4,5,6,7,8,9]
@@ -148,75 +170,6 @@ class UtilsTester(unittest.TestCase):
 
         # Equivalent for all entries per model should be equal
         self.assertTrue(mapeq(models_comb_normal, models_comb_normal2))
-
-
-# def tensor_normalized2rgb(x: torch.Tensor):
-#     f = x.float()
-#     y = INV_NORMALIZE_TRANSFORM(f)
-#     return y
-
-
-# def tensor_normalized2pil_img(x: torch.Tensor):
-#     rgb_tensor = tensor_normalized2rgb(x)
-#     return TF.to_pil_image(rgb_tensor)
-
-
-# def tensor_normalized2nd_array(x: torch.Tensor):
-#     rgb_tensor = tensor_normalized2rgb(x)
-#     return rgb_tensor.numpy()
-
-
-# This will also be helpful!
-# https://pytorch.org/vision/master/auto_examples/plot_visualization_utils.html
-# https://medium.com/analytics-vidhya/read-image-using-cv2-imread-opencv-python-idiot-developer-4b7401e76c20
-# https://www.tutorialkart.com/opencv/python/opencv-python-save-image-example/
-# IMG_FILE = "human_interpretable_img.png"
-
-
-# def show_tensor_normalized(x: torch.Tensor, file=IMG_FILE):
-#     nd_array = tensor_normalized2nd_array(x)
-#     cv2.imwrite(file, nd_array)
-#     pass
-
-
-# def get_n_inputs(n, loader):
-#     k = 0
-#     for x, _ in loader:
-#         if k > n:
-#             break
-#         batch_size, _, _, _ = x.size()
-#         # print(f"batch size {batch_size}")
-#         for i in range(min(batch_size, n - k)):
-#             # Output as a 4D tensor so that the network can take this as input
-#             y = x[i, :, :, :].flatten(end_dim=0).unflatten(0, (1, -1))
-#             # print(y.size())
-#             yield y
-#         k += batch_size
-
-# def save_random_image_pairs(st, sender, snd_label, num_pairs, foldername_images, train_loader):
-#     original_tensors = list(get_n_inputs(num_pairs, train_loader))
-#     for i in range(num_pairs):
-#         # Pick the filenames
-#         original_filename = os.path.join(
-#             foldername_images, f"original_{i}.png")
-#         generated_filename = os.path.join(
-#             foldername_images, f"generated_{i}.png")
-
-#         with autocast():
-#             original_tensor = original_tensors[i]
-#             print(f"\tog tensor shape is {original_tensor.size()}")
-#             generated_tensor_pre = sender(
-#                 original_tensor, vent=snd_label, into=False)
-#             generated_tensor = st(generated_tensor_pre)
-
-#         # Save the images
-#         original_tensor_flat = original_tensor.flatten(end_dim=0)
-#         generated_tensor_flat = generated_tensor.flatten(end_dim=0)
-#         original_np = original_tensor_flat.cpu().numpy()
-#         generated_np = generated_tensor_flat.cpu().numpy()
-#         cv2.imwrite(original_np, original_filename)
-#         cv2.imwrite(generated_np, generated_filename)
-#         # TDOO
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
