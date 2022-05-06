@@ -163,16 +163,14 @@ def adjust_learning_rate(
 def evaluate(model, test_loader):
     model.eval()
 
-    # TODO, why would the total_correct / total_num change as we shuffled the data differently?
+    total_correct, total_num = 0., 0.
     for _, (images, labels) in enumerate(test_loader):
-        total_correct, total_num = 0., 0.
-
         with torch.no_grad():
             labels = labels.cuda().double()
             img = images.cuda()
             h = model(img)
             preds = h.argmax(dim=1).double()
-            total_correct = (preds == labels).sum().cpu().item()
+            total_correct += (preds == labels).sum().cpu().item()
             total_num += h.shape[0]
 
     return total_correct / total_num
@@ -342,6 +340,14 @@ def make_stitch(send_label, recv_label):
 
 
 def stitchtrain(args, two_models=False, load_stitch=False):
+    # I get this runtime error if I don't do this:
+    # Deterministic behavior was enabled with either `torch.use_deterministic_algorithms(True)` or
+    # `at::Context::setDeterministicAlgorithms(true)`, but this operation is not deterministic because
+    # it uses CuBLAS and you have CUDA >= 10.2. To enable deterministic behavior in this case, you must
+    # set an environment variable before running your PyTorch application: CUBLAS_WORKSPACE_CONFIG=:4096:8
+    #or CUBLAS_WORKSPACE_CONFIG=:16:8. For more information, go to
+    # https://docs.nvidia.com/cuda/cublas/index.html#cublasApi_reproducibility
+    os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":16:8"
     fix_seed(0)
 
     name = f"resnet_1111"
@@ -509,6 +515,9 @@ def stitchtrain(args, two_models=False, load_stitch=False):
     # matrix_heatmap(sim_path, heat_path, tick_labels_y=labels,
     #                tick_labels_x=labels)
     print("done!")
+
+    # Cleaar this in case we want to run faster again later
+    os.environ.pop("CUBLAS_WORKSPACE_CONFIG")
 
 
 class Args:
