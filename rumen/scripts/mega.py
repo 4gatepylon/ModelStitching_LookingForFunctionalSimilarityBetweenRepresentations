@@ -117,9 +117,9 @@ def get_loaders_no_ffcv(args):
             }
         train_kwargs.update(cuda_kwargs)
         test_kwargs.update(cuda_kwargs)
-    # Disable shuffling for determinism
+    # Disable shuffling for determinism, but it shouldn't really matter that much
     train_kwargs['shuffle'] = False
-    test_kwargs['shuffle'] = True
+    test_kwargs['shuffle'] = False
 
     transform = torchvision.transforms.Compose([
         torchvision.transforms.ToTensor(),
