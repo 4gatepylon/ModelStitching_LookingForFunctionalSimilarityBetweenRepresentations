@@ -39,6 +39,10 @@ def fix_seed(seed):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
+    # Suggested from
+    # https://discuss.pytorch.org/t/evaluate-twice-accuracy-changes-if-i-shuffle/150976
+    torch.use_deterministic_algorithms(True)
+
 
 def pclone(model):
     return [p.data.detach().clone() for p in model.parameters()]
@@ -103,14 +107,14 @@ def get_loaders_no_ffcv(args):
     test_kwargs = {'batch_size': test_batch_size}
     if use_cuda:
         cuda_kwargs =\
-        {
-            # Single worker for determinism
-            'num_workers': 1,
-            # Pinning memory speeds up performance by copying
-            # directly from disk to GPU I think.
-            # https://spell.ml/blog/pytorch-training-tricks-YAnJqBEAACkARhgD
-            'pin_memory': True
-        }
+            {
+                # Single worker for determinism
+                'num_workers': 1,
+                # Pinning memory speeds up performance by copying
+                # directly from disk to GPU I think.
+                # https://spell.ml/blog/pytorch-training-tricks-YAnJqBEAACkARhgD
+                'pin_memory': True
+            }
         train_kwargs.update(cuda_kwargs)
         test_kwargs.update(cuda_kwargs)
     # Disable shuffling for determinism
@@ -445,7 +449,7 @@ def stitchtrain(args, two_models=False, load_stitch=False):
     # # )
     # # h = self.stitch(h)
     # # h = self.reciever.into_forward(
-    # #     h, 
+    # #     h,
     # #     self.recv_label,
     # #     pool_and_flatten=self.recv_label == "fc",
     # # )
@@ -521,7 +525,8 @@ class Args:
         self.test_bsz = 2048
         self.lr = 0.01   # Learning Rate
         self.warmup = 10  # Warmup epochs
-        self.epochs = 1  # Total epochs per stitch to train (1 is good enough for our purposes)
+        # Total epochs per stitch to train (1 is good enough for our purposes)
+        self.epochs = 1
         self.wd = 0.01   # Weight decay
         self.dataset = "cifar10"
 
