@@ -129,7 +129,7 @@ They give us tantalizing results with positive practical by-products\footnote{
    they use stitching to tell how fast different layers converge to good solutions, which enables them to freeze
    fast-converging layers during training to save compute.
 }.
-In doing so open up a space of possibility for future research, and we see two main directions to explore.
+In doing so, they open up a space of possibility for future research, and we see two main directions to explore.
 
 \textbf{Different Architectures and Layer Shapes.} Bansal et al. only confirm that networks with the same 
 fundamental architecture have similar representations at
@@ -167,8 +167,10 @@ The layers up to the sender (inclusive) we call a prefix and the layers from the
 a suffix. The transformation used is called the stitch, and it is learned\footnote{We use gradient descent for simplicity.}
 on a frozen\footnote{``Frozen'' refers to the fact that the weights are not updated during the backwards pass.}
 prefix/suffix pair. The network formed by concatenating the sender prefix, the stitch, and the receiver
-suffix, is called the stitched network, portrayed in \hyperref[Figure1]{Figure 1}. Just like Bansal et al., we use the task accuracy of the stitched network as our
-primary training task.
+suffix, is called the stitched network, portrayed in \hyperref[Figure1]{Figure 1}. Just like Bansal et al., we
+use the task accuracy of the stitched network as our
+primary training task, and we sometimes refer to the stitched network's accuracy on this task as the ``stitch accuracy'' since
+the only layer able to learn is the stitch.
 
 The stitch belongs to a simple function class such as 1x1 convolutions (depthwise).
 Bansal et al. pick these function classes since, if the sender and receiver networks are in the same
@@ -255,7 +257,7 @@ batch size 256, weight decay 0.01, learning rate 0.01, and a post-warmup cosine 
 These hyperparameters were also arrived at from experimentation. The code will be available on Github.
 
 For ordered pair of networks, we plot the accuracy of all the stitches between their prefixes and suffixes
-on a grid based on the sending layer and the receiver layer. The layer is
+on a grid, based on the sending layer and the receiver layer. The layer is
 denoted by an integer which counts how many layers came before it\footnote{
    The initial convolution is ``0,'' the first block of the first blockset is ``1,'' and so on.
 }.
@@ -295,14 +297,16 @@ to corespond to its row and the column before it. By convention, layers which we
 (mainly due to their shape being too different) were assigned a similarity of 0.
 
 \subsection*{Expectations}
-For stitched network accuracy stitch matrices we were expecting to see some sort of diagonal
-different non-random networks. Bansal et al.'s findings suggested that there would be a one-to-one layer correspondence between
-two networks of the same architecture. That is to say, each layer on the sender could be stitched with maximum
-accuracy only to a single layer on the reciever.
+For similarity matrices between trained networks we were expecting to see some sort of high stitch accuracy diagonal, because
+Bansal et al.'s findings suggested that there would be a one-to-one layer correspondence between
+two networks of the same architecture, and we believed that this might extend to two networks of similar architectures.
+Such a diagonal would mean that each layer on the sender could be stitched with maximum accuracy 
+only to a single layer on the reciever.
 
 For the similarity trained stitch we had no real expectation regarding accuracy, but we did expect it to reach a similar, but
 slightly lower, mean squared difference with the representation than the vanilla stitch. We also expected the mean squared
-difference statistics for the diagonals to exhibit a lower mean and standard deviation, since we know from Bansal et al. that
+difference statistics for the diagonals to exhibit a lower mean and standard deviation than those from all layers, 
+since we know from Bansal et al. that
 those layers should be quite similar.
 
 For our controls we expected to see low stitching accuracy throughout the board since the networks are random, though
