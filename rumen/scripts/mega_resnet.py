@@ -281,14 +281,3 @@ class Resnet(nn.Module):
         x = self.fc(x)
 
         return x
-
-def make_resnet(
-        arch: str,
-        block,
-        layers,
-        pretrained: bool,
-        progress: bool,
-        **kwargs,
-):
-    model = Resnet(block, layers, **kwargs)
-    return model
