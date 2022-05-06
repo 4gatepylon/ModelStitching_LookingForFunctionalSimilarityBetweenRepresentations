@@ -281,3 +281,45 @@ class Resnet(nn.Module):
         x = self.fc(x)
 
         return x
+
+# TODO
+# Remove this if we keep getting wierd ass behavior
+class StitchedResnet(nn.Module):
+    def __init__(self, sender, reciever, stitch, send_label, recv_label):
+        super(StitchedResnet, self).__init__()
+        self.sender = sender
+        self.reciever = reciever
+        self.send_label = send_label
+        self.recv_label = recv_label
+        self.stitch = stitch
+
+        sender.eval()
+        reciever.eval()
+        for p in self.sender.parameters():
+            p.requires_grad = False
+        
+        for p in self.reciever.parameters():
+            p.requires_grad = False
+    
+    # NOTE important that it return the stitch's parameters because
+    # it will be used as a black box in the train loop.
+    def parameters(self):
+        return self.stitch.parameters()
+
+    def forward(self, x):
+        h = self.sender.outfrom_forward(
+            x,
+            self.send_label,
+        )
+        h = self.stitch(h)
+        h = self.reciever.into_forward(
+            h, 
+            self.recv_label,
+            pool_and_flatten=self.recv_label == "fc",
+        )
+        return h
+
+def make_stitched_resnet(model1, model2, stitch, send_label, recv_label):
+    return StitchedResnet(model1, model2, stitch, send_label, recv_label)
+# end
+# TODO

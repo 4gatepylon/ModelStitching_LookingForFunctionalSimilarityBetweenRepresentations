@@ -112,8 +112,8 @@ class Trainer(object):
         model.eval()
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        total_correct, total_num = 0., 0.
         for _, (images, labels) in enumerate(test_loader):
-            total_correct, total_num = 0., 0.
 
             with torch.no_grad():
                 with autocast():
@@ -122,7 +122,7 @@ class Trainer(object):
                     h = images.to(device)
                     h = model(h)
                     preds = h.argmax(dim=1)
-                    total_correct = (preds == labels).sum().cpu().item()
+                    total_correct += (preds == labels).sum().cpu().item()
                     total_num += h.shape[0]
 
         return total_correct / total_num

@@ -17,6 +17,8 @@ from torch.cuda.amp import GradScaler, autocast
 
 from copy import deepcopy
 from mega_resnet import Resnet, BasicBlock
+# TODO this should be deleted (maybe)
+from mega_resnet import make_stitched_resnet
 
 # NOTE same as the original because it's the same tree height away
 RESNETS_FOLDER = "../../pretrained_resnets/"
@@ -446,74 +448,61 @@ def stitchtrain(args, two_models=False, load_stitch=False):
     if not os.path.exists(STITCHES_FOLDER):
         os.mkdir(STITCHES_FOLDER)
 
-    # # TODO
-    # # stitched resnet's forward is:
-    # # def forward(self, x):
-    # # h = self.sender.outfrom_forward(
-    # #     x,
-    # #     self.send_label,
-    # # )
-    # # h = self.stitch(h)
-    # # h = self.reciever.into_forward(
-    # #     h,
-    # #     self.recv_label,
-    # #     pool_and_flatten=self.recv_label == "fc",
-    # # )
-    # # return h
-    # print("Training Table")
-    # for i in range(num_labels):
-    #     for j in range(num_labels):
-    #         # None is used to signify that this is not supported/stitchable
-    #         if stitches[i][j]:
-    #             print("*************************")
-    #             ORIGINAL_PARAMS_1 = pclone(model1)
-    #             ORIGINAL_PARAMS_2 = pclone(model2)
+    # TODO if things keep breaking, do NOT use the stitched resnet
+    print("Training Table")
+    for i in range(num_labels):
+        for j in range(num_labels):
+            # None is used to signify that this is not supported/stitchable
+            if stitches[i][j]:
+                print("*************************")
+                ORIGINAL_PARAMS_1 = pclone(model1)
+                ORIGINAL_PARAMS_2 = pclone(model2)
 
-    #             send_label, recv_label = layerlabels[i][j]
-    #             stitch_file = os.path.join(
-    #                 STITCHES_FOLDER, f"stitch_{send_label}_{recv_label}.pt")
+                send_label, recv_label = layerlabels[i][j]
+                stitch_file = os.path.join(
+                    STITCHES_FOLDER, f"stitch_{send_label}_{recv_label}.pt")
 
-    #             print(f"Training {send_label} to {recv_label}")
-    #             stitch = stitches[i][j]
-    #             # If we already have a stitch, just load it and evaluate it for the acc
-    #             # Else retrain it (noting that train loop does evaluate at the end)
-    #             if load_stitch:
-    #                 stitch.load_state_dict(torch.load(stitch_file))
-    #             # ...
-    #             stitch = stitch.cuda()
+                print(f"Training {send_label} to {recv_label}")
+                stitch = stitches[i][j]
+                # If we already have a stitch, just load it and evaluate it for the acc
+                # Else retrain it (noting that train loop does evaluate at the end)
+                if load_stitch:
+                    stitch.load_state_dict(torch.load(stitch_file))
+                # ...
+                stitch = stitch.cuda()
 
-    #             stitched_resnet = make_stitched_resnet(
-    #                 model1, model2, stitch, send_label, recv_label)
-    #             acc = evaluate(stitched_resnet, test_loader) \
-    #                 if load_stitch else \
-    #                 train_loop(args, stitched_resnet,
-    #                            train_loader, test_loader)
-    #             # ...
-    #             print(acc)
-    #             sims[i][j] = acc
+                stitched_resnet = make_stitched_resnet(
+                    model1, model2, stitch, send_label, recv_label)
+                acc = evaluate(stitched_resnet, test_loader) \
+                    if load_stitch else \
+                    train_loop(args, stitched_resnet,
+                               train_loader, test_loader)
+                # ...
+                print(acc)
+                sims[i][j] = acc
 
-    #             # Save the stitch if this was a training run
-    #             if not load_stitch:
-    #                 torch.save(stitch.state_dict(), stitch_file)
+                # Save the stitch if this was a training run
+                if not load_stitch:
+                    torch.save(stitch.state_dict(), stitch_file)
 
-    #             NEW_PARAMS_1 = pclone(model1)
-    #             NEW_PARAMS_2 = pclone(model2)
-    #             assert listeq(ORIGINAL_PARAMS_1, NEW_PARAMS_1)
-    #             assert listeq(ORIGINAL_PARAMS_2, NEW_PARAMS_2)
-    #             print("*************************\n")
+                NEW_PARAMS_1 = pclone(model1)
+                NEW_PARAMS_2 = pclone(model2)
+                assert listeq(ORIGINAL_PARAMS_1, NEW_PARAMS_1)
+                assert listeq(ORIGINAL_PARAMS_2, NEW_PARAMS_2)
+                print("*************************\n")
 
-    # print("Saving similarities")
-    # if not os.path.exists(SIMS_FOLDER):
-    #     os.mkdir(SIMS_FOLDER)
-    # if not os.path.exists(HEATMAPS_FOLDER):
-    #     os.mkdir(HEATMAPS_FOLDER)
-    # sim_path = os.path.join(
-    #     SIMS_FOLDER, f"{name}_{name}_sims_load_stitch_{load_stitch}_two_models_{two_models}.pt")
-    # heat_path = os.path.join(
-    #     HEATMAPS_FOLDER, f"{name}_{name}_heatmaps_load_stitch_{load_stitch}_two_models_{two_models}.png")
-    # torch.save(torch.tensor(sims), sim_path)
-    # matrix_heatmap(sim_path, heat_path, tick_labels_y=labels,
-    #                tick_labels_x=labels)
+    print("Saving similarities")
+    if not os.path.exists(SIMS_FOLDER):
+        os.mkdir(SIMS_FOLDER)
+    if not os.path.exists(HEATMAPS_FOLDER):
+        os.mkdir(HEATMAPS_FOLDER)
+    sim_path = os.path.join(
+        SIMS_FOLDER, f"{name}_{name}_sims_load_stitch_{load_stitch}_two_models_{two_models}.pt")
+    heat_path = os.path.join(
+        HEATMAPS_FOLDER, f"{name}_{name}_heatmaps_load_stitch_{load_stitch}_two_models_{two_models}.png")
+    torch.save(torch.tensor(sims), sim_path)
+    matrix_heatmap(sim_path, heat_path, tick_labels_y=labels,
+                   tick_labels_x=labels)
     print("done!")
 
     # Cleaar this in case we want to run faster again later
@@ -531,7 +520,7 @@ class Args:
 
         # Training Hyperparams
         self.bsz = 256   # Batch Size
-        self.test_bsz = 2048
+        self.test_bsz = 256
         self.lr = 0.01   # Learning Rate
         self.warmup = 10  # Warmup epochs
         # Total epochs per stitch to train (1 is good enough for our purposes)
@@ -542,12 +531,12 @@ class Args:
 
 if __name__ == "__main__":
     args = Args()
+    # Expect triangle or diagonal
     stitchtrain(args, two_models=True, load_stitch=False)
-    # # Create regular stitches (one model) then load them once into
-    # # a single model (should give a 2nd diagonal) and then into a
-    # # pair of models (unknown what will happen)
-    # stitchtrain(args, two_models=False, load_stitch=False)
-    # stitchtrain(args, two_models=False, load_stitch=True)
-    # stitchtrain(args, two_models=True, load_stitch=True)
-    # # Retrain and confirm that we get a triangle (i.e. code isn't buggy)
-    # stitchtrain(args, two_models=True, load_stitch=False)
+    # Expect the exact same as before
+    stitchtrain(args, two_models=True, load_stitch=True)
+    # Expect a diagonal
+    stitchtrain(args, two_models=False, load_stitch=False)
+    # Expect the exact same as before
+    stitchtrain(args, two_models=False, load_stitch=True)
+    # Done!
