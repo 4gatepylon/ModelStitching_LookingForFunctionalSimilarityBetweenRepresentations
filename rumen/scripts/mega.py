@@ -365,6 +365,13 @@ def stitchtrain(args, two_models=False, load_stitch=False):
     model1.load_state_dict(torch.load(_file))
     model2.load_state_dict(torch.load(_file))
 
+    for p in model1.parameters():
+        p.requires_grad = False
+    for p in model2.parameters():
+        p.requires_grad = False
+    model1.eval()
+    model2.eval()
+
     print("Getting loaders NOT for FFCV")
     train_loader, test_loader = get_loaders_no_ffcv(args)
 
@@ -420,6 +427,20 @@ def stitchtrain(args, two_models=False, load_stitch=False):
     if not os.path.exists(STITCHES_FOLDER):
         os.mkdir(STITCHES_FOLDER)
 
+    # TODO
+    # stitched resnet's forward is:
+    # def forward(self, x):
+    # h = self.sender.outfrom_forward(
+    #     x,
+    #     self.send_label,
+    # )
+    # h = self.stitch(h)
+    # h = self.reciever.into_forward(
+    #     h, 
+    #     self.recv_label,
+    #     pool_and_flatten=self.recv_label == "fc",
+    # )
+    # return h
     print("Training Table")
     for i in range(num_labels):
         for j in range(num_labels):

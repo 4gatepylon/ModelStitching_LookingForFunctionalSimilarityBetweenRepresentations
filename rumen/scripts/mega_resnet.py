@@ -72,64 +72,6 @@ class BasicBlock(nn.Module):
 
         return out
 
-
-class Bottleneck(nn.Module):
-    # Bottleneck in torchvision places the stride for downsampling at 3x3 convolution(self.conv2)
-    # while original implementation places the stride at the first 1x1 convolution(self.conv1)
-    # according to "Deep residual learning for image recognition"https://arxiv.org/abs/1512.03385.
-    # This variant is also known as Resnet V1.5 and improves accuracy according to
-    # https://ngc.nvidia.com/catalog/model-scripts/nvidia:resnet_50_v1_5_for_pytorch.
-
-    expansion: int = 4
-
-    def __init__(
-            self,
-            inplanes: int,
-            planes: int,
-            stride: int = 1,
-            downsample = None,
-            groups: int = 1,
-            base_width: int = 64,
-            dilation: int = 1,
-            norm_layer = None,
-    ) -> None:
-        super().__init__()
-        if norm_layer is None:
-            norm_layer = nn.BatchNorm2d
-        width = int(planes * (base_width / 64.0)) * groups
-        # Both self.conv2 and self.downsample layers downsample the input when stride != 1
-        self.conv1 = conv1x1(inplanes, width)
-        self.bn1 = norm_layer(width)
-        self.conv2 = conv3x3(width, width, stride, groups, dilation)
-        self.bn2 = norm_layer(width)
-        self.conv3 = conv1x1(width, planes * self.expansion)
-        self.bn3 = norm_layer(planes * self.expansion)
-        self.relu = nn.ReLU(inplace=True)
-        self.downsample = downsample
-        self.stride = stride
-
-    def forward(self, x):
-        identity = x
-
-        out = self.conv1(x)
-        out = self.bn1(out)
-        out = self.relu(out)
-
-        out = self.conv2(out)
-        out = self.bn2(out)
-        out = self.relu(out)
-
-        out = self.conv3(out)
-        out = self.bn3(out)
-
-        if self.downsample is not None:
-            identity = self.downsample(x)
-
-        out += identity
-        out = self.relu(out)
-
-        return out
-
 class Resnet(nn.Module):
     def __init__(
             self,
@@ -350,40 +292,3 @@ def make_resnet(
 ):
     model = Resnet(block, layers, **kwargs)
     return model
-
-class StitchedResnet(nn.Module):
-    def __init__(self, sender, reciever, stitch, send_label, recv_label):
-        super(StitchedResnet, self).__init__()
-        self.sender = sender
-        self.reciever = reciever
-        self.send_label = send_label
-        self.recv_label = recv_label
-        self.stitch = stitch
-
-        # TODO why does this break things?
-        sender.eval()
-        reciever.eval()
-        for p in self.sender.parameters():
-            p.requires_grad = False
-        
-        for p in self.reciever.parameters():
-            p.requires_grad = False
-    
-    def parameters(self):
-        return self.stitch.parameters()
-
-    def forward(self, x):
-        h = self.sender.outfrom_forward(
-            x,
-            self.send_label,
-        )
-        h = self.stitch(h)
-        h = self.reciever.into_forward(
-            h, 
-            self.recv_label,
-            pool_and_flatten=self.recv_label == "fc",
-        )
-        return h
-
-def make_stitched_resnet(model1, model2, stitch, send_label, recv_label):
-    return StitchedResnet(model1, model2, stitch, send_label, recv_label)
