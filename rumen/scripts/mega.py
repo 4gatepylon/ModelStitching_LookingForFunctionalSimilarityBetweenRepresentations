@@ -158,8 +158,8 @@ def evaluate(model, test_loader):
     # NOTE used to be for layer in model
     model.eval()
 
+    total_correct, total_num = 0., 0.
     for _, (images, labels) in enumerate(test_loader):
-        total_correct, total_num = 0., 0.
 
         with torch.no_grad():
             with autocast():
@@ -168,7 +168,7 @@ def evaluate(model, test_loader):
                 h = images.cuda()
                 h = model(h)
                 preds = h.argmax(dim=1)
-                total_correct = (preds == labels).sum().cpu().item()
+                total_correct += (preds == labels).sum().cpu().item()
                 total_num += h.shape[0]
 
     return total_correct / total_num
