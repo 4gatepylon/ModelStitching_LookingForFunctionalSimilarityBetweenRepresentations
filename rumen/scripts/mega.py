@@ -49,6 +49,9 @@ def fix_seed(seed):
 def pclone(model):
     return [p.data.detach().clone() for p in model.parameters()]
 
+def bclone(model):
+    return [p.data.detach().clone() for p in model.buffers()]
+
 
 def listeq(l1, l2):
     return min((torch.eq(a, b).int().min().item() for a, b in zip(l1, l2))) == 1
@@ -341,33 +344,29 @@ def make_stitch(send_label, recv_label):
 #    a quick sanity test batch of results
 
 
-def stitchtrain(args, two_models=False, load_stitch=False):
-    # I get this runtime error if I don't do this:
-    # Deterministic behavior was enabled with either `torch.use_deterministic_algorithms(True)` or
-    # `at::Context::setDeterministicAlgorithms(true)`, but this operation is not deterministic because
-    # it uses CuBLAS and you have CUDA >= 10.2. To enable deterministic behavior in this case, you must
-    # set an environment variable before running your PyTorch application: CUBLAS_WORKSPACE_CONFIG=:4096:8
-    #or CUBLAS_WORKSPACE_CONFIG=:16:8. For more information, go to
-    # https://docs.nvidia.com/cuda/cublas/index.html#cublasApi_reproducibility
-    os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":16:8"
-    fix_seed(0)
-
+def stitchtrain(args):
     name = f"resnet_1111"
     numbers = [1, 1, 1, 1]
     _file = os.path.join(RESNETS_FOLDER, f"{name}.pt")
 
-    print("Loading Models and moving to Cuda")
+    print("Loading Models (one with init, one with DeepCopy) and moving to Cuda")
     model1 = Resnet(BasicBlock, numbers, num_classes=10)
-    model2 = model1
-    if two_models:
-        # NOTE normally we might load instead as in the commented section
-        model2 = deepcopy(model1)
-        # model2 = Resnet(BasicBlock, numbers, num_classes=10)
+    model2 = deepcopy(model1)
+
+    print("Asserting that a deepcopied model is the same as the original by weights (BEFORE loading)")
+    assert(listeq(pclone(model1), pclone(model2)))
+    print("Assergin that a deepcopied model is the same as the original by buffers (BEFORE loading)")
+    assert(listeq(bclone(model1), bclone(model2)))
 
     model1 = model1.cuda()
     model2 = model2.cuda()
     model1.load_state_dict(torch.load(_file))
     model2.load_state_dict(torch.load(_file))
+
+    print("Asserting that a deepcopied model is the same as the original by weights (AFTER loading)")
+    assert(listeq(pclone(model1), pclone(model2)))
+    print("Assergin that a deepcopied model is the same as the original by buffers (AFTER loading)")
+    assert(listeq(bclone(model1), bclone(model2)))
 
     print("Disabling requires_grad and evaluating both models")
     for p in model1.parameters():
@@ -377,7 +376,7 @@ def stitchtrain(args, two_models=False, load_stitch=False):
     model1.eval()
     model2.eval()
 
-    print("Checking that parameters and buffers are the same for the models")
+    print("Checking that parameters and buffers are the same for the models (AFTER evaluating)")
     assert listeq(list(model1.parameters()), list(model2.parameters())), \
         "The models need to have identical parameters"
     assert listeq(list(model1.buffers()), list(model2.buffers())), \
@@ -399,6 +398,8 @@ def stitchtrain(args, two_models=False, load_stitch=False):
     print("Making sure that the accuracies don't change")
     assert acc1 == evaluate(model1, test_loader)
     assert acc2 == evaluate(model2, test_loader)
+    assert acc1 == evaluate(model1, train_loader)
+    assert acc2 == evaluate(model2, train_loader)
 
     print("Creating Tables, padding with None (and zero) to make it square")
     labels = ["input", "conv1"] + [(i, 0)
@@ -425,12 +426,15 @@ def stitchtrain(args, two_models=False, load_stitch=False):
         ] \
         for row in layerlabels
     ]
-    sims = [
+    # The two sims will be evaluated at different points
+    sims_original = [
         # 0.0 as default signifies "infinitely far away" or "no similarity"
         # because we couldn't stitch at all.
         [0.0 for _ in range(num_labels)] \
         for _ in range(num_labels)
     ]
+    sims_evaled = deepcopy(sims1)
+    sims_loaded = deepcopy(sims1)
 
     # Make sure all the lengths are correct
     print("Ensuring that layerlabels, stitches, and sims tables have the proper dimensions")
@@ -448,61 +452,173 @@ def stitchtrain(args, two_models=False, load_stitch=False):
     if not os.path.exists(STITCHES_FOLDER):
         os.mkdir(STITCHES_FOLDER)
 
-    # TODO if things keep breaking, do NOT use the stitched resnet
-    print("Training Table")
+    print("Training Table (saving)")
     for i in range(num_labels):
         for j in range(num_labels):
             # None is used to signify that this is not supported/stitchable
             if stitches[i][j]:
                 print("*************************")
-                ORIGINAL_PARAMS_1 = pclone(model1)
-                ORIGINAL_PARAMS_2 = pclone(model2)
-
                 send_label, recv_label = layerlabels[i][j]
-                stitch_file = os.path.join(
-                    STITCHES_FOLDER, f"stitch_{send_label}_{recv_label}.pt")
+                stitch_file = os.path.join(STITCHES_FOLDER, f"stitch_{send_label}_{recv_label}.pt")
 
                 print(f"Training {send_label} to {recv_label}")
                 stitch = stitches[i][j]
-                # If we already have a stitch, just load it and evaluate it for the acc
-                # Else retrain it (noting that train loop does evaluate at the end)
-                if load_stitch:
-                    stitch.load_state_dict(torch.load(stitch_file))
-                # ...
                 stitch = stitch.cuda()
 
-                stitched_resnet = make_stitched_resnet(
-                    model1, model2, stitch, send_label, recv_label)
-                acc = evaluate(stitched_resnet, test_loader) \
-                    if load_stitch else \
-                    train_loop(args, stitched_resnet,
-                               train_loader, test_loader)
-                # ...
+                ORIGINAL_PARAMS_1 = pclone(model1)
+                ORIGINAL_BUFFERS_1 = bclone(model1)
+                ORIGINAL_PARAMS_2 = pclone(model2)
+                ORIGINAL_BUFFERS_2 = bclone(model2)
+                ORIGINAL_STITCH_PARAMS = pclone(stitch)
+                ORIGINAL_STITCH_BUFFERS = bclone(stitch)
+                
+
+                stitched_resnet = make_stitched_resnet(model1, model2, stitch, send_label, recv_label)
+                acc = train_loop(args, stitched_resnet, train_loader, test_loader)
                 print(acc)
-                sims[i][j] = acc
+                sims_original[i][j] = acc
 
                 # Save the stitch if this was a training run
-                if not load_stitch:
-                    torch.save(stitch.state_dict(), stitch_file)
+                torch.save(stitch.state_dict(), stitch_file)
 
                 NEW_PARAMS_1 = pclone(model1)
+                NEW_BUFFERS_1 = bclone(model1)
                 NEW_PARAMS_2 = pclone(model2)
+                NEW_BUFFERS_2 = bclone(model2)
+                NEW_STITCH_PARAMS = pclone(stitch)
+                NEW_STITCH_BUFFERS = bclone(stitch)
+
+                print("Asserting that stitch parameters changed, but not either model (train table)")
                 assert listeq(ORIGINAL_PARAMS_1, NEW_PARAMS_1)
+                assert listeq(ORIGINAL_BUFFERS_1, NEW_BUFFERS_1)
                 assert listeq(ORIGINAL_PARAMS_2, NEW_PARAMS_2)
+                assert listeq(ORIGINAL_BUFFERS_2, NEW_BUFFERS_2)
+                assert not listeq(ORIGINAL_STITCH_PARAMS, NEW_STITCH_PARAMS)
+                assert not listeq(ORIGINAL_STITCH_BUFFERS, NEW_STITCH_BUFFERS)
                 print("*************************\n")
+    
+    print("Creating Stitch Table by Evaluating")
+    for i in range(num_labels):
+        for j in range(num_labels):
+            # None is used to signify that this is not supported/stitchable
+            if stitches[i][j]:
+                print("*************************")
+                send_label, recv_label = layerlabels[i][j]
+
+                print(f"Evaluating {send_label} to {recv_label}")
+                stitch = stitches[i][j]
+                stitch = stitch.cuda()
+
+                ORIGINAL_PARAMS_1 = pclone(model1)
+                ORIGINAL_BUFFERS_1 = bclone(model1)
+                ORIGINAL_PARAMS_2 = pclone(model2)
+                ORIGINAL_BUFFERS_2 = bclone(model2)
+                ORIGINAL_STITCH_PARAMS = pclone(stitch)
+                ORIGINAL_STITCH_BUFFERS = bclone(stitch)
+                
+
+                stitched_resnet = make_stitched_resnet(model1, model2, stitch, send_label, recv_label)
+                acc = evaluate(stitched_resnet, test_loader)
+                print(acc)
+                sims_evaled[i][j] = acc
+
+                # Save the stitch if this was a training run
+                torch.save(stitch.state_dict(), stitch_file)
+
+                NEW_PARAMS_1 = pclone(model1)
+                NEW_BUFFERS_1 = bclone(model1)
+                NEW_PARAMS_2 = pclone(model2)
+                NEW_BUFFERS_2 = bclone(model2)
+                NEW_STITCH_PARAMS = pclone(stitch)
+                NEW_STITCH_BUFFERS = bclone(stitch)
+
+                print("Asserting that no parameters changed after evaluation (eval table)")
+                assert listeq(ORIGINAL_PARAMS_1, NEW_PARAMS_1)
+                assert listeq(ORIGINAL_BUFFERS_1, NEW_BUFFERS_1)
+                assert listeq(ORIGINAL_PARAMS_2, NEW_PARAMS_2)
+                assert listeq(ORIGINAL_BUFFERS_2, NEW_BUFFERS_2)
+                assert listeq(ORIGINAL_STITCH_PARAMS, NEW_STITCH_PARAMS)
+                assert listeq(ORIGINAL_STITCH_BUFFERS, NEW_STITCH_BUFFERS)
+                print("*************************\n")
+    
+    print("Creating Stitch Table by Loading")
+    for i in range(num_labels):
+        for j in range(num_labels):
+            # None is used to signify that this is not supported/stitchable
+            if stitches[i][j]:
+                print("*************************")
+                send_label, recv_label = layerlabels[i][j]
+
+                print(f"Loading {send_label} to {recv_label}")
+                stitch = make_stitch(send_label, recv_label)
+                stitch_file = os.path.join(STITCHES_FOLDER, f"stitch_{send_label}_{recv_label}.pt")
+                stitch.load_state_dict(torch.load(stitch_file))
+                stitch = stitch.cuda()
+
+                true_stitch = stitches[i][j]
+                true_stitch = true_stitch.cuda()
+
+                TRUE_STITCH_PARAMS = pclone(true_stitch)
+                TRUE_STITCH_BUFFERS = bclone(true_stitch)
+
+                ORIGINAL_PARAMS_1 = pclone(model1)
+                ORIGINAL_BUFFERS_1 = bclone(model1)
+                ORIGINAL_PARAMS_2 = pclone(model2)
+                ORIGINAL_BUFFERS_2 = bclone(model2)
+                ORIGINAL_STITCH_PARAMS = pclone(stitch)
+                ORIGINAL_STITCH_BUFFERS = bclone(stitch)
+
+                print("Asserting that true stitch and loaded stitch have the same weights and buffers")
+                assert(listeq(TRUE_STITCH_PARAMS, ORIGINAL_STITCH_PARAMS))
+                assert(listeq(TRUE_STITCH_BUFFERS, ORIGINAL_STITCH_BUFFERS))
+
+                stitched_resnet = make_stitched_resnet(model1, model2, stitch, send_label, recv_label)
+                acc = evaluate(stitched_resnet, test_loader)
+                print(acc)
+                sims_loaded[i][j] = acc
+
+                # Save the stitch if this was a training run
+                torch.save(stitch.state_dict(), stitch_file)
+
+                NEW_PARAMS_1 = pclone(model1)
+                NEW_BUFFERS_1 = bclone(model1)
+                NEW_PARAMS_2 = pclone(model2)
+                NEW_BUFFERS_2 = bclone(model2)
+                NEW_STITCH_PARAMS = pclone(stitch)
+                NEW_STITCH_BUFFERS = bclone(stitch)
+
+                # Stitch should change, but not the model
+                print("Asserting that not parameters changed from loading evaluation")
+                assert listeq(ORIGINAL_PARAMS_1, NEW_PARAMS_1)
+                assert listeq(ORIGINAL_BUFFERS_1, NEW_BUFFERS_1)
+                assert listeq(ORIGINAL_PARAMS_2, NEW_PARAMS_2)
+                assert listeq(ORIGINAL_BUFFERS_2, NEW_BUFFERS_2)
+                assert listeq(ORIGINAL_STITCH_PARAMS, NEW_STITCH_PARAMS)
+                assert listeq(ORIGINAL_STITCH_BUFFERS, NEW_STITCH_BUFFERS)
+                print("*************************\n")
+                
 
     print("Saving similarities")
     if not os.path.exists(SIMS_FOLDER):
         os.mkdir(SIMS_FOLDER)
     if not os.path.exists(HEATMAPS_FOLDER):
         os.mkdir(HEATMAPS_FOLDER)
-    sim_path = os.path.join(
-        SIMS_FOLDER, f"{name}_{name}_sims_load_stitch_{load_stitch}_two_models_{two_models}.pt")
-    heat_path = os.path.join(
-        HEATMAPS_FOLDER, f"{name}_{name}_heatmaps_load_stitch_{load_stitch}_two_models_{two_models}.png")
-    torch.save(torch.tensor(sims), sim_path)
-    matrix_heatmap(sim_path, heat_path, tick_labels_y=labels,
-                   tick_labels_x=labels)
+    
+    # Save the original, evaluated, and loaded tables
+    sims_original_path = os.path.join(SIMS_FOLDER, f"{name}_{name}_sims_original.pt")
+    sims_evaled_path = os.path.join(SIMS_FOLDER, f"{name}_{name}_sims_evaled.pt")
+    sims_loaded_path = os.path.join(SIMS_FOLDER, f"{name}_{name}_sims_loaded.pt")
+    heat_original_path = os.path.join(HEATMAPS_FOLDER, f"{name}_{name}_heatmaps_original.png")
+    heat_evaled_path = os.path.join(HEATMAPS_FOLDER, f"{name}_{name}_heatmaps_evaled.png")
+    heat_loaded_path = os.path.join(HEATMAPS_FOLDER, f"{name}_{name}_heatmaps_loaded.png")
+
+    torch.save(torch.tensor(sims), sims_original_path)
+    torch.save(torch.tensor(sims_evaled), sims_evaled_path)
+    torch.save(torch.tensor(sims_loaded), sims_loaded_path)
+
+    matrix_heatmap(sims_original_path, heat_path, tick_labels_y=labels, tick_labels_x=labels)
+    matrix_heatmap(sims_evaled_path, heat_evaled_path, tick_labels_y=labels, tick_labels_x=labels)
+    matrix_heatmap(sims_loaded_path, heat_loaded_path, tick_labels_y=labels, tick_labels_x=labels)
     print("done!")
 
     # Cleaar this in case we want to run faster again later
@@ -530,13 +646,15 @@ class Args:
 
 
 if __name__ == "__main__":
+    # I get this runtime error if I don't do this:
+    # Deterministic behavior was enabled with either `torch.use_deterministic_algorithms(True)` or
+    # `at::Context::setDeterministicAlgorithms(true)`, but this operation is not deterministic because
+    # it uses CuBLAS and you have CUDA >= 10.2. To enable deterministic behavior in this case, you must
+    # set an environment variable before running your PyTorch application: CUBLAS_WORKSPACE_CONFIG=:4096:8
+    #or CUBLAS_WORKSPACE_CONFIG=:16:8. For more information, go to
+    # https://docs.nvidia.com/cuda/cublas/index.html#cublasApi_reproducibility
+    os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":16:8"
+    fix_seed(0)
+
     args = Args()
-    # Expect triangle or diagonal
-    stitchtrain(args, two_models=True, load_stitch=False)
-    # Expect the exact same as before
-    stitchtrain(args, two_models=True, load_stitch=True)
-    # Expect a diagonal
-    stitchtrain(args, two_models=False, load_stitch=False)
-    # Expect the exact same as before
-    stitchtrain(args, two_models=False, load_stitch=True)
-    # Done!
+    stitchtrain(arg)
