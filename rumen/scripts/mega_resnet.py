@@ -293,8 +293,8 @@ class StitchedResnet(nn.Module):
         self.recv_label = recv_label
         self.stitch = stitch
 
-        sender.eval()
-        reciever.eval()
+        self.sender.eval()
+        self.reciever.eval()
         for p in self.sender.parameters():
             p.requires_grad = False
         
@@ -305,6 +305,17 @@ class StitchedResnet(nn.Module):
     # it will be used as a black box in the train loop.
     def parameters(self):
         return self.stitch.parameters()
+    
+    def train(self):
+        self.stitch.train()
+        # NOTE very important that sender and reciever are always evaled
+        self.sender.eval()
+        self.reciever.eval()
+    
+    def eval(self):
+        self.stitch.eval()
+        self.sender.eval()
+        self.reciever.eval()
 
     def forward(self, x):
         h = self.sender.outfrom_forward(

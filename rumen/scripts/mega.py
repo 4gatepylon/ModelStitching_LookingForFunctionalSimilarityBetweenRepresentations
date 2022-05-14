@@ -54,6 +54,10 @@ def bclone(model):
 
 
 def listeq(l1, l2):
+    if (len(l1) == 0 and len(l2) == 0):
+        return True
+    if (len(l1) != len(l2)):
+        return False
     return min((torch.eq(a, b).int().min().item() for a, b in zip(l1, l2))) == 1
 
 
@@ -103,6 +107,7 @@ def matrix_heatmap(input_file_name: str, output_file_name: str, tick_labels_y=No
 
 def get_loaders_no_ffcv(args):
     use_cuda = torch.cuda.is_available()
+    assert use_cuda, "Should be using CUDA"
     train_batch_size = args.bsz
     test_batch_size = args.test_bsz
 
@@ -113,8 +118,7 @@ def get_loaders_no_ffcv(args):
     if use_cuda:
         cuda_kwargs =\
             {
-                # Single worker for determinism
-                'num_workers': 1,
+                'num_workers': 0,
                 # Pinning memory speeds up performance by copying
                 # directly from disk to GPU I think.
                 # https://spell.ml/blog/pytorch-training-tricks-YAnJqBEAACkARhgD
@@ -132,6 +136,10 @@ def get_loaders_no_ffcv(args):
             NO_FFCV_CIFAR_MEAN, NO_FFCV_CIFAR_STD)
     ])
 
+    # NOTE the `train` parameter changes the actual data (I think) that is passed in (at least
+    # it's coming from a different file). You can find it here
+    # `https://pytorch.org/vision/stable/_modules/torchvision/datasets/cifar.html#CIFAR10`
+    # if you compare the test_list and train_list
     dataset1 = datasets.CIFAR10(
         NO_FFCV_FOLDER, train=True, download=True, transform=transform)
     dataset2 = datasets.CIFAR10(
@@ -301,10 +309,13 @@ def make_stitch(send_label, recv_label):
     assert len(send_shape) == 3
     # assert type(recv_shape) == tuple or t
     if type(recv_shape) == int:
+        flat_shape = send_shape[0] * send_shape[1] * send_shape[2]
         return nn.Sequential(
             nn.Flatten(),
+            # NOTE Adding BN because Yamini did it apparently? Unclear...
+            # nn.BatchNorm1d(flat_shape),
             nn.Linear(
-                send_shape[0] * send_shape[1] * send_shape[2],
+                flat_shape,
                 recv_shape,
             ),
         )
@@ -313,16 +324,26 @@ def make_stitch(send_label, recv_label):
         recv_depth, recv_height, recv_width = recv_shape
         if recv_height <= send_height:
             ratio = send_height // recv_height
-            return nn.Conv2d(
-                send_depth,
-                recv_depth,
-                ratio,
-                stride=ratio,
-                bias=True,
+            return nn.Sequential(
+                # NOTE Adding BN because... refer to above
+                # NOTE uses C from (N x C x H x W) according to 
+                # https://pytorch.org/docs/master/generated/torch.nn.BatchNorm2d.html#torch.nn.BatchNorm2d
+                # nn.BatchNorm2d(send_depth),
+                 nn.Conv2d(
+                    send_depth,
+                    recv_depth,
+                    ratio,
+                    stride=ratio,
+                    bias=True,
+                ),
+                # nn.BatchNorm2d(recv_depth),
             )
+           
         else:
             ratio = recv_height // send_height
             return nn.Sequential(
+                # NOTE Adding BN because... refer to above
+                # nn.BatchNorm2d(send_depth),
                 nn.Upsample(
                     scale_factor=ratio,
                     mode='nearest',
@@ -334,6 +355,7 @@ def make_stitch(send_label, recv_label):
                     stride=1,
                     bias=True,
                 ),
+                # nn.BatchNorm2d(recv_depth),
             )
 
 # NOTE that this code
@@ -355,7 +377,7 @@ def stitchtrain(args):
 
     print("Asserting that a deepcopied model is the same as the original by weights (BEFORE loading)")
     assert(listeq(pclone(model1), pclone(model2)))
-    print("Assergin that a deepcopied model is the same as the original by buffers (BEFORE loading)")
+    print("Asserting that a deepcopied model is the same as the original by buffers (BEFORE loading)")
     assert(listeq(bclone(model1), bclone(model2)))
 
     model1 = model1.cuda()
@@ -365,7 +387,7 @@ def stitchtrain(args):
 
     print("Asserting that a deepcopied model is the same as the original by weights (AFTER loading)")
     assert(listeq(pclone(model1), pclone(model2)))
-    print("Assergin that a deepcopied model is the same as the original by buffers (AFTER loading)")
+    print("Assering that a deepcopied model is the same as the original by buffers (AFTER loading)")
     assert(listeq(bclone(model1), bclone(model2)))
 
     print("Disabling requires_grad and evaluating both models")
@@ -390,16 +412,20 @@ def stitchtrain(args):
     train_loader, test_loader = get_loaders_no_ffcv(args)
 
     # The assertions make sure that the dataset behaves deterministically
+    print("Train and Test Accuracies are on the same dataset")
     acc1 = evaluate(model1, test_loader)
-    print("Model 1 Original Accuracy: {}".format(acc1))
+    acc1train = evaluate(model1, train_loader)
+    print(f"Model 1 Test Accuracy: {acc1}, Train Accuracy: {acc1train}")
     acc2 = evaluate(model2, test_loader)
-    print("Model 2 Original Accuracy: {}".format(acc2))
+    acc2train = evaluate(model2, train_loader)
+    print(f"Model 2 Test Accuracy: {acc2}, Train Accuracy: {acc2train}")
 
     print("Making sure that the accuracies don't change")
-    assert acc1 == evaluate(model1, test_loader)
-    assert acc2 == evaluate(model2, test_loader)
-    assert acc1 == evaluate(model1, train_loader)
-    assert acc2 == evaluate(model2, train_loader)
+    assert acc1 == evaluate(model1, test_loader), "Test Accuracy Shouldn't Change (1)"
+    assert acc2 == evaluate(model2, test_loader), "Test Accuracy Shouldn't Change (2)"
+    assert acc1train == evaluate(model1, train_loader), "Train Accuracy Shouldn't Change (1)"
+    assert acc2train == evaluate(model2, train_loader), "Train Accuracy Shouldn't Change (2)"
+    # NOTE test and train accuracy are NOT same because they come from DIFFERENT sub-datasets
 
     print("Creating Tables, padding with None (and zero) to make it square")
     labels = ["input", "conv1"] + [(i, 0)
@@ -433,20 +459,20 @@ def stitchtrain(args):
         [0.0 for _ in range(num_labels)] \
         for _ in range(num_labels)
     ]
-    sims_evaled = deepcopy(sims1)
-    sims_loaded = deepcopy(sims1)
+    sims_evaled = deepcopy(sims_original)
+    sims_loaded = deepcopy(sims_original)
 
     # Make sure all the lengths are correct
-    print("Ensuring that layerlabels, stitches, and sims tables have the proper dimensions")
+    print("Ensuring that layerlabels, stitches, and sims_original tables have the proper dimensions")
     assert len(layerlabels) == num_labels
     assert len(stitches) == num_labels
-    assert len(sims) == num_labels
+    assert len(sims_original) == num_labels
     assert max((len(l) for l in layerlabels)) == num_labels
     assert max((len(l) for l in stitches)) == num_labels
-    assert max((len(l) for l in sims)) == num_labels
+    assert max((len(l) for l in sims_original)) == num_labels
     assert min((len(l) for l in layerlabels)) == num_labels
     assert min((len(l) for l in stitches)) == num_labels
-    assert min((len(l) for l in sims)) == num_labels
+    assert min((len(l) for l in sims_original)) == num_labels
 
     print("Ensuring that stitches folder exists")
     if not os.path.exists(STITCHES_FOLDER):
@@ -494,7 +520,8 @@ def stitchtrain(args):
                 assert listeq(ORIGINAL_PARAMS_2, NEW_PARAMS_2)
                 assert listeq(ORIGINAL_BUFFERS_2, NEW_BUFFERS_2)
                 assert not listeq(ORIGINAL_STITCH_PARAMS, NEW_STITCH_PARAMS)
-                assert not listeq(ORIGINAL_STITCH_BUFFERS, NEW_STITCH_BUFFERS)
+                assert (len(ORIGINAL_STITCH_BUFFERS) == 0 and len(NEW_STITCH_BUFFERS) == 0) or \
+                    not listeq(ORIGINAL_STITCH_BUFFERS, NEW_STITCH_BUFFERS)
                 print("*************************\n")
     
     print("Creating Stitch Table by Evaluating")
@@ -538,7 +565,8 @@ def stitchtrain(args):
                 assert listeq(ORIGINAL_PARAMS_2, NEW_PARAMS_2)
                 assert listeq(ORIGINAL_BUFFERS_2, NEW_BUFFERS_2)
                 assert listeq(ORIGINAL_STITCH_PARAMS, NEW_STITCH_PARAMS)
-                assert listeq(ORIGINAL_STITCH_BUFFERS, NEW_STITCH_BUFFERS)
+                assert (len(ORIGINAL_STITCH_BUFFERS) == 0 and len(NEW_STITCH_BUFFERS) == 0) or \
+                    listeq(ORIGINAL_STITCH_BUFFERS, NEW_STITCH_BUFFERS)
                 print("*************************\n")
     
     print("Creating Stitch Table by Loading")
@@ -594,7 +622,8 @@ def stitchtrain(args):
                 assert listeq(ORIGINAL_PARAMS_2, NEW_PARAMS_2)
                 assert listeq(ORIGINAL_BUFFERS_2, NEW_BUFFERS_2)
                 assert listeq(ORIGINAL_STITCH_PARAMS, NEW_STITCH_PARAMS)
-                assert listeq(ORIGINAL_STITCH_BUFFERS, NEW_STITCH_BUFFERS)
+                assert (len(ORIGINAL_STITCH_BUFFERS) == 0 and len(NEW_STITCH_BUFFERS) == 0) or \
+                    listeq(ORIGINAL_STITCH_BUFFERS, NEW_STITCH_BUFFERS)
                 print("*************************\n")
                 
 
@@ -612,11 +641,11 @@ def stitchtrain(args):
     heat_evaled_path = os.path.join(HEATMAPS_FOLDER, f"{name}_{name}_heatmaps_evaled.png")
     heat_loaded_path = os.path.join(HEATMAPS_FOLDER, f"{name}_{name}_heatmaps_loaded.png")
 
-    torch.save(torch.tensor(sims), sims_original_path)
+    torch.save(torch.tensor(sims_original), sims_original_path)
     torch.save(torch.tensor(sims_evaled), sims_evaled_path)
     torch.save(torch.tensor(sims_loaded), sims_loaded_path)
 
-    matrix_heatmap(sims_original_path, heat_path, tick_labels_y=labels, tick_labels_x=labels)
+    matrix_heatmap(sims_original_path, heat_original_path, tick_labels_y=labels, tick_labels_x=labels)
     matrix_heatmap(sims_evaled_path, heat_evaled_path, tick_labels_y=labels, tick_labels_x=labels)
     matrix_heatmap(sims_loaded_path, heat_loaded_path, tick_labels_y=labels, tick_labels_x=labels)
     print("done!")
@@ -640,7 +669,7 @@ class Args:
         self.lr = 0.01   # Learning Rate
         self.warmup = 10  # Warmup epochs
         # Total epochs per stitch to train (1 is good enough for our purposes)
-        self.epochs = 1
+        self.epochs = 5
         self.wd = 0.01   # Weight decay
         self.dataset = "cifar10"
 
@@ -657,4 +686,4 @@ if __name__ == "__main__":
     fix_seed(0)
 
     args = Args()
-    stitchtrain(arg)
+    stitchtrain(args)
