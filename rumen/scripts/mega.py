@@ -393,13 +393,16 @@ def stitchtrain(args):
     print("Assering that a deepcopied model is the same as the original by buffers (AFTER loading)")
     assert(listeq(bclone(model1), bclone(model2)))
 
-    print("Disabling requires_grad and evaluating both models")
-    for p in model1.parameters():
-        p.requires_grad = False
-    for p in model2.parameters():
-        p.requires_grad = False
-    model1.eval()
-    model2.eval()
+    # NOTE this is disabled since Yamini does it instead
+    # ... but it's unclear since I will be doing .train()
+    # in the training loop...
+    # print("Disabling requires_grad and evaluating both models")
+    # for p in model1.parameters():
+    #     p.requires_grad = False
+    # for p in model2.parameters():
+    #     p.requires_grad = False
+    # model1.eval()
+    # model2.eval()
 
     print("Checking that parameters and buffers are the same for the models (AFTER evaluating)")
     assert listeq(list(model1.parameters()), list(model2.parameters())), \
@@ -516,6 +519,7 @@ def stitchtrain(args):
                 
 
                 stitched_resnet = make_stitched_resnet(model1, model2, stitch, send_label, recv_label)
+                # TODO this will call .train() on the stitched_resnet which is worrisome
                 acc = train_loop(args, stitched_resnet, train_loader, test_loader)
                 print(acc)
                 sims_original[i][j] = acc
