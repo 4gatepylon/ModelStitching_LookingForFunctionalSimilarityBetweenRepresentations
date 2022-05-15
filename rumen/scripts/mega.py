@@ -374,7 +374,8 @@ def stitchtrain(args):
     print("Loading Models (one with init, one with DeepCopy) and moving to Cuda")
     model1 = Resnet(BasicBlock, numbers, num_classes=10)
     # NOTE we may want to just reference instead here...
-    model2 = deepcopy(model1)
+    # model2 = deepcopy(model1)
+    model2 = model1
 
     print("Asserting that a deepcopied model is the same as the original by weights (BEFORE loading)")
     assert(listeq(pclone(model1), pclone(model2)))
@@ -670,7 +671,7 @@ class Args:
         self.lr = 0.01   # Learning Rate
         self.warmup = 10  # Warmup epochs
         # Total epochs per stitch to train (1 is good enough for our purposes)
-        self.epochs = 5
+        self.epochs = 1
         self.wd = 0.01   # Weight decay
         self.dataset = "cifar10"
 
