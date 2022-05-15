@@ -334,7 +334,7 @@ class StitchedResnet(nn.Module):
 def make_stitched_resnet(model1, model2, stitch, send_label, recv_label):
     # return StitchedResnet(model1, model2, stitch, send_label, recv_label)
     # NOTE this is modified to use Yamini's resnet
-    idx1 = yamini.resnet10_label2idx(send_label)
-    # TODO it shouldn't be recv label but the one before!
+    # NOTE how we use next_label for sender due to the way Yamini uses slices
+    idx1 = yamini.resnet10_label2idx(yamini.next_label(send_label))
     idx2 = yamini.resnet10_label2idx(recv_label)
     return yamini.model_stitch(model1, model2, idx1, kernel_size=1, stitch_depth=1, stitch_no_bn=False, conv_layer_num_top=idx2)

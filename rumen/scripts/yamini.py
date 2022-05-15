@@ -38,8 +38,9 @@ def model_stitch(model1, model2, conv_layer_num, kernel_size=1, stitch_depth=1, 
     # NOTE this is possible to calculate, but since they do it this way, you MUST run it on Cuda
     x = torch.randn(2, 3, 32, 32).cuda()
     # These are probably depth
-    # NOTE this is in (sender, expected sender) format, which is DIFFERENT from (sender, reciever)
-    # ... relative to my system, this is (_, -1), but seems to have a different conv_layer_num
+    # NOTE this is in (pre-sender, reciever) format, which is DIFFERENT from (sender, reciever)
+    # ... you need to pass in the index AFTER the pre-sender if you want to include the sender
+    # (as I do)
     connect_units_in = new_model1[:conv_layer_num].cuda()(x).shape[1]
     connect_units_out = new_model2[:conv_layer_num_top].cuda()(x).shape[1]
 
@@ -125,5 +126,42 @@ def resnet10_label2idx(label):
         assert(block == 0)
         blockset_idx = blockset - 1
         return 3 + blockset_idx
+    else:
+        raise NotImplementedError
+
+# NOTE I added this for cross-compatibility between Yamini's code and my own
+def supported_output_label(label):
+    if type(label) == str:
+        return label in ["conv1", "bn1", "relu", "avgpool", "flatten"]
+    elif type(label) == tuple and len(label) == 2 and type(label[0]) == int and type(label[1]) == int:
+        blockset, block = label
+        assert(block == 0)
+        return 1 <= blockset and blockset <= 4 and block == 0
+    else:
+        raise NotImplementedError
+
+# NOTE only supports resnet 10 (which is why we assert that the block is zero)
+def next_label(label):
+    if type(label) == str:
+        if label == "conv1":
+            return "bn1"
+        if label == "bn1":
+            return "relu"
+        if label == "relu":
+            return (1, 0)
+        if label == "avgpool":
+            return "flatten"
+        if label == "flatten":
+            return "fc"
+        if label == "fc":
+            raise NotImplementedError
+    elif type(label) == tuple and len(label) == 2 and type(label[0]) == int and type(label[1]) == int:
+        blockset, block = label
+        assert(1 <= blockset and blockset <= 4)
+        assert(block == 0)
+        if blockset == 4:
+            return "relu"
+        else:
+            return (blockset + 1, 0)
     else:
         raise NotImplementedError

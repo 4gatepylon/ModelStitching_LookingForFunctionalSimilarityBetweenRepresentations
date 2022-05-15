@@ -19,6 +19,7 @@ from copy import deepcopy
 from mega_resnet import Resnet, BasicBlock
 # TODO this should be deleted (maybe)
 from mega_resnet import make_stitched_resnet
+import yamini
 
 # NOTE same as the original because it's the same tree height away
 RESNETS_FOLDER = "../../pretrained_resnets/"
@@ -454,6 +455,19 @@ def stitchtrain(args):
         ] \
         for row in layerlabels
     ]
+
+    # NOTE this is a sort of hack for cross-compatibility with Yamini's code
+    stitches = [
+        [
+            stitches[i][j] if (
+                yamini.supported_output_label(labels[i]) and 
+                yamini.supported_output_label(labels[j])
+            ) else None \
+                for j in range(len(stitches[0]))
+        ] \
+            for i in range(len(stitches))
+    ]
+
     # The two sims will be evaluated at different points
     sims_original = [
         # 0.0 as default signifies "infinitely far away" or "no similarity"
@@ -484,9 +498,9 @@ def stitchtrain(args):
     for i in range(num_labels):
         for j in range(num_labels):
             # None is used to signify that this is not supported/stitchable
+            send_label, recv_label = layerlabels[i][j]
             if stitches[i][j]:
                 print("*************************")
-                send_label, recv_label = layerlabels[i][j]
                 stitch_file = os.path.join(STITCHES_FOLDER, f"stitch_{send_label}_{recv_label}.pt")
 
                 print(f"Training {send_label} to {recv_label}")
