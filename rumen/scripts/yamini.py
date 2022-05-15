@@ -91,3 +91,39 @@ def model_stitch(model1, model2, conv_layer_num, kernel_size=1, stitch_depth=1, 
             param.requires_grad = False
 
     return model_centaur
+
+# NOTE I added this to be able to convert labels to yamini's indices
+# NOTE resnet_10 is input -> [ conv1 -> bn1 -> relu -> blocksets[0] -> ... -> blocksets[3] -> avgpool -> flatten -> fc ]
+# which means:
+# conv1        = 0
+# bn1          = 1
+# relu         = 2
+# blocksets[0] = 3
+# blocksets[1] = 4
+# blocksets[2] = 5
+# blocksets[3] = 6
+# avgpool      = 7
+# flatten      = 8
+# fc           = 9
+def resnet10_label2idx(label):
+    if type(label) == str:
+        if label == "conv1":
+            return 0
+        if label == "bn1":
+            return 1
+        if label == "relu":
+            return 2
+        if label == "avgpool":
+            return 7
+        if label == "flatten":
+            return 8
+        if label == "fc":
+            return 9
+    elif type(label) == tuple and len(label) == 2 and type(label[0]) == int and type(label[1]) == int:
+        blockset, block = label
+        assert(1 <= blockset and blockset <= 4)
+        assert(block == 0)
+        blockset_idx = blockset - 1
+        return 3 + blockset_idx
+    else:
+        raise NotImplementedError

@@ -4,6 +4,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import yamini
+
 def conv3x3(in_planes: int, out_planes: int, stride: int = 1, groups: int = 1, dilation: int = 1) -> nn.Conv2d:
     """3x3 convolution with padding"""
     return nn.Conv2d(
@@ -330,6 +332,9 @@ class StitchedResnet(nn.Module):
         return h
 
 def make_stitched_resnet(model1, model2, stitch, send_label, recv_label):
-    return StitchedResnet(model1, model2, stitch, send_label, recv_label)
-# end
-# TODO
+    # return StitchedResnet(model1, model2, stitch, send_label, recv_label)
+    # NOTE this is modified to use Yamini's resnet
+    idx1 = yamini.resnet10_label2idx(send_label)
+    # TODO it shouldn't be recv label but the one before!
+    idx2 = yamini.resnet10_label2idx(recv_label)
+    return yamini.model_stitch(model1, model2, idx1, kernel_size=1, stitch_depth=1, stitch_no_bn=False, conv_layer_num_top=idx2)
