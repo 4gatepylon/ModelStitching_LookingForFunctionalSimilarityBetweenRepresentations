@@ -313,7 +313,7 @@ def make_stitch(send_label, recv_label):
         return nn.Sequential(
             nn.Flatten(),
             # NOTE Adding BN because Yamini did it apparently? Unclear...
-            # nn.BatchNorm1d(flat_shape),
+            nn.BatchNorm1d(flat_shape),
             nn.Linear(
                 flat_shape,
                 recv_shape,
@@ -328,7 +328,7 @@ def make_stitch(send_label, recv_label):
                 # NOTE Adding BN because... refer to above
                 # NOTE uses C from (N x C x H x W) according to 
                 # https://pytorch.org/docs/master/generated/torch.nn.BatchNorm2d.html#torch.nn.BatchNorm2d
-                # nn.BatchNorm2d(send_depth),
+                nn.BatchNorm2d(send_depth),
                  nn.Conv2d(
                     send_depth,
                     recv_depth,
@@ -336,14 +336,14 @@ def make_stitch(send_label, recv_label):
                     stride=ratio,
                     bias=True,
                 ),
-                # nn.BatchNorm2d(recv_depth),
+                nn.BatchNorm2d(recv_depth),
             )
            
         else:
             ratio = recv_height // send_height
             return nn.Sequential(
                 # NOTE Adding BN because... refer to above
-                # nn.BatchNorm2d(send_depth),
+                nn.BatchNorm2d(send_depth),
                 nn.Upsample(
                     scale_factor=ratio,
                     mode='nearest',
@@ -355,7 +355,7 @@ def make_stitch(send_label, recv_label):
                     stride=1,
                     bias=True,
                 ),
-                # nn.BatchNorm2d(recv_depth),
+                nn.BatchNorm2d(recv_depth),
             )
 
 # NOTE that this code
@@ -373,6 +373,7 @@ def stitchtrain(args):
 
     print("Loading Models (one with init, one with DeepCopy) and moving to Cuda")
     model1 = Resnet(BasicBlock, numbers, num_classes=10)
+    # NOTE we may want to just reference instead here...
     model2 = deepcopy(model1)
 
     print("Asserting that a deepcopied model is the same as the original by weights (BEFORE loading)")
