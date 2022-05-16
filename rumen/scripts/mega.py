@@ -2,6 +2,7 @@
 # without any external context.
 import os
 import math
+import cv2
 import time
 import random
 import numpy as np
@@ -17,7 +18,6 @@ from torch.cuda.amp import GradScaler, autocast
 
 from copy import deepcopy
 from mega_resnet import Resnet, BasicBlock
-# TODO this should be deleted (maybe)
 from mega_resnet import make_stitched_resnet
 
 # NOTE same as the original because it's the same tree height away
@@ -25,13 +25,15 @@ RESNETS_FOLDER = "../../pretrained_resnets/"
 SIMS_FOLDER = "../../sims/"
 HEATMAPS_FOLDER = "../../heatmaps/"
 STITCHES_FOLDER = "../../stitches/"
+IMAGES_FOLDER = "../../images/"
 
 # Loaders folders
 NO_FFCV_FOLDER = "../../data_no_ffcv/"
 
 NO_FFCV_CIFAR_MEAN = [0.1307, ]
 NO_FFCV_CIFAR_STD = [0.3081, ]
-
+INV_NO_FFCV_CIFAR_MEAN = [-ans for ans in NO_FFCV_CIFAR_MEAN]
+INV_NO_FFCV_CIFAR_STD = [1.0/ans for ans in NO_FFCV_CIFAR_STD]
 
 def fix_seed(seed):
     random.seed(seed)
@@ -127,8 +129,9 @@ def get_loaders_no_ffcv(args):
         train_kwargs.update(cuda_kwargs)
         test_kwargs.update(cuda_kwargs)
     # Disable shuffling for determinism, but it shouldn't really matter that much
-    train_kwargs['shuffle'] = False
-    test_kwargs['shuffle'] = False
+    # We keep it because it should (in theory, fingers crossed) help with accuracy
+    train_kwargs['shuffle'] = True
+    test_kwargs['shuffle'] = True
 
     transform = torchvision.transforms.Compose([
         torchvision.transforms.ToTensor(),
@@ -217,10 +220,6 @@ def train_loop(
         # epoch
         # NOTE that enumerate's start changes the starting index
         for it, (inputs, outputs) in enumerate(train_loader, start=(e - 1) * len(train_loader)):
-            # TODO not sure why it's so slow sometimes, but it seems to need to "Warm up"
-            # ... I've never seen this before ngl
-            # print(f"\t\t\titeration {it}")
-            # adjust
             adjust_learning_rate(epochs=epochs,
                                  warmup_epochs=args.warmup,
                                  base_lr=args.lr * args.bsz / 256,
@@ -231,15 +230,10 @@ def train_loop(
             optimizer.zero_grad(set_to_none=True)
 
             with autocast():
-                # NOTE this is for ffcv
                 y = outputs.cuda()
                 h = inputs.cuda()
                 h = model(h)
-                # print(h)
-                # print(y)
-                # TODO modularize this out to enable sim training
                 loss = F.cross_entropy(h, y)
-                # print(loss)
 
             scaler.scale(loss).backward()
             scaler.step(optimizer)
@@ -358,6 +352,67 @@ def make_stitch(send_label, recv_label):
                 nn.BatchNorm2d(recv_depth),
             )
 
+def get_n_inputs(n, loader):
+    k = 0
+    for x, _ in loader:
+        if k > n:
+            break
+        batch_size, _, _, _ = x.size()
+        for i in range(min(batch_size, n - k)):
+            # Output as a 4D tensor so that the network can take this as input
+            y = x[i, :, :, :].flatten(end_dim=0).unflatten(0, (1, -1))
+            yield y
+        k += batch_size
+
+def save_random_image_pairs(st, sender, send_label, num_pairs, foldername_images, train_loader):
+    # NOTE st is not in cuda by default
+    sender = sender.cuda()
+    st = st.cuda()
+    sender.eval()
+    st.eval()
+    for p in st.parameters():
+        p.requires_grad = False
+    
+    # un-normalize the image so that it can be shown in cv2 how we would see it originally
+    inv_transform = torchvision.transforms.Compose([
+        torchvision.transforms.Normalize(mean=[0,], std=INV_NO_FFCV_CIFAR_STD),
+        torchvision.transforms.Normalize(mean=INV_NO_FFCV_CIFAR_MEAN, std=[1,])
+    ])
+    
+    original_tensors = list(get_n_inputs(num_pairs, train_loader))
+    for i in range(num_pairs):
+        # Pick the filenames
+        original_filename = os.path.join(
+            foldername_images, f"original_{i}.png")
+        generated_filename = os.path.join(
+            foldername_images, f"generated_{i}.png")
+
+        with torch.no_grad():
+            with autocast():
+                original_tensor = original_tensors[i].cuda()
+                print(f"\tOriginal tensor shape is {original_tensor.size()}")
+                generated_tensor_pre = sender.outfrom_forward(
+                    original_tensor,
+                    send_label,
+                )
+                generated_tensor = st(generated_tensor_pre)
+
+        # Save the images
+        original_tensor_flat = original_tensor.flatten(end_dim=1)
+        generated_tensor_flat = generated_tensor.flatten(end_dim=1)
+        original_tensor_flat = inv_transform(original_tensor_flat)
+        generated_tensor_flat = inv_transform(generated_tensor_flat)
+
+        print(f"\tFlattened original tensor shape: {original_tensor_flat.size()}")
+        print(f"\tFlattened generated tensor shape: {generated_tensor_flat.size()}")
+        assert original_tensor_flat.size() == (3, 32, 32)
+        assert generated_tensor_flat.size() == (3, 32, 32)
+        # NOTE cv2 expects the channels to be channels last, with height and width first
+        original_np = original_tensor_flat.cpu().detach().float().numpy().transpose(1, 2, 0)
+        generated_np = generated_tensor_flat.cpu().detach().float().numpy().transpose(1, 2, 0)
+        cv2.imwrite(original_filename, original_np)
+        cv2.imwrite(generated_filename, generated_np)
+
 # NOTE that this code
 # 1. does NOT pretrain (i.e. regular train) the models...
 #    instead you can use `experiment.py` for that
@@ -366,7 +421,7 @@ def make_stitch(send_label, recv_label):
 #    a quick sanity test batch of results
 
 
-def stitchtrain(args):
+def stitchtrain(args, models_seperate=True):
     name = f"resnet_1111"
     numbers = [1, 1, 1, 1]
     _file = os.path.join(RESNETS_FOLDER, f"{name}.pt")
@@ -374,8 +429,7 @@ def stitchtrain(args):
     print("Loading Models (one with init, one with DeepCopy) and moving to Cuda")
     model1 = Resnet(BasicBlock, numbers, num_classes=10)
     # NOTE we may want to just reference instead here...
-    # model2 = deepcopy(model1)
-    model2 = model1
+    model2 = deepcopy(model1) if models_seperate else model1
 
     print("Asserting that a deepcopied model is the same as the original by weights (BEFORE loading)")
     assert(listeq(pclone(model1), pclone(model2)))
@@ -389,7 +443,7 @@ def stitchtrain(args):
 
     print("Asserting that a deepcopied model is the same as the original by weights (AFTER loading)")
     assert(listeq(pclone(model1), pclone(model2)))
-    print("Assering that a deepcopied model is the same as the original by buffers (AFTER loading)")
+    print("Asserting that a deepcopied model is the same as the original by buffers (AFTER loading)")
     assert(listeq(bclone(model1), bclone(model2)))
 
     print("Disabling requires_grad and evaluating both models")
@@ -480,153 +534,153 @@ def stitchtrain(args):
     if not os.path.exists(STITCHES_FOLDER):
         os.mkdir(STITCHES_FOLDER)
 
-    print("Training Table (saving)")
-    for i in range(num_labels):
-        for j in range(num_labels):
-            # None is used to signify that this is not supported/stitchable
-            if stitches[i][j]:
-                print("*************************")
-                send_label, recv_label = layerlabels[i][j]
-                stitch_file = os.path.join(STITCHES_FOLDER, f"stitch_{send_label}_{recv_label}.pt")
+    # print("Training Table (saving)")
+    # for i in range(num_labels):
+    #     for j in range(num_labels):
+    #         # None is used to signify that this is not supported/stitchable
+    #         if stitches[i][j]:
+    #             print("*************************")
+    #             send_label, recv_label = layerlabels[i][j]
+    #             stitch_file = os.path.join(STITCHES_FOLDER, f"stitch_{send_label}_{recv_label}.pt")
 
-                print(f"Training {send_label} to {recv_label}")
-                stitch = stitches[i][j]
-                stitch = stitch.cuda()
+    #             print(f"Training {send_label} to {recv_label}")
+    #             stitch = stitches[i][j]
+    #             stitch = stitch.cuda()
 
-                ORIGINAL_PARAMS_1 = pclone(model1)
-                ORIGINAL_BUFFERS_1 = bclone(model1)
-                ORIGINAL_PARAMS_2 = pclone(model2)
-                ORIGINAL_BUFFERS_2 = bclone(model2)
-                ORIGINAL_STITCH_PARAMS = pclone(stitch)
-                ORIGINAL_STITCH_BUFFERS = bclone(stitch)
+    #             ORIGINAL_PARAMS_1 = pclone(model1)
+    #             ORIGINAL_BUFFERS_1 = bclone(model1)
+    #             ORIGINAL_PARAMS_2 = pclone(model2)
+    #             ORIGINAL_BUFFERS_2 = bclone(model2)
+    #             ORIGINAL_STITCH_PARAMS = pclone(stitch)
+    #             ORIGINAL_STITCH_BUFFERS = bclone(stitch)
                 
 
-                stitched_resnet = make_stitched_resnet(model1, model2, stitch, send_label, recv_label)
-                acc = train_loop(args, stitched_resnet, train_loader, test_loader)
-                print(acc)
-                sims_original[i][j] = acc
+    #             stitched_resnet = make_stitched_resnet(model1, model2, stitch, send_label, recv_label)
+    #             acc = train_loop(args, stitched_resnet, train_loader, test_loader)
+    #             print(acc)
+    #             sims_original[i][j] = acc
 
-                # Save the stitch if this was a training run
-                torch.save(stitch.state_dict(), stitch_file)
+    #             # Save the stitch if this was a training run
+    #             torch.save(stitch.state_dict(), stitch_file)
 
-                NEW_PARAMS_1 = pclone(model1)
-                NEW_BUFFERS_1 = bclone(model1)
-                NEW_PARAMS_2 = pclone(model2)
-                NEW_BUFFERS_2 = bclone(model2)
-                NEW_STITCH_PARAMS = pclone(stitch)
-                NEW_STITCH_BUFFERS = bclone(stitch)
+    #             NEW_PARAMS_1 = pclone(model1)
+    #             NEW_BUFFERS_1 = bclone(model1)
+    #             NEW_PARAMS_2 = pclone(model2)
+    #             NEW_BUFFERS_2 = bclone(model2)
+    #             NEW_STITCH_PARAMS = pclone(stitch)
+    #             NEW_STITCH_BUFFERS = bclone(stitch)
 
-                print("Asserting that stitch parameters changed, but not either model (train table)")
-                assert listeq(ORIGINAL_PARAMS_1, NEW_PARAMS_1)
-                assert listeq(ORIGINAL_BUFFERS_1, NEW_BUFFERS_1)
-                assert listeq(ORIGINAL_PARAMS_2, NEW_PARAMS_2)
-                assert listeq(ORIGINAL_BUFFERS_2, NEW_BUFFERS_2)
-                assert not listeq(ORIGINAL_STITCH_PARAMS, NEW_STITCH_PARAMS)
-                assert (len(ORIGINAL_STITCH_BUFFERS) == 0 and len(NEW_STITCH_BUFFERS) == 0) or \
-                    not listeq(ORIGINAL_STITCH_BUFFERS, NEW_STITCH_BUFFERS)
-                print("*************************\n")
+    #             print("Asserting that stitch parameters changed, but not either model (train table)")
+    #             assert listeq(ORIGINAL_PARAMS_1, NEW_PARAMS_1)
+    #             assert listeq(ORIGINAL_BUFFERS_1, NEW_BUFFERS_1)
+    #             assert listeq(ORIGINAL_PARAMS_2, NEW_PARAMS_2)
+    #             assert listeq(ORIGINAL_BUFFERS_2, NEW_BUFFERS_2)
+    #             assert not listeq(ORIGINAL_STITCH_PARAMS, NEW_STITCH_PARAMS)
+    #             assert (len(ORIGINAL_STITCH_BUFFERS) == 0 and len(NEW_STITCH_BUFFERS) == 0) or \
+    #                 not listeq(ORIGINAL_STITCH_BUFFERS, NEW_STITCH_BUFFERS)
+    #             print("*************************\n")
     
-    print("Creating Stitch Table by Evaluating")
-    for i in range(num_labels):
-        for j in range(num_labels):
-            # None is used to signify that this is not supported/stitchable
-            if stitches[i][j]:
-                print("*************************")
-                send_label, recv_label = layerlabels[i][j]
+    # print("Creating Stitch Table by Evaluating")
+    # for i in range(num_labels):
+    #     for j in range(num_labels):
+    #         # None is used to signify that this is not supported/stitchable
+    #         if stitches[i][j]:
+    #             print("*************************")
+    #             send_label, recv_label = layerlabels[i][j]
 
-                print(f"Evaluating {send_label} to {recv_label}")
-                stitch = stitches[i][j]
-                stitch = stitch.cuda()
+    #             print(f"Evaluating {send_label} to {recv_label}")
+    #             stitch = stitches[i][j]
+    #             stitch = stitch.cuda()
 
-                ORIGINAL_PARAMS_1 = pclone(model1)
-                ORIGINAL_BUFFERS_1 = bclone(model1)
-                ORIGINAL_PARAMS_2 = pclone(model2)
-                ORIGINAL_BUFFERS_2 = bclone(model2)
-                ORIGINAL_STITCH_PARAMS = pclone(stitch)
-                ORIGINAL_STITCH_BUFFERS = bclone(stitch)
+    #             ORIGINAL_PARAMS_1 = pclone(model1)
+    #             ORIGINAL_BUFFERS_1 = bclone(model1)
+    #             ORIGINAL_PARAMS_2 = pclone(model2)
+    #             ORIGINAL_BUFFERS_2 = bclone(model2)
+    #             ORIGINAL_STITCH_PARAMS = pclone(stitch)
+    #             ORIGINAL_STITCH_BUFFERS = bclone(stitch)
                 
 
-                stitched_resnet = make_stitched_resnet(model1, model2, stitch, send_label, recv_label)
-                acc = evaluate(stitched_resnet, test_loader)
-                print(acc)
-                sims_evaled[i][j] = acc
+    #             stitched_resnet = make_stitched_resnet(model1, model2, stitch, send_label, recv_label)
+    #             acc = evaluate(stitched_resnet, test_loader)
+    #             print(acc)
+    #             sims_evaled[i][j] = acc
 
-                # Save the stitch if this was a training run
-                torch.save(stitch.state_dict(), stitch_file)
+    #             # Save the stitch if this was a training run
+    #             torch.save(stitch.state_dict(), stitch_file)
 
-                NEW_PARAMS_1 = pclone(model1)
-                NEW_BUFFERS_1 = bclone(model1)
-                NEW_PARAMS_2 = pclone(model2)
-                NEW_BUFFERS_2 = bclone(model2)
-                NEW_STITCH_PARAMS = pclone(stitch)
-                NEW_STITCH_BUFFERS = bclone(stitch)
+    #             NEW_PARAMS_1 = pclone(model1)
+    #             NEW_BUFFERS_1 = bclone(model1)
+    #             NEW_PARAMS_2 = pclone(model2)
+    #             NEW_BUFFERS_2 = bclone(model2)
+    #             NEW_STITCH_PARAMS = pclone(stitch)
+    #             NEW_STITCH_BUFFERS = bclone(stitch)
 
-                print("Asserting that no parameters changed after evaluation (eval table)")
-                assert listeq(ORIGINAL_PARAMS_1, NEW_PARAMS_1)
-                assert listeq(ORIGINAL_BUFFERS_1, NEW_BUFFERS_1)
-                assert listeq(ORIGINAL_PARAMS_2, NEW_PARAMS_2)
-                assert listeq(ORIGINAL_BUFFERS_2, NEW_BUFFERS_2)
-                assert listeq(ORIGINAL_STITCH_PARAMS, NEW_STITCH_PARAMS)
-                assert (len(ORIGINAL_STITCH_BUFFERS) == 0 and len(NEW_STITCH_BUFFERS) == 0) or \
-                    listeq(ORIGINAL_STITCH_BUFFERS, NEW_STITCH_BUFFERS)
-                print("*************************\n")
+    #             print("Asserting that no parameters changed after evaluation (eval table)")
+    #             assert listeq(ORIGINAL_PARAMS_1, NEW_PARAMS_1)
+    #             assert listeq(ORIGINAL_BUFFERS_1, NEW_BUFFERS_1)
+    #             assert listeq(ORIGINAL_PARAMS_2, NEW_PARAMS_2)
+    #             assert listeq(ORIGINAL_BUFFERS_2, NEW_BUFFERS_2)
+    #             assert listeq(ORIGINAL_STITCH_PARAMS, NEW_STITCH_PARAMS)
+    #             assert (len(ORIGINAL_STITCH_BUFFERS) == 0 and len(NEW_STITCH_BUFFERS) == 0) or \
+    #                 listeq(ORIGINAL_STITCH_BUFFERS, NEW_STITCH_BUFFERS)
+    #             print("*************************\n")
     
-    print("Creating Stitch Table by Loading")
-    for i in range(num_labels):
-        for j in range(num_labels):
-            # None is used to signify that this is not supported/stitchable
-            if stitches[i][j]:
-                print("*************************")
-                send_label, recv_label = layerlabels[i][j]
+    # print("Creating Stitch Table by Loading")
+    # for i in range(num_labels):
+    #     for j in range(num_labels):
+    #         # None is used to signify that this is not supported/stitchable
+    #         if stitches[i][j]:
+    #             print("*************************")
+    #             send_label, recv_label = layerlabels[i][j]
 
-                print(f"Loading {send_label} to {recv_label}")
-                stitch = make_stitch(send_label, recv_label)
-                stitch_file = os.path.join(STITCHES_FOLDER, f"stitch_{send_label}_{recv_label}.pt")
-                stitch.load_state_dict(torch.load(stitch_file))
-                stitch = stitch.cuda()
+    #             print(f"Loading {send_label} to {recv_label}")
+    #             stitch = make_stitch(send_label, recv_label)
+    #             stitch_file = os.path.join(STITCHES_FOLDER, f"stitch_{send_label}_{recv_label}.pt")
+    #             stitch.load_state_dict(torch.load(stitch_file))
+    #             stitch = stitch.cuda()
 
-                true_stitch = stitches[i][j]
-                true_stitch = true_stitch.cuda()
+    #             true_stitch = stitches[i][j]
+    #             true_stitch = true_stitch.cuda()
 
-                TRUE_STITCH_PARAMS = pclone(true_stitch)
-                TRUE_STITCH_BUFFERS = bclone(true_stitch)
+    #             TRUE_STITCH_PARAMS = pclone(true_stitch)
+    #             TRUE_STITCH_BUFFERS = bclone(true_stitch)
 
-                ORIGINAL_PARAMS_1 = pclone(model1)
-                ORIGINAL_BUFFERS_1 = bclone(model1)
-                ORIGINAL_PARAMS_2 = pclone(model2)
-                ORIGINAL_BUFFERS_2 = bclone(model2)
-                ORIGINAL_STITCH_PARAMS = pclone(stitch)
-                ORIGINAL_STITCH_BUFFERS = bclone(stitch)
+    #             ORIGINAL_PARAMS_1 = pclone(model1)
+    #             ORIGINAL_BUFFERS_1 = bclone(model1)
+    #             ORIGINAL_PARAMS_2 = pclone(model2)
+    #             ORIGINAL_BUFFERS_2 = bclone(model2)
+    #             ORIGINAL_STITCH_PARAMS = pclone(stitch)
+    #             ORIGINAL_STITCH_BUFFERS = bclone(stitch)
 
-                print("Asserting that true stitch and loaded stitch have the same weights and buffers")
-                assert(listeq(TRUE_STITCH_PARAMS, ORIGINAL_STITCH_PARAMS))
-                assert(listeq(TRUE_STITCH_BUFFERS, ORIGINAL_STITCH_BUFFERS))
+    #             print("Asserting that true stitch and loaded stitch have the same weights and buffers")
+    #             assert(listeq(TRUE_STITCH_PARAMS, ORIGINAL_STITCH_PARAMS))
+    #             assert(listeq(TRUE_STITCH_BUFFERS, ORIGINAL_STITCH_BUFFERS))
 
-                stitched_resnet = make_stitched_resnet(model1, model2, stitch, send_label, recv_label)
-                acc = evaluate(stitched_resnet, test_loader)
-                print(acc)
-                sims_loaded[i][j] = acc
+    #             stitched_resnet = make_stitched_resnet(model1, model2, stitch, send_label, recv_label)
+    #             acc = evaluate(stitched_resnet, test_loader)
+    #             print(acc)
+    #             sims_loaded[i][j] = acc
 
-                # Save the stitch if this was a training run
-                torch.save(stitch.state_dict(), stitch_file)
+    #             # Save the stitch if this was a training run
+    #             torch.save(stitch.state_dict(), stitch_file)
 
-                NEW_PARAMS_1 = pclone(model1)
-                NEW_BUFFERS_1 = bclone(model1)
-                NEW_PARAMS_2 = pclone(model2)
-                NEW_BUFFERS_2 = bclone(model2)
-                NEW_STITCH_PARAMS = pclone(stitch)
-                NEW_STITCH_BUFFERS = bclone(stitch)
+    #             NEW_PARAMS_1 = pclone(model1)
+    #             NEW_BUFFERS_1 = bclone(model1)
+    #             NEW_PARAMS_2 = pclone(model2)
+    #             NEW_BUFFERS_2 = bclone(model2)
+    #             NEW_STITCH_PARAMS = pclone(stitch)
+    #             NEW_STITCH_BUFFERS = bclone(stitch)
 
-                # Stitch should change, but not the model
-                print("Asserting that not parameters changed from loading evaluation")
-                assert listeq(ORIGINAL_PARAMS_1, NEW_PARAMS_1)
-                assert listeq(ORIGINAL_BUFFERS_1, NEW_BUFFERS_1)
-                assert listeq(ORIGINAL_PARAMS_2, NEW_PARAMS_2)
-                assert listeq(ORIGINAL_BUFFERS_2, NEW_BUFFERS_2)
-                assert listeq(ORIGINAL_STITCH_PARAMS, NEW_STITCH_PARAMS)
-                assert (len(ORIGINAL_STITCH_BUFFERS) == 0 and len(NEW_STITCH_BUFFERS) == 0) or \
-                    listeq(ORIGINAL_STITCH_BUFFERS, NEW_STITCH_BUFFERS)
-                print("*************************\n")
+    #             # Stitch should change, but not the model
+    #             print("Asserting that not parameters changed from loading evaluation")
+    #             assert listeq(ORIGINAL_PARAMS_1, NEW_PARAMS_1)
+    #             assert listeq(ORIGINAL_BUFFERS_1, NEW_BUFFERS_1)
+    #             assert listeq(ORIGINAL_PARAMS_2, NEW_PARAMS_2)
+    #             assert listeq(ORIGINAL_BUFFERS_2, NEW_BUFFERS_2)
+    #             assert listeq(ORIGINAL_STITCH_PARAMS, NEW_STITCH_PARAMS)
+    #             assert (len(ORIGINAL_STITCH_BUFFERS) == 0 and len(NEW_STITCH_BUFFERS) == 0) or \
+    #                 listeq(ORIGINAL_STITCH_BUFFERS, NEW_STITCH_BUFFERS)
+    #             print("*************************\n")
                 
 
     print("Saving similarities")
@@ -636,12 +690,14 @@ def stitchtrain(args):
         os.mkdir(HEATMAPS_FOLDER)
     
     # Save the original, evaluated, and loaded tables
-    sims_original_path = os.path.join(SIMS_FOLDER, f"{name}_{name}_sims_original.pt")
-    sims_evaled_path = os.path.join(SIMS_FOLDER, f"{name}_{name}_sims_evaled.pt")
-    sims_loaded_path = os.path.join(SIMS_FOLDER, f"{name}_{name}_sims_loaded.pt")
-    heat_original_path = os.path.join(HEATMAPS_FOLDER, f"{name}_{name}_heatmaps_original.png")
-    heat_evaled_path = os.path.join(HEATMAPS_FOLDER, f"{name}_{name}_heatmaps_evaled.png")
-    heat_loaded_path = os.path.join(HEATMAPS_FOLDER, f"{name}_{name}_heatmaps_loaded.png")
+    # Models that are seperate are in different memory locations
+    sepstr = "seperate" if models_seperate else "together"
+    sims_original_path = os.path.join(SIMS_FOLDER, f"{name}_{name}_sims_original_{sepstr}_models.pt")
+    sims_evaled_path = os.path.join(SIMS_FOLDER, f"{name}_{name}_sims_evaled_{sepstr}_models.pt")
+    sims_loaded_path = os.path.join(SIMS_FOLDER, f"{name}_{name}_sims_loaded_{sepstr}_models.pt")
+    heat_original_path = os.path.join(HEATMAPS_FOLDER, f"{name}_{name}_heatmaps_original_{sepstr}_models.png")
+    heat_evaled_path = os.path.join(HEATMAPS_FOLDER, f"{name}_{name}_heatmaps_evaled_{sepstr}_models.png")
+    heat_loaded_path = os.path.join(HEATMAPS_FOLDER, f"{name}_{name}_heatmaps_loaded_{sepstr}_models.png")
 
     torch.save(torch.tensor(sims_original), sims_original_path)
     torch.save(torch.tensor(sims_evaled), sims_evaled_path)
@@ -652,9 +708,34 @@ def stitchtrain(args):
     matrix_heatmap(sims_loaded_path, heat_loaded_path, tick_labels_y=labels, tick_labels_x=labels)
     print("done!")
 
-    # Cleaar this in case we want to run faster again later
-    os.environ.pop("CUBLAS_WORKSPACE_CONFIG")
-
+    print(f"Will Generate images in the images folder `{IMAGES_FOLDER}`")
+    if not os.path.exists(IMAGES_FOLDER):
+        os.mkdir(IMAGES_FOLDER)
+    # 0th column is into input, 1st column is into conv1
+    first_column_stitches = [
+        stitches[i][1] \
+        for i in range(len(stitches)) if stitches[i][1]
+    ]
+    send_labels = [
+        layerlabels[i][1][0] \
+        for i in range(len(layerlabels)) if stitches[i][1]
+    ]
+    first_column_images_folders = [
+        os.path.join(IMAGES_FOLDER, f"row{i}_{sepstr}_models/") \
+        for i in range(len(stitches)) if stitches[i][1]
+    ]
+    print("Making subfolder by row (sender)")
+    for folder in first_column_images_folders:
+        if not os.path.exists(folder):
+            os.mkdir(folder)
+    num_image_pairs = 10
+    assert len(first_column_stitches) == len(first_column_images_folders)
+    assert len(send_labels) == len(first_column_images_folders)
+    print(f"Generating {num_image_pairs} images")
+    for st, folder, send_label in zip(first_column_stitches, first_column_images_folders, send_labels):
+        # NOTE we use test_loader, but either should be fine
+        print(f"\tGenerating for Stitch {st}\n*************************\n")
+        save_random_image_pairs(st, model1, send_label, num_image_pairs, folder, test_loader)
 
 class Args:
     def __init__(self):
@@ -671,7 +752,7 @@ class Args:
         self.lr = 0.01   # Learning Rate
         self.warmup = 10  # Warmup epochs
         # Total epochs per stitch to train (1 is good enough for our purposes)
-        self.epochs = 1
+        self.epochs = 5
         self.wd = 0.01   # Weight decay
         self.dataset = "cifar10"
 
@@ -688,4 +769,10 @@ if __name__ == "__main__":
     fix_seed(0)
 
     args = Args()
-    stitchtrain(args)
+    # NOTE it should not matter whether models are seperate or not, the answer should
+    # be the exact same.
+    stitchtrain(args, models_seperate=True)
+    stitchtrain(args, models_seperate=False)
+
+    # Cleaar this in case we want to run faster again later
+    os.environ.pop("CUBLAS_WORKSPACE_CONFIG")
