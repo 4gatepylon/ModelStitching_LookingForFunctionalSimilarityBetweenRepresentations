@@ -62,6 +62,60 @@ def listeq(l1, l2):
         return False
     return min((torch.eq(a, b).int().min().item() for a, b in zip(l1, l2))) == 1
 
+# Make sure that if you output from one layer and then input into the next one, 
+# the following conditions will hold for a single network
+# (and if they don't something is wrong):
+# 1. You get equivalent accuracy
+# 2. You get equivalent accuracy to the stitched network made this way
+# NOTE this assumes Resnet1111
+def sanity_test_diagonal(model, loader):
+    # TODO we might want to leave out output or input
+    labels = ["input", "conv1"] + [(i, 0) for i in range(1, 5)] + ["fc", "output"]
+    assert len(labels) >= 5
+    sane = True
+    # For every pair of layers make sure that if you outut from one and input into the next one it works
+    # Note we use warnings instead of asserts so that we can catch all the errors. This boolean function
+    # is meant to be used in an assert so that -O can optimize it away for normal use.
+    for i in range(0, len(labels) - 1):
+        out_label = labels[i]
+        in_label = labels[i+1]
+        stitch = Identity()
+        stitched_resnet = StitchedResnet(model, model, stitch, out_label, in_label)
+        stitched_resnet.freeze()
+        this_is_sane = True
+        for _input, _ in loader:
+            with torch.no_grad():
+                with autocast():
+                    _output = stitched_resnet(_input)
+                    _intermediate_outfrom = model.outfrom_forward(_input, out_label)
+                    _output_into = model.into_forward(_intermediate, in_label, pool_and_flatten=True)
+                    _exp_output = model(_input)
+                    # If the output is not equal to the expected output
+                    stitched_network_fail = (_output == _exp_output).int().min() != 1
+                    outfrom_into_fail = (_output_into == _exp_output).int().min() != 1
+                    if stitched_network_fail:
+                        sane = False
+                        if this_is_sane or not this_is_sane:
+                            warn(f"Stitched Resnet:")
+                            warn(f"Sanity failed for {out_label} -> {in_label}")
+                            warn(f"Got {_output}\n")
+                            warn(f"Expected {_exp_output}\n")
+                            warn(f"Cutting off at first occurence for brevity")
+                        this_is_sane = False
+                    if outfrom_into_fail:
+                        if this_is_sane or not this_is_sane:
+                            warn(f"Using Outfrom & Into:")
+                            warn(f"Sanity failed for {out_label} -> {in_label}")
+                            warn(f"Got {_output}\n")
+                            warn(f"Expected {_exp_output}\n")
+                            warn(f"Cutting off at first occurence for brevity")
+                        this_is_sane = False
+                    if stitched_network_fail and not outfrom_into_fail:
+                        warn(f"Stitched network failed, but out outfrom into, they might not be equal\n")
+                    elif outfrom_into_fail and not stitched_network_fail:
+                        warn(f"Outfrom/Into failed, but not the stitched network, they might not be equal")
+    return sane
+
 
 def matrix_heatmap(input_file_name: str, output_file_name: str, tick_labels_y=None, tick_labels_x=None):
     mat = torch.load(input_file_name)
@@ -482,6 +536,13 @@ def stitchtrain(args, models_seperate=True):
     assert acc1train == evaluate(model1, train_loader), "Train Accuracy Shouldn't Change (1)"
     assert acc2train == evaluate(model2, train_loader), "Train Accuracy Shouldn't Change (2)"
     # NOTE test and train accuracy are NOT same because they come from DIFFERENT sub-datasets
+
+    print("Sanity testing both models' \"Stitch Matrix\" Diagonals for correct output with Idenity stitch")
+    assert sanity_test_diagonal(model1, train_loader), "Sanity Test Diagonal (model1) Failed on train_loader"
+    assert sanity_test_diagonal(model1, test_loader), "Sanity Test Diagonal (model1) Failed on test_loader"
+    assert sanity_test_diagonal(model2, train_loader), "Sanity Test Diagonal (model2) Failed on train_loader"
+    assert sanity_test_diagonal(model2, train_loader), "Sanity Test Diagonal (model2) Failed on train_loader"
+
 
     print("Creating Tables, padding with None (and zero) to make it square")
     labels = ["input", "conv1"] + [(i, 0)
