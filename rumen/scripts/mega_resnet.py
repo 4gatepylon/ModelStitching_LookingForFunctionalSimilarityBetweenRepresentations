@@ -333,3 +333,10 @@ def make_stitched_resnet(model1, model2, stitch, send_label, recv_label):
     return StitchedResnet(model1, model2, stitch, send_label, recv_label)
 # end
 # TODO
+
+class Identity(nn.Module):
+    def __init__(self):
+        super(Identity, self).__init__()
+
+    def forward(self, x):
+        return x

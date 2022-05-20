@@ -17,8 +17,7 @@ from torch.utils.data import DataLoader
 from torch.cuda.amp import GradScaler, autocast
 
 from copy import deepcopy
-from mega_resnet import Resnet, BasicBlock
-from mega_resnet import make_stitched_resnet
+from mega_resnet import Resnet, BasicBlock, make_stitched_resnet, Identity
 
 # NOTE same as the original because it's the same tree height away
 RESNETS_FOLDER = "../../pretrained_resnets/"
@@ -61,6 +60,69 @@ def listeq(l1, l2):
     if (len(l1) != len(l2)):
         return False
     return min((torch.eq(a, b).int().min().item() for a, b in zip(l1, l2))) == 1
+
+# Make sure that if you output from one layer and then input into the next one, 
+# the following conditions will hold for a single network
+# (and if they don't something is wrong):
+# 1. You get equivalent accuracy
+# 2. You get equivalent accuracy to the stitched network made this way
+# NOTE this assumes Resnet1111
+def sanity_test_diagonal(model1, model2, loader):
+    # TODO we might want to leave out output or input
+    labels = ["input", "conv1"] + [(i, 0) for i in range(1, 5)] + ["fc", "output"]
+    assert len(labels) >= 5
+    sane = True
+    # For every pair of layers make sure that if you outut from one and input into the next one it works
+    # Note we use warnings instead of asserts so that we can catch all the errors. This boolean function
+    # is meant to be used in an assert so that -O can optimize it away for normal use.
+    for i in range(0, len(labels) - 1):
+        out_label = labels[i]
+        in_label = labels[i+1]
+        stitch = Identity()
+        stitched_resnet = make_stitched_resnet(model1, model2, stitch, out_label, in_label)
+        stitched_resnet.eval()
+        for _input, _ in loader:
+            with torch.no_grad():
+                with autocast():
+                    _input = _input.cuda()
+                    _output = stitched_resnet(_input)
+                    _intermediate_outfrom = model1.outfrom_forward(
+                        _input,
+                        out_label,
+                    )
+                    _output_into = model2.into_forward(
+                        _intermediate_outfrom,
+                        in_label,
+                        pool_and_flatten=in_label == "fc",
+                    )
+                    _exp_output1 = model1(_input)
+                    _exp_output2 = model2(_input)
+                    # If the output is not equal to the expected output
+                    exps_match_fail = (_exp_output1 == _exp_output2).int().min() != 1
+                    stitched_network_fail = (_output == _exp_output1).int().min() != 1
+                    outfrom_into_fail = (_output_into == _exp_output1).int().min() != 1
+                    if exps_match_fail:
+                        sane = False 
+                        warn("Two models' expected outputs do not match")
+                    if stitched_network_fail:
+                        sane = False
+                        warn(f"Stitched Resnet:")
+                        warn(f"Sanity failed for {out_label} -> {in_label}")
+                        warn(f"Got {_output}\n")
+                        warn(f"Expected {_exp_output1}\n")
+                        warn(f"Cutting off at first occurence for brevity")
+                    if outfrom_into_fail:
+                        sane = Fasle
+                        warn(f"Using Outfrom & Into:")
+                        warn(f"Sanity failed for {out_label} -> {in_label}")
+                        warn(f"Got {_output}\n")
+                        warn(f"Expected {_exp_output1}\n")
+                        warn(f"Cutting off at first occurence for brevity")
+                    if stitched_network_fail and not outfrom_into_fail:
+                        warn(f"Stitched network failed, but out outfrom into, they might not be equal\n")
+                    elif outfrom_into_fail and not stitched_network_fail:
+                        warn(f"Outfrom/Into failed, but not the stitched network, they might not be equal")
+    return sane
 
 
 def matrix_heatmap(input_file_name: str, output_file_name: str, tick_labels_y=None, tick_labels_x=None):
@@ -390,7 +452,7 @@ def save_random_image_pairs(st, sender, send_label, num_pairs, foldername_images
         with torch.no_grad():
             with autocast():
                 original_tensor = original_tensors[i].cuda()
-                print(f"\tOriginal tensor shape is {original_tensor.size()}")
+                # print(f"\tOriginal tensor shape is {original_tensor.size()}")
                 generated_tensor_pre = sender.outfrom_forward(
                     original_tensor,
                     send_label,
@@ -403,8 +465,8 @@ def save_random_image_pairs(st, sender, send_label, num_pairs, foldername_images
         original_tensor_flat = inv_transform(original_tensor_flat)
         generated_tensor_flat = inv_transform(generated_tensor_flat)
 
-        print(f"\tFlattened original tensor shape: {original_tensor_flat.size()}")
-        print(f"\tFlattened generated tensor shape: {generated_tensor_flat.size()}")
+        # print(f"\tFlattened original tensor shape: {original_tensor_flat.size()}")
+        # print(f"\tFlattened generated tensor shape: {generated_tensor_flat.size()}")
         assert original_tensor_flat.size() == (3, 32, 32)
         assert generated_tensor_flat.size() == (3, 32, 32)
         # NOTE cv2 expects the channels to be channels last, with height and width first
@@ -482,6 +544,11 @@ def stitchtrain(args, models_seperate=True):
     assert acc1train == evaluate(model1, train_loader), "Train Accuracy Shouldn't Change (1)"
     assert acc2train == evaluate(model2, train_loader), "Train Accuracy Shouldn't Change (2)"
     # NOTE test and train accuracy are NOT same because they come from DIFFERENT sub-datasets
+
+    print("Sanity testing both models' \"Stitch Matrix\" Diagonals for correct output with Idenity stitch")
+    assert sanity_test_diagonal(model1, model2, train_loader), "Sanity Test Diagonal (model1 -> model2) Failed on train_loader"
+    assert sanity_test_diagonal(model1, model2, test_loader), "Sanity Test Diagonal (model1 -> model2) Failed on test_loader"
+
 
     print("Creating Tables, padding with None (and zero) to make it square")
     labels = ["input", "conv1"] + [(i, 0)
@@ -734,7 +801,7 @@ def stitchtrain(args, models_seperate=True):
     print(f"Generating {num_image_pairs} images")
     for st, folder, send_label in zip(first_column_stitches, first_column_images_folders, send_labels):
         # NOTE we use test_loader, but either should be fine
-        print(f"\tGenerating for Stitch {st}\n*************************\n")
+        # print(f"\tGenerating for Stitch {st}\n*************************\n")
         save_random_image_pairs(st, model1, send_label, num_image_pairs, folder, test_loader)
 
 class Args:
@@ -771,8 +838,11 @@ if __name__ == "__main__":
     args = Args()
     # NOTE it should not matter whether models are seperate or not, the answer should
     # be the exact same.
+    print(f"Models Seperate\n**************************************************\n")
     stitchtrain(args, models_seperate=True)
+    print(f"Models Together\n**************************************************\n")
     stitchtrain(args, models_seperate=False)
+    print(f"\n**************************************************\n")
 
     # Cleaar this in case we want to run faster again later
     os.environ.pop("CUBLAS_WORKSPACE_CONFIG")

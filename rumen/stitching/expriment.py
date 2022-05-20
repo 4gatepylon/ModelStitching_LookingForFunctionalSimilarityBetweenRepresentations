@@ -56,7 +56,7 @@ def sanity_test_model_outfrom_into(model, number, loader):
     labels = LayerLabel.labels(number)
     assert len(labels) >= 5
     sane = True
-    # For every pair of layers make sure that if you outut from one and input into the next one it works
+    # For every pair of layers make sure that if you output from one and input into the next one it works
     for i in range(0, len(labels) - 1):
         out_label = labels[i]
         in_label = labels[i+1]
@@ -78,7 +78,7 @@ def sanity_test_model_outfrom_into(model, number, loader):
                         this_is_sane = False
     return sane
 
-# Basically copied from above, but makes sure that the stitched resnet is not bused
+# Basically copied from above, but makes sure that the stitched resnet is not busted
 def sanity_test_model_outfrom_into_stitched_resnet(model, number, loader):
     labels = LayerLabel.labels(number)
     assert len(labels) >= 5
