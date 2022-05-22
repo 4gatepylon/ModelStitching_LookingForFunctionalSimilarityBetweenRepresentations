@@ -436,9 +436,11 @@ def save_random_image_pairs(st, sender, send_label, num_pairs, foldername_images
         p.requires_grad = False
     
     # un-normalize the image so that it can be shown in cv2 how we would see it originally
+    # NOTE this returns PIL images
     inv_transform = torchvision.transforms.Compose([
         torchvision.transforms.Normalize(mean=[0,], std=INV_NO_FFCV_CIFAR_STD),
-        torchvision.transforms.Normalize(mean=INV_NO_FFCV_CIFAR_MEAN, std=[1,])
+        torchvision.transforms.Normalize(mean=INV_NO_FFCV_CIFAR_MEAN, std=[1,]),
+        torchvision.transforms.ToPILImage(mode="RGB"),
     ])
     
     original_tensors = list(get_n_inputs(num_pairs, train_loader))
@@ -452,7 +454,6 @@ def save_random_image_pairs(st, sender, send_label, num_pairs, foldername_images
         with torch.no_grad():
             with autocast():
                 original_tensor = original_tensors[i].cuda()
-                # print(f"\tOriginal tensor shape is {original_tensor.size()}")
                 generated_tensor_pre = sender.outfrom_forward(
                     original_tensor,
                     send_label,
@@ -462,16 +463,15 @@ def save_random_image_pairs(st, sender, send_label, num_pairs, foldername_images
         # Save the images
         original_tensor_flat = original_tensor.flatten(end_dim=1)
         generated_tensor_flat = generated_tensor.flatten(end_dim=1)
+
+        # NOTE these are PIL images
         original_tensor_flat = inv_transform(original_tensor_flat)
         generated_tensor_flat = inv_transform(generated_tensor_flat)
+        original_np = np.array(original_tensor_flat)
+        generated_np = np.array(generated_tensor_flat)
 
-        # print(f"\tFlattened original tensor shape: {original_tensor_flat.size()}")
-        # print(f"\tFlattened generated tensor shape: {generated_tensor_flat.size()}")
-        assert original_tensor_flat.size() == (3, 32, 32)
-        assert generated_tensor_flat.size() == (3, 32, 32)
-        # NOTE cv2 expects the channels to be channels last, with height and width first
-        original_np = original_tensor_flat.cpu().detach().float().numpy().transpose(1, 2, 0)
-        generated_np = generated_tensor_flat.cpu().detach().float().numpy().transpose(1, 2, 0)
+        assert original_np.shape == (32, 32, 3)
+        assert generated_np.shape == (32, 32, 3)
         cv2.imwrite(original_filename, original_np)
         cv2.imwrite(generated_filename, generated_np)
 
