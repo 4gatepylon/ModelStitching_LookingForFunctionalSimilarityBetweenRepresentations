@@ -1,6 +1,5 @@
 import os
 import cv2
-import torch
 import torchvision
 import numpy as np
 from torchvision import datasets
@@ -74,4 +73,21 @@ if __name__ == "__main__":
     print(f"Correct: {num_correct} / {num_total}")
     print(f"Total Offset: {num_pixels_off} out of {num_incorrect} (average pixel offset is {num_pixels_off / num_incorrect})")
     print("OK!")
+
+    # Create a cv2 image so taht we can confirm it or not
+    image_name1 = "test_image1.png"
+    image_name2 = "test_image2.png"
+    image_path1 = os.path.join(IMAGES_FOLDER, image_name1)
+    image_path2 = os.path.join(IMAGES_FOLDER, image_name2)
+
+    if not os.path.exists(IMAGES_FOLDER):
+        os.mkdir(IMAGES_FOLDER)
+    # to draw needs to be (H x W x D) ~ 32 x 32 x 3
+    og = og.transpose(1, 2, 0)
+    ogdi = ogdi.transpose(1, 2, 0)
+    cv2.imwrite(image_path1, og)
+    cv2.imwrite(image_path2, ogdi)
+    # End
+    print("Written!")
+    print("Done!")
 
