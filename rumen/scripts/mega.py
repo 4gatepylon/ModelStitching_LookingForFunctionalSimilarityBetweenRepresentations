@@ -549,7 +549,6 @@ def stitchtrain(args, models_seperate=True):
     assert sanity_test_diagonal(model1, model2, train_loader), "Sanity Test Diagonal (model1 -> model2) Failed on train_loader"
     assert sanity_test_diagonal(model1, model2, test_loader), "Sanity Test Diagonal (model1 -> model2) Failed on test_loader"
 
-
     print("Creating Tables, padding with None (and zero) to make it square")
     labels = ["input", "conv1"] + [(i, 0)
                                    for i in range(1, 5)] + ["fc", "output"]
@@ -840,6 +839,7 @@ if __name__ == "__main__":
     # be the exact same.
     print(f"Models Seperate\n**************************************************\n")
     stitchtrain(args, models_seperate=True)
+    print(f"\n**************************************************\n")
     print(f"Models Together\n**************************************************\n")
     stitchtrain(args, models_seperate=False)
     print(f"\n**************************************************\n")
