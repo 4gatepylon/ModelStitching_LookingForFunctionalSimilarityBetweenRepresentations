@@ -190,3 +190,7 @@ stitches/
 images/
 */images/
 **/images/
+
+# As of May 23rd, 2022 we are putting al those folders ^
+# into the following "experiment folders
+experiments/

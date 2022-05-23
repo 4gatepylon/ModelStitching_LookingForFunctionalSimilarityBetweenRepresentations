@@ -1,6 +1,7 @@
 # A Massive script to try and do the entire stitching experiment (in its simplest possible form)
 # without any external context.
 import os
+import argparse
 import math
 import cv2
 import time
@@ -168,11 +169,9 @@ def matrix_heatmap(input_file_name: str, output_file_name: str, tick_labels_y=No
     plt.clf()
 
 
-def get_loaders_no_ffcv(args):
+def get_loaders_no_ffcv(train_batch_size, test_batch_size):
     use_cuda = torch.cuda.is_available()
     assert use_cuda, "Should be using CUDA"
-    train_batch_size = args.bsz
-    test_batch_size = args.test_bsz
 
     device = torch.device("cuda" if use_cuda else "cpu")
 
@@ -254,40 +253,54 @@ def evaluate(model, test_loader):
 
 
 def train_loop(
-    args,
+    ### Hyperparameters ###
+    bsz,
+    wd,
+    lr,
+    max_epochs,
+    warmup,
+    ### ... ###
     model,
     train_loader,
     test_loader,
+    early_stop_acc=None,
     verbose=True,
 ):
     parameters = list(model.parameters())
 
+    assert bsz >= 256
+    assert max_epochs >= 1
+
     optimizer = torch.optim.SGD(
         params=parameters,
         momentum=0.9,
-        lr=args.lr * args.bsz / 256,
-        weight_decay=args.wd
+        lr=lr * bsz / 256,
+        weight_decay=wd
     )
 
     scaler = GradScaler()
 
     start = time.time()
-    epochs = args.epochs
-    for e in range(1, epochs + 1):
+    eval_acc = None
+    for e in range(1, max_epochs + 1):
+        # Log
         if verbose:
-            print(
-                f"\t\t starting on epoch {e} for {len(train_loader)} iterations")
+            print(f"\t\t starting on epoch {e} for {len(train_loader)} iterations")
+        
+        # Stop early if we have trained enough
+        eval_acc = evaluate(model, test_loader)
+        if (not early_stop_acc is None) and (early_stop_acc <= eval_acc):
+            break
+        
         model.train()
-        # epoch
         # NOTE that enumerate's start changes the starting index
         for it, (inputs, outputs) in enumerate(train_loader, start=(e - 1) * len(train_loader)):
-            adjust_learning_rate(epochs=epochs,
-                                 warmup_epochs=args.warmup,
-                                 base_lr=args.lr * args.bsz / 256,
+            adjust_learning_rate(epochs=max_epochs,
+                                 warmup_epochs=warmup,
+                                 base_lr=lr * bsz / 256,
                                  optimizer=optimizer,
                                  loader=train_loader,
                                  step=it)
-            # zero grad (should we set to none?)
             optimizer.zero_grad(set_to_none=True)
 
             with autocast():
@@ -302,8 +315,7 @@ def train_loop(
         if verbose:
             print(f'\t\tepoch: {e} | time: {time.time() - start:.3f}')
 
-    eval_acc = evaluate(model, test_loader)
-
+    assert eval_acc > 0
     return eval_acc
 
 
@@ -474,6 +486,64 @@ def save_random_image_pairs(st, sender, send_label, num_pairs, foldername_images
         cv2.imwrite(original_filename, original_np)
         cv2.imwrite(generated_filename, generated_np)
 
+def best_possible_stitch(models, labels, args, early_stop_acc = 0.9):
+    assert type(models) == tuple and len(models) == 2
+    assert type(labels) == tuple and len(labels) == 2
+    assert not args.use_default_bsz
+    assert not args.use_default_lr
+    assert not args.use_default_max_epochs
+
+    model1, model2 = models
+    assert type(model1) == nn.Module
+    assert type(model2) == nn.Module
+    send_label, recv_label = labels
+    assert type(send_label) == str or \
+        (type(send_label) == tuple and len(send_label) == 2 and send_label[0] in [1, 2, 3, 4] and send_label[1] == 0)
+    assert type(recv_label) == str or \
+        (type(recv_label) == tuple and len(recv_label) == 2 and recv_label[0] in [1, 2, 3, 4] and recv_label[1] == 0)
+
+    best_stitch = None
+    best_acc = 0.0
+    for max_epochs in args.max_epochs_range:
+        for lr in args.lr_range:
+            for batch_size in args.batch_size_range:
+                train_loader, test_loader = get_loaders_no_ffcv(batch_size, args.test_bsz)
+
+                stitch = make_stitch(send_label, recv_label)
+                stitch = st.cuda()
+                ORIGINAL_STITCH_PARAMS = pclone(stitch)
+                ORIGINAL_STITCH_BUFFERS = bclone(stitch)
+
+                
+                stitched_resnet = make_stitched_resnet(model1, model2, stitch, send_label, recv_label)
+                acc = train_loop(args, 
+                    # Pass in our hyperparamters
+                    batch_size,  # Changes
+                    args.wd,     # Does NOT change
+                    lr,          # Changes
+                    max_epochs,  # Changes
+                    warmup,      # Does NOT change
+                    # ...
+                    stitched_resnet,
+                    train_loader,
+                    test_loader,
+                    early_stop_acc=early_stop_acc,
+                    # Use Default Verbosity
+                )
+
+                # TODO add sanity test for file load/eval AND add hyperparameter search HERE
+                # Save the stitch if this was a training run ONLY for the sanity test
+                # torch.save(stitch.state_dict(), stitch_file)
+
+
+                NEW_STITCH_PARAMS = pclone(stitch)
+                NEW_STITCH_BUFFERS = bclone(stitch)
+                assert not listeq(ORIGINAL_STITCH_PARAMS, NEW_STITCH_PARAMS)
+                assert (len(ORIGINAL_STITCH_BUFFERS) == 0 and len(NEW_STITCH_BUFFERS) == 0) or \
+                    not listeq(ORIGINAL_STITCH_BUFFERS, NEW_STITCH_BUFFERS)
+                
+    assert not best_stitch is None
+    return (best_stitch, best_acc)
 # NOTE that this code
 # 1. does NOT pretrain (i.e. regular train) the models...
 #    instead you can use `experiment.py` for that
@@ -525,8 +595,8 @@ def stitchtrain(args, models_seperate=True):
     assert(list(set(map(lambda p: p.data.dtype, model2.parameters()))) == [torch.float32]), \
         "The model2 needs to have only float32 parameters"
 
-    print("Getting loaders NOT for FFCV, NO Shuffling")
-    train_loader, test_loader = get_loaders_no_ffcv(args)
+    print("Getting sanity loaders NOT for FFCV, NO Shuffling")
+    train_loader, test_loader = get_loaders_no_ffcv(args.default_bsz, args.test_bsz)
 
     # The assertions make sure that the dataset behaves deterministically
     print("Train and Test Accuracies are on the same dataset")
@@ -536,6 +606,12 @@ def stitchtrain(args, models_seperate=True):
     acc2 = evaluate(model2, test_loader)
     acc2train = evaluate(model2, train_loader)
     print(f"Model 2 Test Accuracy: {acc2}, Train Accuracy: {acc2train}")
+
+    # NOTE this snippet is added to early stop training on easy layer pairs to stitch
+    # when doing grid search
+    max_acc = max(acc1, acc2)
+    assert 0 <= max_acc and max_acc <= 1
+    early_stop_acc = max_acc - (args.early_stop_percent_diff * max_acc)
 
     print("Making sure that the accuracies don't change")
     assert acc1 == evaluate(model1, test_loader), "Test Accuracy Shouldn't Change (1)"
@@ -561,18 +637,6 @@ def stitchtrain(args, models_seperate=True):
     assert max(map(len, layerlabels)) == 8 and min(map(len, layerlabels)) == 8
 
     print("Creating stitches and sims")
-    # 1x1 or 2x2 table of stitch table
-    stitches = [
-        [
-            make_stitch(labels[0], labels[1]) \
-            # Do not support stitching into input because nothing goes into input
-            # Do not support stitching from output because output does not have an output
-            # Do not support stitching from fc because matching shapes is hard
-            if (labels[1] != "input" and labels[0] != "fc" and labels[0] != "output") else None \
-            for labels in row
-        ] \
-        for row in layerlabels
-    ]
     # The two sims will be evaluated at different points
     sims_original = [
         # 0.0 as default signifies "infinitely far away" or "no similarity"
@@ -580,8 +644,6 @@ def stitchtrain(args, models_seperate=True):
         [0.0 for _ in range(num_labels)] \
         for _ in range(num_labels)
     ]
-    sims_evaled = deepcopy(sims_original)
-    sims_loaded = deepcopy(sims_original)
 
     # Make sure all the lengths are correct
     print("Ensuring that layerlabels, stitches, and sims_original tables have the proper dimensions")
@@ -598,7 +660,17 @@ def stitchtrain(args, models_seperate=True):
     print("Ensuring that stitches folder exists")
     if not os.path.exists(STITCHES_FOLDER):
         os.mkdir(STITCHES_FOLDER)
+    
+    print(f"Will Generate images in the images folder `{IMAGES_FOLDER}`")
+    if not os.path.exists(IMAGES_FOLDER):
+        os.mkdir(IMAGES_FOLDER)
 
+    # `sepstr` is used in various places below to annotate what experiment this is
+    # (we run both with one model and with two just in case as a debugging tactic)
+    sepstr = "seperate" if models_seperate else "together"
+
+    # NOTE train loader is not used and new ones are created for the purposes of hyperparameter tuning
+    train_loader = None
     print("Training Table (saving)")
     for i in range(num_labels):
         for j in range(num_labels):
@@ -609,217 +681,85 @@ def stitchtrain(args, models_seperate=True):
                 stitch_file = os.path.join(STITCHES_FOLDER, f"stitch_{send_label}_{recv_label}.pt")
 
                 print(f"Training {send_label} to {recv_label}")
-                stitch = stitches[i][j]
-                stitch = stitch.cuda()
-
+                # NOTE we do this sanity test wrapping the grid search (on each entry)
+                # because it will decrease the amount of work done and we have confidence that
+                # there are no bugs right now
                 ORIGINAL_PARAMS_1 = pclone(model1)
                 ORIGINAL_BUFFERS_1 = bclone(model1)
                 ORIGINAL_PARAMS_2 = pclone(model2)
                 ORIGINAL_BUFFERS_2 = bclone(model2)
-                ORIGINAL_STITCH_PARAMS = pclone(stitch)
-                ORIGINAL_STITCH_BUFFERS = bclone(stitch)
-                
 
-                stitched_resnet = make_stitched_resnet(model1, model2, stitch, send_label, recv_label)
-                acc = train_loop(args, stitched_resnet, train_loader, test_loader)
+                # NOTE stitch will be in cuda
+                stitch, acc = best_possible_stitch(
+                    models=(model1, model2),
+                    labels=(send_label, recv_label),
+                    args=args,
+                    # NOTE this may make more sense to define somewhere else, but whatever
+                    early_stop_acc=early_stop_acc,
+                )
                 print(acc)
-                sims_original[i][j] = acc
-
-                # Save the stitch if this was a training run
-                torch.save(stitch.state_dict(), stitch_file)
 
                 NEW_PARAMS_1 = pclone(model1)
                 NEW_BUFFERS_1 = bclone(model1)
                 NEW_PARAMS_2 = pclone(model2)
                 NEW_BUFFERS_2 = bclone(model2)
-                NEW_STITCH_PARAMS = pclone(stitch)
-                NEW_STITCH_BUFFERS = bclone(stitch)
-
-                print("Asserting that stitch parameters changed, but not either model (train table)")
-                assert listeq(ORIGINAL_PARAMS_1, NEW_PARAMS_1)
-                assert listeq(ORIGINAL_BUFFERS_1, NEW_BUFFERS_1)
-                assert listeq(ORIGINAL_PARAMS_2, NEW_PARAMS_2)
-                assert listeq(ORIGINAL_BUFFERS_2, NEW_BUFFERS_2)
-                assert not listeq(ORIGINAL_STITCH_PARAMS, NEW_STITCH_PARAMS)
-                assert (len(ORIGINAL_STITCH_BUFFERS) == 0 and len(NEW_STITCH_BUFFERS) == 0) or \
-                    not listeq(ORIGINAL_STITCH_BUFFERS, NEW_STITCH_BUFFERS)
-                print("*************************\n")
-    
-    print("Creating Stitch Table by Evaluating")
-    for i in range(num_labels):
-        for j in range(num_labels):
-            # None is used to signify that this is not supported/stitchable
-            if stitches[i][j]:
-                print("*************************")
-                send_label, recv_label = layerlabels[i][j]
-
-                print(f"Evaluating {send_label} to {recv_label}")
-                stitch = stitches[i][j]
-                stitch = stitch.cuda()
-
-                ORIGINAL_PARAMS_1 = pclone(model1)
-                ORIGINAL_BUFFERS_1 = bclone(model1)
-                ORIGINAL_PARAMS_2 = pclone(model2)
-                ORIGINAL_BUFFERS_2 = bclone(model2)
-                ORIGINAL_STITCH_PARAMS = pclone(stitch)
-                ORIGINAL_STITCH_BUFFERS = bclone(stitch)
                 
-
-                stitched_resnet = make_stitched_resnet(model1, model2, stitch, send_label, recv_label)
-                acc = evaluate(stitched_resnet, test_loader)
-                print(acc)
-                sims_evaled[i][j] = acc
-
-                # Save the stitch if this was a training run
-                torch.save(stitch.state_dict(), stitch_file)
-
-                NEW_PARAMS_1 = pclone(model1)
-                NEW_BUFFERS_1 = bclone(model1)
-                NEW_PARAMS_2 = pclone(model2)
-                NEW_BUFFERS_2 = bclone(model2)
-                NEW_STITCH_PARAMS = pclone(stitch)
-                NEW_STITCH_BUFFERS = bclone(stitch)
-
-                print("Asserting that no parameters changed after evaluation (eval table)")
+                print("Asserting that model parameters did not change after grid search")
                 assert listeq(ORIGINAL_PARAMS_1, NEW_PARAMS_1)
                 assert listeq(ORIGINAL_BUFFERS_1, NEW_BUFFERS_1)
                 assert listeq(ORIGINAL_PARAMS_2, NEW_PARAMS_2)
                 assert listeq(ORIGINAL_BUFFERS_2, NEW_BUFFERS_2)
-                assert listeq(ORIGINAL_STITCH_PARAMS, NEW_STITCH_PARAMS)
-                assert (len(ORIGINAL_STITCH_BUFFERS) == 0 and len(NEW_STITCH_BUFFERS) == 0) or \
-                    listeq(ORIGINAL_STITCH_BUFFERS, NEW_STITCH_BUFFERS)
                 print("*************************\n")
-    
-    print("Creating Stitch Table by Loading")
-    for i in range(num_labels):
-        for j in range(num_labels):
-            # None is used to signify that this is not supported/stitchable
-            if stitches[i][j]:
-                print("*************************")
-                send_label, recv_label = layerlabels[i][j]
 
-                print(f"Loading {send_label} to {recv_label}")
-                stitch = make_stitch(send_label, recv_label)
-                stitch_file = os.path.join(STITCHES_FOLDER, f"stitch_{send_label}_{recv_label}.pt")
-                stitch.load_state_dict(torch.load(stitch_file))
-                stitch = stitch.cuda()
+                # j == 1 is the same as recv_label == "conv1"
+                if j == 1:
+                    assert recv_label == "conv1"
+                    print(f"Generating image for stitch {send_label} -> {recv_label}")
+                    img_folder = os.path.join(IMAGES_FOLDER, f"row{i}_{sepstr}_models/")
+                    print(f"Storing image in {img_folder}")
+                    if not os.path.exists(img_folder):
+                        os.mkdir(img_folder)
+                    num_image_pairs = 10
+                    save_random_image_pairs(stitch, model1, send_label, num_image_pairs, img_folder, test_loader)
 
-                true_stitch = stitches[i][j]
-                true_stitch = true_stitch.cuda()
-
-                TRUE_STITCH_PARAMS = pclone(true_stitch)
-                TRUE_STITCH_BUFFERS = bclone(true_stitch)
-
-                ORIGINAL_PARAMS_1 = pclone(model1)
-                ORIGINAL_BUFFERS_1 = bclone(model1)
-                ORIGINAL_PARAMS_2 = pclone(model2)
-                ORIGINAL_BUFFERS_2 = bclone(model2)
-                ORIGINAL_STITCH_PARAMS = pclone(stitch)
-                ORIGINAL_STITCH_BUFFERS = bclone(stitch)
-
-                print("Asserting that true stitch and loaded stitch have the same weights and buffers")
-                assert(listeq(TRUE_STITCH_PARAMS, ORIGINAL_STITCH_PARAMS))
-                assert(listeq(TRUE_STITCH_BUFFERS, ORIGINAL_STITCH_BUFFERS))
-
-                stitched_resnet = make_stitched_resnet(model1, model2, stitch, send_label, recv_label)
-                acc = evaluate(stitched_resnet, test_loader)
-                print(acc)
-                sims_loaded[i][j] = acc
-
-                # Save the stitch if this was a training run
-                torch.save(stitch.state_dict(), stitch_file)
-
-                NEW_PARAMS_1 = pclone(model1)
-                NEW_BUFFERS_1 = bclone(model1)
-                NEW_PARAMS_2 = pclone(model2)
-                NEW_BUFFERS_2 = bclone(model2)
-                NEW_STITCH_PARAMS = pclone(stitch)
-                NEW_STITCH_BUFFERS = bclone(stitch)
-
-                # Stitch should change, but not the model
-                print("Asserting that not parameters changed from loading evaluation")
-                assert listeq(ORIGINAL_PARAMS_1, NEW_PARAMS_1)
-                assert listeq(ORIGINAL_BUFFERS_1, NEW_BUFFERS_1)
-                assert listeq(ORIGINAL_PARAMS_2, NEW_PARAMS_2)
-                assert listeq(ORIGINAL_BUFFERS_2, NEW_BUFFERS_2)
-                assert listeq(ORIGINAL_STITCH_PARAMS, NEW_STITCH_PARAMS)
-                assert (len(ORIGINAL_STITCH_BUFFERS) == 0 and len(NEW_STITCH_BUFFERS) == 0) or \
-                    listeq(ORIGINAL_STITCH_BUFFERS, NEW_STITCH_BUFFERS)
-                print("*************************\n")
-                
-
-    print("Saving similarities")
+    print("Creating similarities and heatmaps folder")
     if not os.path.exists(SIMS_FOLDER):
         os.mkdir(SIMS_FOLDER)
     if not os.path.exists(HEATMAPS_FOLDER):
         os.mkdir(HEATMAPS_FOLDER)
     
-    # Save the original, evaluated, and loaded tables
-    # Models that are seperate are in different memory locations
-    sepstr = "seperate" if models_seperate else "together"
+    print("Saving similarities and heatmaps")
     sims_original_path = os.path.join(SIMS_FOLDER, f"{name}_{name}_sims_original_{sepstr}_models.pt")
-    sims_evaled_path = os.path.join(SIMS_FOLDER, f"{name}_{name}_sims_evaled_{sepstr}_models.pt")
-    sims_loaded_path = os.path.join(SIMS_FOLDER, f"{name}_{name}_sims_loaded_{sepstr}_models.pt")
     heat_original_path = os.path.join(HEATMAPS_FOLDER, f"{name}_{name}_heatmaps_original_{sepstr}_models.png")
-    heat_evaled_path = os.path.join(HEATMAPS_FOLDER, f"{name}_{name}_heatmaps_evaled_{sepstr}_models.png")
-    heat_loaded_path = os.path.join(HEATMAPS_FOLDER, f"{name}_{name}_heatmaps_loaded_{sepstr}_models.png")
-
     torch.save(torch.tensor(sims_original), sims_original_path)
-    torch.save(torch.tensor(sims_evaled), sims_evaled_path)
-    torch.save(torch.tensor(sims_loaded), sims_loaded_path)
-
     matrix_heatmap(sims_original_path, heat_original_path, tick_labels_y=labels, tick_labels_x=labels)
-    matrix_heatmap(sims_evaled_path, heat_evaled_path, tick_labels_y=labels, tick_labels_x=labels)
-    matrix_heatmap(sims_loaded_path, heat_loaded_path, tick_labels_y=labels, tick_labels_x=labels)
     print("done!")
-
-    print(f"Will Generate images in the images folder `{IMAGES_FOLDER}`")
-    if not os.path.exists(IMAGES_FOLDER):
-        os.mkdir(IMAGES_FOLDER)
-    # 0th column is into input, 1st column is into conv1
-    first_column_stitches = [
-        stitches[i][1] \
-        for i in range(len(stitches)) if stitches[i][1]
-    ]
-    send_labels = [
-        layerlabels[i][1][0] \
-        for i in range(len(layerlabels)) if stitches[i][1]
-    ]
-    first_column_images_folders = [
-        os.path.join(IMAGES_FOLDER, f"row{i}_{sepstr}_models/") \
-        for i in range(len(stitches)) if stitches[i][1]
-    ]
-    print("Making subfolder by row (sender)")
-    for folder in first_column_images_folders:
-        if not os.path.exists(folder):
-            os.mkdir(folder)
-    num_image_pairs = 10
-    assert len(first_column_stitches) == len(first_column_images_folders)
-    assert len(send_labels) == len(first_column_images_folders)
-    print(f"Generating {num_image_pairs} images")
-    for st, folder, send_label in zip(first_column_stitches, first_column_images_folders, send_labels):
-        # NOTE we use test_loader, but either should be fine
-        # print(f"\tGenerating for Stitch {st}\n*************************\n")
-        save_random_image_pairs(st, model1, send_label, num_image_pairs, folder, test_loader)
+        
 
 class Args:
-    def __init__(self):
-        # FFCV Number of workers for loading
-        self.fccv_num_workers: int = 1
-        self.num_workers = 1
+    def __init__(self):        
+        ### Batch sizes ###
+        self.use_default_bsz = False             # ...
+        self.default_bsz = 1024                  # ...
+        self.bsz_range = [256, 1024, 2048, 4096] # Grid search on this, NOTE 256 is min because of lr_scheduler (read the code)
+        self.test_bsz = 256                      # NOTE test batch size shouldn't affect acc
 
-        # Used by FFCV for train/test split
-        self.fraction = 1.0
+        ### Learning Rate(s) ###
+        self.use_default_lr = False                   # ...
+        self.default_lr = 0.01                        # ...
+        self.lr_range = [0.001, 0.01, 0.05, 0.1, 0.2] # Grid Search on this
 
-        # Training Hyperparams
-        self.bsz = 256   # Batch Size
-        self.test_bsz = 256
-        self.lr = 0.01   # Learning Rate
-        self.warmup = 10  # Warmup epochs
-        # Total epochs per stitch to train (1 is good enough for our purposes)
-        self.epochs = 1 # TODO
-        self.wd = 0.01   # Weight decay
-        self.dataset = "cifar10"
+        ### Epochs ###
+        self.warmup = 10                          # Warmup epochs
+        self.use_default_max_epochs = False       # ...
+        self.default_max_epochs = 1               # ...
+        self.max_epochs_range = [1, 5, 8, 10, 15] # Grid search on this
+        self.use_early_stop = True                # ...
+        self.early_stop_percent_diff = 0.01       # If you get within this * max original model acc, stop training
+        
+        ### Misc ###
+        self.wd = 0.01           # Weight decay
+        self.dataset = "cifar10" # ...
 
 
 if __name__ == "__main__":
