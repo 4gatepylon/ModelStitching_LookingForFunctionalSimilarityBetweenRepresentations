@@ -1,0 +1,238 @@
+\documentclass{article} % For LaTeX2e
+\usepackage{iclr2021_conference,times}
+
+% Optional math commands from https://github.com/goodfeli/dlbook_notation.
+\input{math_commands.tex}
+
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{caption}
+\usepackage{float}
+% I got these from this guide:
+% https://shantoroy.com/latex/how-to-write-algorithm-in-latex/
+% Which I use to highlight how we do the experiment.
+\usepackage{algorithm}
+\usepackage{arevmath}
+\usepackage[noend]{algpseudocode}
+
+\usepackage{graphicx}
+\graphicspath{ {.} }
+
+\setcitestyle{square,comma}
+
+
+\title{Expanding Model Stitching}
+
+% Authors must not appear in the submitted version, you uncomment a line below
+% which is labeled "iclrfinalcopy" to anonymize or not.
+\author{Adriano Hernandez, Rumen Dangovski \& Peter Y. Lu\\
+MIT EECS\\
+Cambridge, MA 02139, USA \\
+\texttt{\{adrianoh,rumenrd,lup\}@mit.edu}
+}
+
+% The \author macro works with any number of authors. There are two commands
+% used to separate the names and addresses of multiple authors: \And and \AND.
+%
+% Using \And between authors leaves it to \LaTeX{} to determine where to break
+% the lines. Using \AND forces a linebreak at that point. So, if \LaTeX{}
+% puts 3 of 4 authors names on the first line, and the last on the second
+% line, try using \AND instead of \And before the third author name.
+
+\newcommand{\fix}{\marginpar{FIX}}
+\newcommand{\new}{\marginpar{NEW}}
+
+\iclrfinalcopy % Uncomment for camera-ready version, but NOT for submission.
+\begin{document}
+
+\maketitle
+
+% We cut out the following:
+% - an explanation of what Bansal et. al did
+% - everything regarding similarity-trained stitches, similarities by mse of results, "expected sender", etc...
+\begin{abstract}
+\textit{Model stitching} (Lenc \& Vedaldi 2015) is a compelling methodology to find functional
+similarity between different neural network representations.
+We expand on a previous work from Bansal, Nakkiran \& Barak which used it to
+compare the representations learned by differently seeded
+and/or trained neural networks.
+Our small modifications enable us to compare the representations learned by neural networks with different architectures.
+This enables us to reveal interesting behavior of model stitching. Namely, we find that stitching, 
+based on convolutions, for small ResNets, can reach unexpectedly
+high accuracy for intuitively different layers if those layers come later in the first (sender) network than in
+the second (receiver). This leads us to hypothesize that stitches are not in fact learning to match the
+representations expected by receiver layers, but instead to find different representations which nonetheless
+yield similar results.
+\end{abstract}
+
+\section{Introduction}
+\label{Introduction}
+The success of deep learning for visual recognition has been attributed to the ability of neural networks to learn
+good representations of their training data \cite{Rumelhart1986LearningIR}. That is, intermediate outputs (which we refer
+to as ``representations'') of good neural networks 
+are believed to encode meaningful information about their inputs, which these neural networks use for classification and/or other
+downstream machine learning tasks \cite{goodfellow2016deep}.
+However, our understanding of these representations is somewhat limited. Though
+deep learning interpretability research, particularly for computer vision, has helped us
+to intuitively grasp what deep neural 
+networks are learning, we do not
+know why good representations are learned, nor do we have a robust theory to characterize them. For example, we do not
+know how to compare representations effectively.
+
+Our goal is to improve the existing toolbox to find functional similarity between representations.
+While many papers \cite{Kornblith2019SimilarityON} \cite{Morcos2018InsightsOR} \cite{Ding2021GroundingRS}
+look for statistical or geometric similarity, we believe that functional similarity is more salient
+because it is easier to understand and more relevant to practical applications.
+We expand a previous work
+\cite{Bansal2021RevisitingMS}, to include comparisons between representations of more varied shapes. They
+are all, however, from the internals of ResNets \cite{He2016DeepRL}.
+Because we can compare all pairs of layers across
+two pairs of different neural networks, we unexpectedly uncover that using Bansal's measure, layers'
+representations are very similar to all those before them.
+
+\section{Experimental Setup}
+\label{ExperimentalSetup}
+\subsection*{Models and Dataset}
+
+We compare all different
+layers of all ResNets with a number of layers ranging from 10 to 18.
+These ResNets are trained on CIFAR-10 for comparable results
+with Bansal et. al. These small ResNets we characterize with 4-tuples, where 
+each element is either 1 or 2, representing the number of residual blocks per blockset\footnote{
+   Residual blocks are partitioned into sets of consecutive within which they have the same shape.
+} out of the 4 blocksets
+present in a ResNet. Since we never use 10 or more blocks per blockset, we can denote these 4-tuples unambiguously as
+r1111, r1112, and so on. This set of 16 ResNets\footnote{
+   Since each element of the 4-tuple is either 1 or 2, there are 16 total choices.
+} we refer to as the small ResNets.
+
+\subsection*{Experiment}
+We train each possible small resnet on CIFAR, yielding an accuracy above 90\%. Because 
+there are 16 such possible
+small ResNets and we stitch every possible ordered pair, there are around 256 such pairs we stitch amongst the small
+ResNets. In every ordered pair of networks being stitched, the former is called ``the sender'', and the latter
+is ``the receiver''. Unlike Bansal et al., which only compared corresponding blocks,
+for any sender/receiver pair, we stitch from \textit{all} residual blocks of the sender into
+\textit{all} residual blocks of the receiver. Also unlike Bansal et al., we only vary our neural networks by their
+initialization weights, but our setup is otherwise nearly identical.
+
+We use randomly initialized ResNets as controls. Our controls enable us to make sure that
+the stitches are appropriately powerful. If we were to pick very powerful stitches, i.e. MLPs,
+they would be ineffective for our purpose because with sufficient training they would always yield
+high ``simimlarity'' (downstream accuracy). We can be sure this is not the case by ensuring that
+the stitches never yield high similarity for random networks (where only overly powerful stitches
+would).
+
+We train each stitch for 4 epochs with both networks frozen. For both
+regular training of the network and training of the stitches we use stochastic gradient descent with momentum 0.9,
+batch size 256, weight decay 0.01, learning rate 0.01, and a post-warmup cosine learning rate scheduler.
+
+\section{Results}
+\label{Results}
+For every ordered pair of networks, we plot the accuracy of all the stitches between their prefixes and suffixes
+on a grid, based on the sending layer and the receiver layer. The layer is
+denoted by an integer which counts how many residual blocks came before it\footnote{
+   The initial convolution is ``0,'' the first block of the first blockset is ``1,'' and so on.
+}. The value in the grid element is the accuracy of the stitched network after traning.
+
+We interpret the accuracy of the stitched network as a similarity between the layer corresponding to
+the row and the layer corresponding to the column before the the column of that accuracy in the grid.
+This is because if we stitch from layer $A_i$ \textit{into} layer $B_j$ (of networks $A$, $B$),
+we can think of $A_i$ as compared to what $B_j$ ``expected'' to recieve, which was $B_{j-1}$. Thus,
+the grid is a similarity matrix shifted to the right by one column.  We nonetheless refer to it as the
+``similarity matrix''.
+
+\subsection*{Expectations}
+For similarity matrices between trained networks we were expecting to see a high stitch accuracy diagonal, because
+Bansal et al.'s findings suggested that there would be a one-to-one layer correspondence between
+two networks of the same architecture, and we believed that this might extend to two networks of similar architectures.
+Such a diagonal would mean that each layer on the sender could be stitched with maximum accuracy 
+only to a single layer on the reciever.
+
+For our controls we expected to see low stitching accuracy throughout the board since the networks are random, though
+it would also make sense if some of the earlier or later layers exhibited higher accuracy since the complexity of the stitch
+may be enough to approximate those layers.
+
+\subsection*{Similarity Matrices}
+We found unexpected patterns (\hyperref[Figure2]{Figure 1}) in the stitching network accuracy.
+When the sender was stitched into
+the receiver and neither is random, all layers in the lower left hand triangle (where the row is less than its column, 
+regardless of the shape of either resnet)
+of the similarity matrix exhibited high stitched network accuracy. Note that, similarly in Bansal et al.,
+we considered the stitched network accuracy to be high if it is nearly identical to that of the
+(least accurate) original network.
+
+For random networks we were not surprised.
+When two random networks were stitched, nearly all stitched networks have low
+accuracy with a rather uniform distribution. When
+a sender was stitched with a random receiver, only stitched networks with stitches from the
+later layers of the sender into the later layers of the (random)
+receiver had high accuracy. When a random sender was stitched
+into a receiver, only stitched networks with stitches into the early layers of the
+receiver had high accuracy.
+
+Examples are depicted below. The triangular pattern is present in \hyperref[Figure2]{Figure 1} and in \hyperref[Figure3]{Figure 2}.
+The expected (and actual) mostly random pattern expected from our controls is present in \hyperref[Figure4]{Figure 3}.
+
+\label{Figure2}
+\begin{center}
+   \begin{figure}[H]
+      \centering
+      \includegraphics[width=6cm, trim={0.5cm, 2cm, 0.5cm, 2cm}, clip]{ImagePdfs/resnet1111_1111.pdf}
+      \includegraphics[width=6cm,angle=270, trim={0.25cm, 3cm, 0.25cm, 3.5cm}, clip]{ImagePdfs/resnet1112_1122.pdf}
+      \caption{Triangle Pattern in Small ResNets.
+      The plot is to be interpreted as a similarity matrix from sender to reciever (shifted right by one column).
+      Where comparisons were not possible due to overly dissimilar shapes, a similarity of zero was logged.}
+   \end{figure}
+\end{center}
+
+\label{Figure3}
+\begin{center}
+   \begin{figure}[H]
+      \centering
+      \includegraphics[width=9.5cm, trim={3cm, 7cm, 3cm, 7cm}, clip]{ImagePdfs/resnet18_resnet34_sims.pdf}
+      \caption*{Triangular Pattern in Larger ResNets.
+      The plot is to be interpreted, just like \hyperref[Figure2]{Figure 1} as a similarity matrix from sender to reciever
+      (shifted right by one column).
+      Where comparisons were not possible due to overly dissimilar shapes, a similarity of zero was logged.}
+   \end{figure}
+\end{center}
+
+\label{Figure4}
+\begin{center}
+   \begin{figure}[H]
+      \centering
+      \includegraphics[width=8.5cm, trim={3cm, 7cm, 3cm, 7cm}, clip]{ImagePdfs/resnet18_rand_resnet18_sims.pdf}
+      \caption*{Mostly Random (Uniform) Pattern for Random Senders. The plot is to be intrepreted, just like
+      \hyperref[Figure2]{Figure 1} or \hyperref[Figure3]{Figure 2}
+      as a similarity matrix from sender to reciever (shifted right by one column).
+      Where comparisons were not possible due to overly dissimilar shapes, a similarity of zero was logged.}
+   \end{figure}
+\end{center}
+
+\subsection*{Conclusion}
+The most interesting aspect of our results is the high accuracy of the stitching network
+for layers in the lower left hand triangle. Given that we interpret the stitching network accuracy
+as a similarity, our results suggest that each sender representation is similar with \textit{all}
+the receiver representations from a layer before it. We expected to see that each layer would be
+similar to 1 to 3 layers at most because the standard narrative has been that 
+every layer loses some amount of granular information, and so that information should not be reconstructable
+in a \textit{interchangeability} test like stitching.
+
+We see two main explanations for the results. The first is that the common narrative could be wrong and some neural
+networks may in fact be able to maintain most if not all of the granular information of the image throughout their
+processing of it. The second is that the stitch may be able to give the reciever a representation which, despite being
+different from that which is expected, nonetheless yields high accuracy.
+
+We believe that the latter option is the most likely. Intuitively, the sttich may be able to figure out how to
+generate some generic, albeit unrealistic, set of the most salient features for the recieving layer to classify
+in a given way. Perhaps it is generating the ``average'' human, for example. However, a deeper analysis is required
+to ascertain whether that is the case. Numerical sanity checking as well as other functional tests may be called
+for. Additionally, stitching into the very first layer (by generating images) would allow us to use inspection to
+check this hypothesis. (This last idea, we pursued, but had difficulty interpreting the images generated, leaving them
+beyond the scope of this paper.)
+
+\newpage
+\bibliography{iclr2021_conference}
+\bibliographystyle{iclr2021_conference}
+\end{document}
