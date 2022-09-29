@@ -40,7 +40,7 @@ from loaders import Loaders
 from resnet.resnet_generator import ResnetGenerator
 from trainer import Trainer, Hyperparams
 from visualizer import Visualizer
-from cifar import pclone, mapeq, mapneq, flattened_table
+from cifar import pclone, mapeq, mapneq, flattened_table, choose_product
 
 def sanity_test_stitches_ptrs(data_ptrs):
     assert len(data_ptrs) > 0, "should have at least some data pointers"
@@ -56,7 +56,7 @@ def sanity_test_model_outfrom_into(model, number, loader):
     labels = LayerLabel.labels(number)
     assert len(labels) >= 5
     sane = True
-    # For every pair of layers make sure that if you outut from one and input into the next one it works
+    # For every pair of layers make sure that if you output from one and input into the next one it works
     for i in range(0, len(labels) - 1):
         out_label = labels[i]
         in_label = labels[i+1]
@@ -78,7 +78,7 @@ def sanity_test_model_outfrom_into(model, number, loader):
                         this_is_sane = False
     return sane
 
-# Basically copied from above, but makes sure that the stitched resnet is not bused
+# Basically copied from above, but makes sure that the stitched resnet is not busted
 def sanity_test_model_outfrom_into_stitched_resnet(model, number, loader):
     labels = LayerLabel.labels(number)
     assert len(labels) >= 5
@@ -131,7 +131,7 @@ class Experiment(object):
         print(f"Using device: {device}")
 
         print("Generating combinations")
-        combinations = [[1, 1, 1, 1]]
+        combinations = choose_product(4, [1, 2])
 
         print(f"Storing resnets in {Experiment.RESNETS_FOLDER}")
         if not os.path.exists(Experiment.RESNETS_FOLDER):

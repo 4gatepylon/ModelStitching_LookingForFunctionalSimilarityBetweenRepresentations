@@ -216,6 +216,9 @@ def get_stitched_classifier(settings):
         stitched, clip_latent_model = stitch_vit_clip(settings.numout)
         return stitched, clip_latent_model
 
+    ################################
+    ############ Model 2 ###########
+    ################################
     if 'ImageNet' in settings.dataname:
         model2 = resnet50(pretrained=True)#torch.load(settings.stitch_model2_path, map_location='cpu')
     elif settings.classifiername=='resnet18k_cifar' and settings.stitch_model2_path=='random_init' and settings.stitch_model1_path=='random_init':
@@ -224,7 +227,9 @@ def get_stitched_classifier(settings):
         model2 = resnet18k_cifar(k, num_classes)
     else:
         model2 = torch.load(settings.stitch_model2_path, map_location='cpu')    
-
+    ################################
+    ############ Model 1 ###########
+    ################################
     if settings.stitch_model1_path=='random_init':
         model1 = copy.deepcopy(model2)
         for layer in model1.children():

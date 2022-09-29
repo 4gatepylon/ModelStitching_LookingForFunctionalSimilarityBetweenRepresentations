@@ -1,3 +1,8 @@
+# TODO
+Put everything into the experiments folder.
+
+Add all the sanity tests from `mega.py` as unit tests.
+
 # Overview
 Here we have a relatively modular and well-tested stitching library. It is the `stitching` module that you import
 things from by doing `from stitching.abc.py import xyz` for some `abc`  and `xyz` of your choice. To unit test this library simply run `python -m unittest discover -v -s . -p "*.py"` (probably make an alias, on my stystem it's `stest`) from within the `stitching` directory.

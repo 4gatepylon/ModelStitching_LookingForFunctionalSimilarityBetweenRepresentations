@@ -178,14 +178,19 @@ viz/
 heatmaps/
 */heatmaps/
 **/heatmaps/
-
 data_ffcv/
 data_no_ffcv/
 */data_ffcv/
 **/data_ffcv/
 */data_no_ffcv/
 **/data_no_ffcv/
-
 stitches/
 */stitches/
 **/stitches/
+images/
+*/images/
+**/images/
+
+# As of May 23rd, 2022 we are putting al those folders ^
+# into the following "experiment folders
+experiments/
