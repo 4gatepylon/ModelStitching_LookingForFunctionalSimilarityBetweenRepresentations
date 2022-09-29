@@ -288,6 +288,7 @@ def train_loop(
             print(f"\t\t starting on epoch {e} for {len(train_loader)} iterations")
         
         # Stop early if we have trained enough
+        # TODO add early stopping based on loss function concavity
         eval_acc = evaluate(model, test_loader)
         if (not early_stop_acc is None) and (early_stop_acc <= eval_acc):
             break
@@ -489,13 +490,10 @@ def save_random_image_pairs(st, sender, send_label, num_pairs, foldername_images
 def best_possible_stitch(models, labels, args, early_stop_acc = 0.9):
     assert type(models) == tuple and len(models) == 2
     assert type(labels) == tuple and len(labels) == 2
-    assert not args.use_default_bsz
-    assert not args.use_default_lr
-    assert not args.use_default_max_epochs
 
     model1, model2 = models
-    assert type(model1) == nn.Module
-    assert type(model2) == nn.Module
+    assert isinstance(model1, nn.Module)
+    assert isinstance(model2, nn.Module)
     send_label, recv_label = labels
     assert type(send_label) == str or \
         (type(send_label) == tuple and len(send_label) == 2 and send_label[0] in [1, 2, 3, 4] and send_label[1] == 0)
@@ -506,34 +504,38 @@ def best_possible_stitch(models, labels, args, early_stop_acc = 0.9):
     best_acc = 0.0
     for max_epochs in args.max_epochs_range:
         for lr in args.lr_range:
-            for batch_size in args.batch_size_range:
+            for batch_size in args.bsz_range:
+                print(f"\t HYPERPARAMETER SEARCH: Trying max_epochs={max_epochs}, lr={lr}, batch_size={batch_size}")
                 train_loader, test_loader = get_loaders_no_ffcv(batch_size, args.test_bsz)
 
                 stitch = make_stitch(send_label, recv_label)
-                stitch = st.cuda()
+                stitch = stitch.cuda()
                 ORIGINAL_STITCH_PARAMS = pclone(stitch)
                 ORIGINAL_STITCH_BUFFERS = bclone(stitch)
 
                 
                 stitched_resnet = make_stitched_resnet(model1, model2, stitch, send_label, recv_label)
-                acc = train_loop(args, 
+                acc = train_loop(
                     # Pass in our hyperparamters
                     batch_size,  # Changes
                     args.wd,     # Does NOT change
                     lr,          # Changes
                     max_epochs,  # Changes
-                    warmup,      # Does NOT change
+                    args.warmup, # Does NOT change
                     # ...
                     stitched_resnet,
                     train_loader,
                     test_loader,
+                    verbose=True,
                     early_stop_acc=early_stop_acc,
-                    # Use Default Verbosity
                 )
+                print(f"\t HYPERPARAMETER SEARCH: Trying acc={acc}")
+                best_acc = max(acc, best_acc)
 
                 # TODO add sanity test for file load/eval AND add hyperparameter search HERE
                 # Save the stitch if this was a training run ONLY for the sanity test
                 # torch.save(stitch.state_dict(), stitch_file)
+                # stitch_file = os.path.join(STITCHES_FOLDER, f"stitch_{send_label}_{recv_label}.pt")
 
 
                 NEW_STITCH_PARAMS = pclone(stitch)
@@ -596,7 +598,9 @@ def stitchtrain(args, models_seperate=True):
         "The model2 needs to have only float32 parameters"
 
     print("Getting sanity loaders NOT for FFCV, NO Shuffling")
-    train_loader, test_loader = get_loaders_no_ffcv(args.default_bsz, args.test_bsz)
+    assert len(args.bsz_range) > 0
+    # NOTE any bsz is fine for his sanity test
+    train_loader, test_loader = get_loaders_no_ffcv(args.bsz_range[0], args.test_bsz)
 
     # The assertions make sure that the dataset behaves deterministically
     print("Train and Test Accuracies are on the same dataset")
@@ -648,13 +652,10 @@ def stitchtrain(args, models_seperate=True):
     # Make sure all the lengths are correct
     print("Ensuring that layerlabels, stitches, and sims_original tables have the proper dimensions")
     assert len(layerlabels) == num_labels
-    assert len(stitches) == num_labels
     assert len(sims_original) == num_labels
     assert max((len(l) for l in layerlabels)) == num_labels
-    assert max((len(l) for l in stitches)) == num_labels
     assert max((len(l) for l in sims_original)) == num_labels
     assert min((len(l) for l in layerlabels)) == num_labels
-    assert min((len(l) for l in stitches)) == num_labels
     assert min((len(l) for l in sims_original)) == num_labels
 
     print("Ensuring that stitches folder exists")
@@ -675,11 +676,9 @@ def stitchtrain(args, models_seperate=True):
     for i in range(num_labels):
         for j in range(num_labels):
             # None is used to signify that this is not supported/stitchable
-            if stitches[i][j]:
+            send_label, recv_label = layerlabels[i][j]
+            if recv_label != "input" and send_label != "fc" and send_label != "output":
                 print("*************************")
-                send_label, recv_label = layerlabels[i][j]
-                stitch_file = os.path.join(STITCHES_FOLDER, f"stitch_{send_label}_{recv_label}.pt")
-
                 print(f"Training {send_label} to {recv_label}")
                 # NOTE we do this sanity test wrapping the grid search (on each entry)
                 # because it will decrease the amount of work done and we have confidence that
@@ -697,6 +696,7 @@ def stitchtrain(args, models_seperate=True):
                     # NOTE this may make more sense to define somewhere else, but whatever
                     early_stop_acc=early_stop_acc,
                 )
+                assert 0 < acc and  acc < 1
                 print(acc)
 
                 NEW_PARAMS_1 = pclone(model1)
@@ -712,7 +712,7 @@ def stitchtrain(args, models_seperate=True):
                 print("*************************\n")
 
                 # j == 1 is the same as recv_label == "conv1"
-                if j == 1:
+                if j == 1 and not stitch is None:
                     assert recv_label == "conv1"
                     print(f"Generating image for stitch {send_label} -> {recv_label}")
                     img_folder = os.path.join(IMAGES_FOLDER, f"row{i}_{sepstr}_models/")
@@ -739,22 +739,15 @@ def stitchtrain(args, models_seperate=True):
 class Args:
     def __init__(self):        
         ### Batch sizes ###
-        self.use_default_bsz = False             # ...
-        self.default_bsz = 1024                  # ...
-        self.bsz_range = [256, 1024, 2048, 4096] # Grid search on this, NOTE 256 is min because of lr_scheduler (read the code)
+        self.bsz_range = [1024, 2048] # Grid search on this, NOTE 256 is min because of lr_scheduler (read the code)
         self.test_bsz = 256                      # NOTE test batch size shouldn't affect acc
 
         ### Learning Rate(s) ###
-        self.use_default_lr = False                   # ...
-        self.default_lr = 0.01                        # ...
-        self.lr_range = [0.001, 0.01, 0.05, 0.1, 0.2] # Grid Search on this
+        self.lr_range = [0.001, 0.01, 0.1, 0.2] # Grid Search on this
 
         ### Epochs ###
         self.warmup = 10                          # Warmup epochs
-        self.use_default_max_epochs = False       # ...
-        self.default_max_epochs = 1               # ...
-        self.max_epochs_range = [1, 5, 8, 10, 15] # Grid search on this
-        self.use_early_stop = True                # ...
+        self.max_epochs_range = [1, 5, 10] # Grid search on this
         self.early_stop_percent_diff = 0.01       # If you get within this * max original model acc, stop training
         
         ### Misc ###
@@ -779,9 +772,9 @@ if __name__ == "__main__":
     print(f"Models Seperate\n**************************************************\n")
     stitchtrain(args, models_seperate=True)
     print(f"\n**************************************************\n")
-    print(f"Models Together\n**************************************************\n")
-    stitchtrain(args, models_seperate=False)
-    print(f"\n**************************************************\n")
+    # print(f"Models Together\n**************************************************\n")
+    # stitchtrain(args, models_seperate=False)
+    # print(f"\n**************************************************\n")
 
     # Cleaar this in case we want to run faster again later
     os.environ.pop("CUBLAS_WORKSPACE_CONFIG")

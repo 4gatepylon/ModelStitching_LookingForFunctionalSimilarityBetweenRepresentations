@@ -1,3 +1,3 @@
 #!/bin/bash
 
-python3 mega.py
+python3 -O mega.py
