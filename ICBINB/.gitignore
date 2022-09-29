@@ -4,3 +4,5 @@
 *.out
 *.pdf
 *.synctex.gz
+!stitch2d2.drawio.pdf
+*.bcf
