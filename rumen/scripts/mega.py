@@ -68,7 +68,6 @@ def listeq(l1, l2):
 # 2. You get equivalent accuracy to the stitched network made this way
 # NOTE this assumes Resnet1111
 def sanity_test_diagonal(model1, model2, loader):
-    # TODO we might want to leave out output or input
     labels = ["input", "conv1"] + [(i, 0) for i in range(1, 5)] + ["fc", "output"]
     assert len(labels) >= 5
     sane = True
@@ -600,153 +599,153 @@ def stitchtrain(args, models_seperate=True):
     if not os.path.exists(STITCHES_FOLDER):
         os.mkdir(STITCHES_FOLDER)
 
-    # print("Training Table (saving)")
-    # for i in range(num_labels):
-    #     for j in range(num_labels):
-    #         # None is used to signify that this is not supported/stitchable
-    #         if stitches[i][j]:
-    #             print("*************************")
-    #             send_label, recv_label = layerlabels[i][j]
-    #             stitch_file = os.path.join(STITCHES_FOLDER, f"stitch_{send_label}_{recv_label}.pt")
+    print("Training Table (saving)")
+    for i in range(num_labels):
+        for j in range(num_labels):
+            # None is used to signify that this is not supported/stitchable
+            if stitches[i][j]:
+                print("*************************")
+                send_label, recv_label = layerlabels[i][j]
+                stitch_file = os.path.join(STITCHES_FOLDER, f"stitch_{send_label}_{recv_label}.pt")
 
-    #             print(f"Training {send_label} to {recv_label}")
-    #             stitch = stitches[i][j]
-    #             stitch = stitch.cuda()
+                print(f"Training {send_label} to {recv_label}")
+                stitch = stitches[i][j]
+                stitch = stitch.cuda()
 
-    #             ORIGINAL_PARAMS_1 = pclone(model1)
-    #             ORIGINAL_BUFFERS_1 = bclone(model1)
-    #             ORIGINAL_PARAMS_2 = pclone(model2)
-    #             ORIGINAL_BUFFERS_2 = bclone(model2)
-    #             ORIGINAL_STITCH_PARAMS = pclone(stitch)
-    #             ORIGINAL_STITCH_BUFFERS = bclone(stitch)
+                ORIGINAL_PARAMS_1 = pclone(model1)
+                ORIGINAL_BUFFERS_1 = bclone(model1)
+                ORIGINAL_PARAMS_2 = pclone(model2)
+                ORIGINAL_BUFFERS_2 = bclone(model2)
+                ORIGINAL_STITCH_PARAMS = pclone(stitch)
+                ORIGINAL_STITCH_BUFFERS = bclone(stitch)
                 
 
-    #             stitched_resnet = make_stitched_resnet(model1, model2, stitch, send_label, recv_label)
-    #             acc = train_loop(args, stitched_resnet, train_loader, test_loader)
-    #             print(acc)
-    #             sims_original[i][j] = acc
+                stitched_resnet = make_stitched_resnet(model1, model2, stitch, send_label, recv_label)
+                acc = train_loop(args, stitched_resnet, train_loader, test_loader)
+                print(acc)
+                sims_original[i][j] = acc
 
-    #             # Save the stitch if this was a training run
-    #             torch.save(stitch.state_dict(), stitch_file)
+                # Save the stitch if this was a training run
+                torch.save(stitch.state_dict(), stitch_file)
 
-    #             NEW_PARAMS_1 = pclone(model1)
-    #             NEW_BUFFERS_1 = bclone(model1)
-    #             NEW_PARAMS_2 = pclone(model2)
-    #             NEW_BUFFERS_2 = bclone(model2)
-    #             NEW_STITCH_PARAMS = pclone(stitch)
-    #             NEW_STITCH_BUFFERS = bclone(stitch)
+                NEW_PARAMS_1 = pclone(model1)
+                NEW_BUFFERS_1 = bclone(model1)
+                NEW_PARAMS_2 = pclone(model2)
+                NEW_BUFFERS_2 = bclone(model2)
+                NEW_STITCH_PARAMS = pclone(stitch)
+                NEW_STITCH_BUFFERS = bclone(stitch)
 
-    #             print("Asserting that stitch parameters changed, but not either model (train table)")
-    #             assert listeq(ORIGINAL_PARAMS_1, NEW_PARAMS_1)
-    #             assert listeq(ORIGINAL_BUFFERS_1, NEW_BUFFERS_1)
-    #             assert listeq(ORIGINAL_PARAMS_2, NEW_PARAMS_2)
-    #             assert listeq(ORIGINAL_BUFFERS_2, NEW_BUFFERS_2)
-    #             assert not listeq(ORIGINAL_STITCH_PARAMS, NEW_STITCH_PARAMS)
-    #             assert (len(ORIGINAL_STITCH_BUFFERS) == 0 and len(NEW_STITCH_BUFFERS) == 0) or \
-    #                 not listeq(ORIGINAL_STITCH_BUFFERS, NEW_STITCH_BUFFERS)
-    #             print("*************************\n")
+                print("Asserting that stitch parameters changed, but not either model (train table)")
+                assert listeq(ORIGINAL_PARAMS_1, NEW_PARAMS_1)
+                assert listeq(ORIGINAL_BUFFERS_1, NEW_BUFFERS_1)
+                assert listeq(ORIGINAL_PARAMS_2, NEW_PARAMS_2)
+                assert listeq(ORIGINAL_BUFFERS_2, NEW_BUFFERS_2)
+                assert not listeq(ORIGINAL_STITCH_PARAMS, NEW_STITCH_PARAMS)
+                assert (len(ORIGINAL_STITCH_BUFFERS) == 0 and len(NEW_STITCH_BUFFERS) == 0) or \
+                    not listeq(ORIGINAL_STITCH_BUFFERS, NEW_STITCH_BUFFERS)
+                print("*************************\n")
     
-    # print("Creating Stitch Table by Evaluating")
-    # for i in range(num_labels):
-    #     for j in range(num_labels):
-    #         # None is used to signify that this is not supported/stitchable
-    #         if stitches[i][j]:
-    #             print("*************************")
-    #             send_label, recv_label = layerlabels[i][j]
+    print("Creating Stitch Table by Evaluating")
+    for i in range(num_labels):
+        for j in range(num_labels):
+            # None is used to signify that this is not supported/stitchable
+            if stitches[i][j]:
+                print("*************************")
+                send_label, recv_label = layerlabels[i][j]
 
-    #             print(f"Evaluating {send_label} to {recv_label}")
-    #             stitch = stitches[i][j]
-    #             stitch = stitch.cuda()
+                print(f"Evaluating {send_label} to {recv_label}")
+                stitch = stitches[i][j]
+                stitch = stitch.cuda()
 
-    #             ORIGINAL_PARAMS_1 = pclone(model1)
-    #             ORIGINAL_BUFFERS_1 = bclone(model1)
-    #             ORIGINAL_PARAMS_2 = pclone(model2)
-    #             ORIGINAL_BUFFERS_2 = bclone(model2)
-    #             ORIGINAL_STITCH_PARAMS = pclone(stitch)
-    #             ORIGINAL_STITCH_BUFFERS = bclone(stitch)
+                ORIGINAL_PARAMS_1 = pclone(model1)
+                ORIGINAL_BUFFERS_1 = bclone(model1)
+                ORIGINAL_PARAMS_2 = pclone(model2)
+                ORIGINAL_BUFFERS_2 = bclone(model2)
+                ORIGINAL_STITCH_PARAMS = pclone(stitch)
+                ORIGINAL_STITCH_BUFFERS = bclone(stitch)
                 
 
-    #             stitched_resnet = make_stitched_resnet(model1, model2, stitch, send_label, recv_label)
-    #             acc = evaluate(stitched_resnet, test_loader)
-    #             print(acc)
-    #             sims_evaled[i][j] = acc
+                stitched_resnet = make_stitched_resnet(model1, model2, stitch, send_label, recv_label)
+                acc = evaluate(stitched_resnet, test_loader)
+                print(acc)
+                sims_evaled[i][j] = acc
 
-    #             # Save the stitch if this was a training run
-    #             torch.save(stitch.state_dict(), stitch_file)
+                # Save the stitch if this was a training run
+                torch.save(stitch.state_dict(), stitch_file)
 
-    #             NEW_PARAMS_1 = pclone(model1)
-    #             NEW_BUFFERS_1 = bclone(model1)
-    #             NEW_PARAMS_2 = pclone(model2)
-    #             NEW_BUFFERS_2 = bclone(model2)
-    #             NEW_STITCH_PARAMS = pclone(stitch)
-    #             NEW_STITCH_BUFFERS = bclone(stitch)
+                NEW_PARAMS_1 = pclone(model1)
+                NEW_BUFFERS_1 = bclone(model1)
+                NEW_PARAMS_2 = pclone(model2)
+                NEW_BUFFERS_2 = bclone(model2)
+                NEW_STITCH_PARAMS = pclone(stitch)
+                NEW_STITCH_BUFFERS = bclone(stitch)
 
-    #             print("Asserting that no parameters changed after evaluation (eval table)")
-    #             assert listeq(ORIGINAL_PARAMS_1, NEW_PARAMS_1)
-    #             assert listeq(ORIGINAL_BUFFERS_1, NEW_BUFFERS_1)
-    #             assert listeq(ORIGINAL_PARAMS_2, NEW_PARAMS_2)
-    #             assert listeq(ORIGINAL_BUFFERS_2, NEW_BUFFERS_2)
-    #             assert listeq(ORIGINAL_STITCH_PARAMS, NEW_STITCH_PARAMS)
-    #             assert (len(ORIGINAL_STITCH_BUFFERS) == 0 and len(NEW_STITCH_BUFFERS) == 0) or \
-    #                 listeq(ORIGINAL_STITCH_BUFFERS, NEW_STITCH_BUFFERS)
-    #             print("*************************\n")
+                print("Asserting that no parameters changed after evaluation (eval table)")
+                assert listeq(ORIGINAL_PARAMS_1, NEW_PARAMS_1)
+                assert listeq(ORIGINAL_BUFFERS_1, NEW_BUFFERS_1)
+                assert listeq(ORIGINAL_PARAMS_2, NEW_PARAMS_2)
+                assert listeq(ORIGINAL_BUFFERS_2, NEW_BUFFERS_2)
+                assert listeq(ORIGINAL_STITCH_PARAMS, NEW_STITCH_PARAMS)
+                assert (len(ORIGINAL_STITCH_BUFFERS) == 0 and len(NEW_STITCH_BUFFERS) == 0) or \
+                    listeq(ORIGINAL_STITCH_BUFFERS, NEW_STITCH_BUFFERS)
+                print("*************************\n")
     
-    # print("Creating Stitch Table by Loading")
-    # for i in range(num_labels):
-    #     for j in range(num_labels):
-    #         # None is used to signify that this is not supported/stitchable
-    #         if stitches[i][j]:
-    #             print("*************************")
-    #             send_label, recv_label = layerlabels[i][j]
+    print("Creating Stitch Table by Loading")
+    for i in range(num_labels):
+        for j in range(num_labels):
+            # None is used to signify that this is not supported/stitchable
+            if stitches[i][j]:
+                print("*************************")
+                send_label, recv_label = layerlabels[i][j]
 
-    #             print(f"Loading {send_label} to {recv_label}")
-    #             stitch = make_stitch(send_label, recv_label)
-    #             stitch_file = os.path.join(STITCHES_FOLDER, f"stitch_{send_label}_{recv_label}.pt")
-    #             stitch.load_state_dict(torch.load(stitch_file))
-    #             stitch = stitch.cuda()
+                print(f"Loading {send_label} to {recv_label}")
+                stitch = make_stitch(send_label, recv_label)
+                stitch_file = os.path.join(STITCHES_FOLDER, f"stitch_{send_label}_{recv_label}.pt")
+                stitch.load_state_dict(torch.load(stitch_file))
+                stitch = stitch.cuda()
 
-    #             true_stitch = stitches[i][j]
-    #             true_stitch = true_stitch.cuda()
+                true_stitch = stitches[i][j]
+                true_stitch = true_stitch.cuda()
 
-    #             TRUE_STITCH_PARAMS = pclone(true_stitch)
-    #             TRUE_STITCH_BUFFERS = bclone(true_stitch)
+                TRUE_STITCH_PARAMS = pclone(true_stitch)
+                TRUE_STITCH_BUFFERS = bclone(true_stitch)
 
-    #             ORIGINAL_PARAMS_1 = pclone(model1)
-    #             ORIGINAL_BUFFERS_1 = bclone(model1)
-    #             ORIGINAL_PARAMS_2 = pclone(model2)
-    #             ORIGINAL_BUFFERS_2 = bclone(model2)
-    #             ORIGINAL_STITCH_PARAMS = pclone(stitch)
-    #             ORIGINAL_STITCH_BUFFERS = bclone(stitch)
+                ORIGINAL_PARAMS_1 = pclone(model1)
+                ORIGINAL_BUFFERS_1 = bclone(model1)
+                ORIGINAL_PARAMS_2 = pclone(model2)
+                ORIGINAL_BUFFERS_2 = bclone(model2)
+                ORIGINAL_STITCH_PARAMS = pclone(stitch)
+                ORIGINAL_STITCH_BUFFERS = bclone(stitch)
 
-    #             print("Asserting that true stitch and loaded stitch have the same weights and buffers")
-    #             assert(listeq(TRUE_STITCH_PARAMS, ORIGINAL_STITCH_PARAMS))
-    #             assert(listeq(TRUE_STITCH_BUFFERS, ORIGINAL_STITCH_BUFFERS))
+                print("Asserting that true stitch and loaded stitch have the same weights and buffers")
+                assert(listeq(TRUE_STITCH_PARAMS, ORIGINAL_STITCH_PARAMS))
+                assert(listeq(TRUE_STITCH_BUFFERS, ORIGINAL_STITCH_BUFFERS))
 
-    #             stitched_resnet = make_stitched_resnet(model1, model2, stitch, send_label, recv_label)
-    #             acc = evaluate(stitched_resnet, test_loader)
-    #             print(acc)
-    #             sims_loaded[i][j] = acc
+                stitched_resnet = make_stitched_resnet(model1, model2, stitch, send_label, recv_label)
+                acc = evaluate(stitched_resnet, test_loader)
+                print(acc)
+                sims_loaded[i][j] = acc
 
-    #             # Save the stitch if this was a training run
-    #             torch.save(stitch.state_dict(), stitch_file)
+                # Save the stitch if this was a training run
+                torch.save(stitch.state_dict(), stitch_file)
 
-    #             NEW_PARAMS_1 = pclone(model1)
-    #             NEW_BUFFERS_1 = bclone(model1)
-    #             NEW_PARAMS_2 = pclone(model2)
-    #             NEW_BUFFERS_2 = bclone(model2)
-    #             NEW_STITCH_PARAMS = pclone(stitch)
-    #             NEW_STITCH_BUFFERS = bclone(stitch)
+                NEW_PARAMS_1 = pclone(model1)
+                NEW_BUFFERS_1 = bclone(model1)
+                NEW_PARAMS_2 = pclone(model2)
+                NEW_BUFFERS_2 = bclone(model2)
+                NEW_STITCH_PARAMS = pclone(stitch)
+                NEW_STITCH_BUFFERS = bclone(stitch)
 
-    #             # Stitch should change, but not the model
-    #             print("Asserting that not parameters changed from loading evaluation")
-    #             assert listeq(ORIGINAL_PARAMS_1, NEW_PARAMS_1)
-    #             assert listeq(ORIGINAL_BUFFERS_1, NEW_BUFFERS_1)
-    #             assert listeq(ORIGINAL_PARAMS_2, NEW_PARAMS_2)
-    #             assert listeq(ORIGINAL_BUFFERS_2, NEW_BUFFERS_2)
-    #             assert listeq(ORIGINAL_STITCH_PARAMS, NEW_STITCH_PARAMS)
-    #             assert (len(ORIGINAL_STITCH_BUFFERS) == 0 and len(NEW_STITCH_BUFFERS) == 0) or \
-    #                 listeq(ORIGINAL_STITCH_BUFFERS, NEW_STITCH_BUFFERS)
-    #             print("*************************\n")
+                # Stitch should change, but not the model
+                print("Asserting that not parameters changed from loading evaluation")
+                assert listeq(ORIGINAL_PARAMS_1, NEW_PARAMS_1)
+                assert listeq(ORIGINAL_BUFFERS_1, NEW_BUFFERS_1)
+                assert listeq(ORIGINAL_PARAMS_2, NEW_PARAMS_2)
+                assert listeq(ORIGINAL_BUFFERS_2, NEW_BUFFERS_2)
+                assert listeq(ORIGINAL_STITCH_PARAMS, NEW_STITCH_PARAMS)
+                assert (len(ORIGINAL_STITCH_BUFFERS) == 0 and len(NEW_STITCH_BUFFERS) == 0) or \
+                    listeq(ORIGINAL_STITCH_BUFFERS, NEW_STITCH_BUFFERS)
+                print("*************************\n")
                 
 
     print("Saving similarities")
@@ -818,7 +817,7 @@ class Args:
         self.lr = 0.01   # Learning Rate
         self.warmup = 10  # Warmup epochs
         # Total epochs per stitch to train (1 is good enough for our purposes)
-        self.epochs = 5
+        self.epochs = 1 # TODO
         self.wd = 0.01   # Weight decay
         self.dataset = "cifar10"
 
