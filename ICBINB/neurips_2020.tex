@@ -152,13 +152,18 @@ after $i$ as $A_{i<}$. If we wish to include layer $i$ we can always call such (
 $A_{\leq i}$ or $A_{i\leq}$. For an input $x$, if we call the sender $A$, the reciever $B$,
 and the stitch $S$, we call $C = B_{j<}(S(A_{\leq i}(x)))$ the \textit{stitched network}. Normally,
 we train $S$ by doing backpropagation on the stitched network with both $A$ and $B$ frozen. The
-resulting accuracy is used to find the similarity between $A_{\leq i}(x)$ and $B_{\leq j}(x)$, the
+resulting accuracy is used to find the similarity\footnote{
+  We use the downstream accuracy of the stitched network as our similarity measure for simplicity,
+  since the original networks' accuracies were over 90\%. Otherwise, a ratio or difference, as used
+  in Bansal et. al. may be more informative. In our case, no choice amongst these would change
+  our qualitative result.
+} between $A_{\leq i}(x)$ and $B_{\leq j}(x)$, the
 former of which is called the \textit{provided representation} and the latter of which is called
 the \textit{expected representation}.
 
 Unlike Bansal et al., which only compare corresponding blocks (i.e. $i = j$) of a sender and
 reciever with the same architecture,
-we we stitch from \textit{all} residual blocks of the sender into
+we stitch from \textit{all} residual blocks of the sender into
 \textit{all} residual blocks of the receiver even when they have different architectures, as long as
 they are Small Resnets. Also unlike Bansal et al., we only vary
 our neural networks by their initialization weights, but our setup is otherwise nearly identical. To
@@ -173,7 +178,7 @@ We use the randomly-initialized ResNets as controls. Our controls enable us to m
 the stitches are appropriately powerful. By powerful we mean how complex the functions are that
 stitches can represent. If a stitch is very powerful, then even with random networks it should be able to
 yield high downstream accuracy because it can learn any transformation. In this case our 
-stitches would always yield high ``similarity'' (downstream accuracy) and therefore be uninformative.
+stitches would always yield high ``similarity'' and therefore be uninformative.
 We can be sure this is not the case by ensuring that
 the stitches never yield high similarity for random networks (where only overly powerful stitches
 would).
@@ -348,9 +353,10 @@ Thank you to MIT EECS for funding this project and MIT SuperUROP and the Soljaci
 \appendix
 \section{Appendix}
 Here we provide additional information that may be helpful to readers, but which was
-beyond the scope of the main paper. There are three subsections: further details on our
+beyond the scope of the main paper. There are four subsections: further details on our
 testing procedures; results from larger Resnets to support the idea that our surprising findings
-could generalize; and numerical sanity testing to try and confirm or disprove the \textit{hacking}
+could generalize; numerical sanity testing to try and confirm or disprove the \textit{hacking}
+hypothesis; and image-generation to try and visualize the possibility of the \textit{hacking}
 hypothesis.
 %; and images, generated using stitches (into the first layer), also to try and
 % confirm or disprove the \textit{hacking} hypothesis. Unfortunately, neither of these latter
@@ -475,16 +481,25 @@ and so we cannot conclude, from these results, that the stitch is likely hacking
      similarity matrix, per the previous figures in this paper).}
   \end{figure}
 \end{center}
-% This should be done.
-% \subsection*{Image Generation}
-% We tried generating images as a sanity test to see if we could shed some light on whether
-% the Small Resnets' stitches were creating meaningful representations for their corresponding
-% images. We stitched from all blocksets into the very first layer to do this. This approach
-% makes sense for better understanding our results because images are human-interpretable, so
-% we can get an intuitive sense of whether the stitch is creating meaningful outputs.
-% However, unlike in other cases, the stitched network was only able to reach a maximum
-% of around 30\%-40\% accuracy in this case. Perhaps the first layer of a Resnet is one of
-% the most important ones. Regardless, the images were not very interpretable. Broad contours
-% were maintained when stitching from earlier layers, but when stitching from later layers,
-% it was difficult to find any pattern. Some sample images are below.
+
+\subsection*{Image Generation}
+\begin{center}
+  \begin{figure}[H]
+     \centering
+     \includegraphics[width=10cm]{images.png}
+     \caption{Our results from generating images using stitches.
+     We stitched the output of intermediate
+     layers (numbered on the left from zero through five to signify the 
+     number of blocks coming before it---zero
+     corresponding to the output of the first
+     convolution, for example) into the very first layer, thereby
+     generating images. We hoped to
+     understand whether the stitches
+     were able to hack the reciever. We did, however,
+     not find a discernable pattern other than the loss
+     of granularity as the layers progressed.
+     On the left side of each pair is the stitch-generated
+     image, whereas on the right side is the actual image.}
+  \end{figure}
+\end{center}
 \end{document}
