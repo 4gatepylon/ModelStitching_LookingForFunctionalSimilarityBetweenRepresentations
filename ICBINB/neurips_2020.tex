@@ -4,14 +4,14 @@
 % before loading neurips_2020
 
 % ready for submission
-\usepackage{neurips_2020}
+% \usepackage{neurips_2020}
 
 % to compile a preprint version, e.g., for submission to arXiv, add add the
 % [preprint] option:
 % \usepackage[preprint]{neurips_2020}
 
 % to compile a camera-ready version, add the [final] option, e.g.:
-% \usepackage[final]{neurips_2020}
+\usepackage[final]{neurips_2020}
 
 % to avoid loading the natbib package, add option nonatbib:
 % \usepackage[nonatbib]{neurips_2020}
@@ -47,10 +47,10 @@
 % authors names on the first line, and the last on the second line, try using
 % \AND instead of \And before the third author name.
 
-\author{Adriano Hernandez, Rumen Dangovski \& Peter Y. Lu\\
+\author{Adriano Hernandez, Rumen Dangovski, Peter Y. Lu \& Marin Soljacic\\
 MIT EECS\\
 Cambridge, MA 02139, USA \\
-\texttt{\{adrianoh,rumenrd,lup\}@mit.edu}
+\texttt{\{adrianoh,rumenrd,lup,soljacic\}@mit.edu}
 }
 \begin{document}
 
@@ -72,7 +72,7 @@ Cambridge, MA 02139, USA \\
 
   This leads us to hypothesize that stitches are not in fact learning to match the
   representations expected by receiver layers, but instead finding different representations which nonetheless
-  yield similar results. Thus, we believe that model stitching may not necessarily always be an
+  yield similar results. Thus, we suggest that model stitching, naively implemented, may not necessarily always be an
   accurate measure of similarity.
 \end{abstract}
 
@@ -106,16 +106,31 @@ Our goal is to improve the existing toolbox to find \textit{functional} similari
 % we believe is tightly coupled with them having similar information, even if that information is
 % stored in vastly different ways. We believe this to be a salient measure of similarity, since
 % it is practical and interpretable, using measures like task accuracy.
-It is not obvious how to find functional similarity.
-Many papers \cite{Kornblith2019SimilarityON} \cite{Morcos2018InsightsOR} \cite{Ding2021GroundingRS}
-look for measures of statistical or geometric similarity because they can confirm known edge cases (i.e. when
-representations are exactly the same).
-However, these measures are not very informative in general, since neural networks'
-representations can vary greatly in ways which are not yet well-understood,
-simply due to random initialization of the weights. 
+It is not obvious how to find functional similarity, nor is it obvious exactly what it precisely
+means even though we (the authors) have some intuition of it, so before we continue we provide
+a sufficient definition for our purposes. For us, a representational similarity metric
+is good at measuring ``functional similarity'' if we can easily use it to tell whether two
+representations of one or two models are used by the model(s) for the same or similar purpose(s).
+We believe this is a useful lens because if two representations can be used for similar purposes
+then in some sense they encode similar information. We care about similar information
+because understanding whether two models's representations
+encode similar information could be useful for soft guarantees of safe, fair, or robust AI.
 
-We believe that a previous work \cite{Bansal2021RevisitingMS} provides us with such a measure. It uses,
-learned transformations to \textit{translate} representations from one layer into those for another
+While we are interested in functional similarity, many papers \cite{Kornblith2019SimilarityON} 
+\cite{Morcos2018InsightsOR} \cite{Ding2021GroundingRS}
+look for measures of statistical or geometric similarity\footnote{
+  Here, we mean simply that the representations, given proper shifts and rescales,
+  are numerically or geometrically close by on average.
+} because they can confirm known edge cases, like
+a pair of identical representations or a representation and a vector of random noise.
+
+These measures are a great starting point, but are not very informative in general, since different
+neural networks could process and store information in ways which are analogous to eachother but not numerically
+similar. In fact, they have been found \cite{Ding2021GroundingRS} \cite{Dujmovi2022SomePO} to be misleading on occasion
+in both Computer Vision and Brain Sciences.
+
+We believe that a previous work \cite{Bansal2021RevisitingMS} provides us with a potentially better functional similarity 
+measure. It uses, learned transformations to \textit{translate} representations from one layer into those for another
 layer. Their technique measures functional similarity, because invariant to the type of transformations used,
 it tests whether two representations can be interchanged, which is a strong indicator that the two representations
 function similarly. However, their work can only
@@ -208,7 +223,7 @@ based on the sender's layer and the receiver's layer. The layer is
 denoted by an integer which counts how many residual blocks came before it\footnote{
    The initial convolution is ``0,'' the first block of the first stage is ``1,'' and so on.
 }. The value in the grid element is the accuracy of the stitched network after traning. Thus, this
-grid is a \textit{similarity matrix} where entry $i, j$ correspnds to the similarity of
+grid is a \textit{similarity matrix} where entry $i, j$ corresponds to the similarity of
 $A_{\leq i}(x)$ and $B_{\leq j}$.
 
 \subsection{Expectations}
@@ -230,10 +245,13 @@ These hypotheses make sense because Bansal et. al.'s findings suggest that each 
 should have at least one similar layer in the reciever---at least in the cast of identical architectures,
 where those two layers are the corresponding ones; and it is usually assumed that distant layers
 have different information, and so they should not be similar. However, \textbf{we found that every
-layer in the sender was extremely similar to all layers before it in the reciever}. That is to say,
-regardless of the architecture, if $j \leq i$ then the similarity was high. Visually, this looks
-like a triangle in the lower left-hand corner of the similarity matrix. This is visible in the figure
-below and quite perplexing.
+layer in the sender was extremely similar to all layers before it in the reciever by proportion of
+neural network length}. That is to say, for small Resnets,
+regardless of the architecture, if we had one Resnet of length $I$ and another of length $J$, then if
+$\frac{j}{J} \leq \frac{i}{I}$ the similarity was high between layer $i$ in the $I$-length network and 
+layer and $j$ in the $J$-length network. Visually, this looks
+like a triangle in the lower left-hand corner of the similarity matrix. The triangle's endoints are the top left cell,
+the bottom left cell, and the bottom right cell. This pattern is visible in the figure below and quite perplexing.
 
 For our controls we expected to see low stitching accuracy throughout the board since the networks are random,
 and we did. With that said, some of the top left or bottom right elements have high similarity depending on
@@ -246,29 +264,57 @@ case is analogous.
       \centering
       \includegraphics{tables.png}
       \caption{Triangle similarity pattern between trained Small Resnets and (expected) low similarity pattern for
-      random ones. The plot is to be interpreted as a similarity matrix from sender to reciever.}
+      random ones. The plot is to be interpreted as a similarity matrix from sender to reciever. This is indicative
+      of the pattern we saw on all such Resnets.}
    \end{figure}
 \end{center}
 
 \subsection{Conclusion}
+%%%%%%%%%%%%%%%
+% The result that a sender representation from layer i can perform well stitched into layer j in the receiver (where j < i)
+% but a representation from sender layer j cannot be stitched into receiver layer i in the receiver is indeed interesting.
+% However, it is not clear that this result implies that stitching is not measuring representation similarity. One alternative
+% explanation for this result would be that this experiment reparametrizes the stitching function into the composition of
+% a learnable layer S and non-learnable receiver network layers between j and i. This is especially plausible for residual
+% architectures that may contain collapsing paths or other “fixed point” dynamics [1]. For instance, when stitching a
+% later layer from a trained sender to a random receiver, the function achieves high accuracy even for early receiver layers.
+% It would be useful to see a control for this explanation. Alternatively, consistent results on non-residual architectures
+% would increase the strength of the hypothesis.
+%%%%%%%%%%%%%%%
 The most interesting aspect of our results is the high accuracy of the stitching network
-for layers in the lower left hand triangle. Given that we interpret the stitching network accuracy
+for layers in the lower left hand triangle. It is true that our findings do \textit{not} contradict Bansal et. al.'s
+findings since they \textit{only stitched on the diagonal} which yielded the same high accuracy for them
+as it did for us. However, we are still surprised. Given that we interpret the stitching network accuracy
 as a similarity, our results suggest that each sender representation is similar with \textit{all}
-the receiver representations from a layer before it. We expected to see that each layer would be
+the receiver representations from a layer (proportionally) before it. We expected to see that each layer would be
 similar to a couple (nearby) layers at most because the standard narrative has been that 
 every layer loses some amount of granular information, and so that information should not be reconstructable
 in an \textit{interchangeability} test like stitching.
 
-We see two main explanations for the results. The first is that the common narrative could be wrong and some neural
-networks may in fact be able to maintain most if not all of the granular information of the image throughout their
-processing of it. The second is that the stitch may be able to give the reciever a representation which, despite being
-different from that which is expected, nonetheless yields high accuracy.
+In our conclusions we focus our scope on the fact that layers are similar to those before them for similar, but not 
+equal, length networks, 
+instead of the fact that those layers ``before them'' need only be proportionally (to their own network's length) before, 
+since most of our networks did not vary in length very much.
+However, the poportionality finding could prove to be interesting to explore in future work, since it may tell us something
+about Resnet length-invariant properties. A slightly more extreme case for the curious in depicted in the Appendix.
 
-We believe that the latter option is the most likely. Intuitively, the stitch may be able to figure out how to
-generate some generic, albeit unrealistic, set of the most salient features for the recieving layer to classify
-in a given way. Perhaps it is generating the ``average'' human, for example. However, a deeper analysis is required
-to ascertain whether that is the case. In the Appendix, we further discuss sanity tests we explored and dub this
-hypothesis \textit{hacking}.
+We see two main explanations for our results. The first is that the common narrative could be wrong and some neural
+networks may in fact be able to maintain most if not all of the granular information of the image throughout their
+processing of it. An alternative, but not uncommon, narrive to the standard one is that neural networks progressively 
+discard information from layer to layer until only the class information remains. In that view, our results are actually
+expected since the stitch need only make sure that it transfers the class information. This could make sense since nearest
+upsampling is lossless, while downsampling is lossy, which matches the observation that stitching backwards yields high
+accuracy but not forwards, suggesting that it is easier to retain the information in the backwards direction.
+
+The second explanation we see is that the stitch may be able to give the reciever a representation which,
+despite being different from that which is expected, nonetheless yields high accuracy. Intuitively, the stitch may be
+able to figure out how to generate some generic, albeit unrealistic, set of the most salient features for the
+recieving layer to classify in a given way. Perhaps it is generating the ``average'' human, or some sort of adversarial
+representation. 
+
+To rigorously determine why our obervations are as they are, however, a deeper analysis is required.
+In the Appendix, we further discuss sanity tests we executed to try and buttress our second explanation, which
+we henceforth dub the \textit{hacking} hypothesis.
 
 Despite our difficulty generalizing model stitching, we still see it as an important
 step forward in our ability to compare representations, since its focus on
@@ -347,6 +393,11 @@ Thank you to MIT EECS for funding this project and MIT SuperUROP and the Soljaci
   \newblock Deep residual learning for image recognition.
   \newblock \emph{2016 IEEE Conference on Computer Vision and Pattern Recognition
     (CVPR)}, pp.\  770--778, 2016.
+  
+  \bibitem[Dujmović et~al.(2022) Dujmović, Bowers, Adolfi, and Malhotra]{Dujmovi2022SomePO}
+  Dujmović, M., Bowers, J., Adolfi, F. \& Malhotra, G.
+  \newblock Some pitfalls of measuring representational similarity using Representational Similarity Analysis.
+  \newblock \emph{ BioRxiv}. (2022)
 
   \end{thebibliography}
 \newpage
@@ -389,7 +440,12 @@ a Small Resnet for clarity on our architecture.
      \caption{Our results generalize to larger Resnets of a similar type (also on CIFAR-10).
      We were able to yield the same triangular pattern between Resnet18 and Resnet34 in both
      directions, suggesting that our results are the function of some general property of the
-     Resnet architecture or of CIFAR-10.}
+     Resnet architecture or of CIFAR-10. One thing that becomes more aparent for Resnet
+     pairs whose lengths are very different, is that it is not whether the reciever layer comes
+     before the sender layer, numerically, that matters, but whether it comes before it proportional
+     to the length of the reciever Resnet. This is perplexing. Visually, in the table this means
+     that the lower left hand triangle of high similarity includes all elements below the diagonal,
+     from the top left cell to the bottom right cell, \textit{regardless of the slope of this diagonal}.}
   \end{figure}
 \end{center}
 \subsection*{Numerical Sanity Testing}
@@ -397,7 +453,7 @@ When we found that our metric was finding high similarity between distant layers
 this result using numerical testing. We averaged the mean squared error between three pairs of values:
 the expected representation with that generated by a vanilla stitch (trained with backpropagation on the CIFAR-10
 classification task, as discussed in the body of this paper); the expected representation with that generated 
-by a similarity-trained stitch; and the representation generated by similarity-trained stitch with that generated 
+by a similarity-trained stitch; and the representation generated by a similarity-trained stitch with that generated 
 by a vanilla stitch. Respectively, we refer to these three pairs as \textbf{EV}, \textbf{ES}, and \textbf{SV}.
 The mean squared error is over the elements in the representations' tensors. For those mean squared errors, we
 found the minimum, mean, maximum, and standard deviation over the (cartesian product of the) entire dataset of
